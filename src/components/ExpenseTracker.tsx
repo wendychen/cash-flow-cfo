@@ -1,12 +1,14 @@
-import { useState, useEffect } from "react";
-import { Download } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Download, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ExpenseForm from "./ExpenseForm";
 import ExpenseList from "./ExpenseList";
+import ExpenseChart from "./ExpenseChart";
 import { Expense } from "@/types/expense";
 import { toast } from "@/hooks/use-toast";
 
 const ExpenseTracker = () => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [expenses, setExpenses] = useState<Expense[]>(() => {
     const saved = localStorage.getItem("expenses");
     return saved ? JSON.parse(saved) : [];
@@ -86,6 +88,70 @@ const ExpenseTracker = () => {
     });
   };
 
+  const importFromCSV = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target?.result as string;
+        const lines = text.split("\n").filter((line) => line.trim());
+        
+        // Skip header if present
+        const startIndex = lines[0]?.toLowerCase().includes("date") ? 1 : 0;
+        
+        const importedExpenses: Expense[] = [];
+        for (let i = startIndex; i < lines.length; i++) {
+          const line = lines[i];
+          // Parse CSV handling quoted strings
+          const matches = line.match(/(".*?"|[^,]+)(?=\s*,|\s*$)/g);
+          if (matches && matches.length >= 3) {
+            const date = matches[0].replace(/"/g, "").trim();
+            const description = matches[1].replace(/"/g, "").trim();
+            const amount = parseFloat(matches[2].replace(/"/g, "").trim());
+            
+            if (date && description && !isNaN(amount)) {
+              importedExpenses.push({
+                id: crypto.randomUUID(),
+                date,
+                description,
+                amount,
+                needsCheck: false,
+              });
+            }
+          }
+        }
+
+        if (importedExpenses.length > 0) {
+          setExpenses((prev) => [...importedExpenses, ...prev]);
+          toast({
+            title: "Imported successfully",
+            description: `${importedExpenses.length} expenses imported`,
+          });
+        } else {
+          toast({
+            title: "No expenses found",
+            description: "Check your CSV format (Date, Description, Amount)",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        toast({
+          title: "Import failed",
+          description: "Invalid CSV format",
+          variant: "destructive",
+        });
+      }
+    };
+    reader.readAsText(file);
+    
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   const total = expenses.reduce((sum, exp) => sum + exp.amount, 0);
 
   return (
@@ -105,18 +171,35 @@ const ExpenseTracker = () => {
             <p className="text-sm text-muted-foreground">Total</p>
             <p className="text-2xl font-bold text-foreground">NT${total.toFixed(0)}</p>
           </div>
-          <Button variant="outline" onClick={exportToCSV} className="gap-2">
-            <Download className="w-4 h-4" />
-            Export CSV
-          </Button>
+          <div className="flex gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              onChange={importFromCSV}
+              className="hidden"
+            />
+            <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="gap-2">
+              <Upload className="w-4 h-4" />
+              Import
+            </Button>
+            <Button variant="outline" onClick={exportToCSV} className="gap-2">
+              <Download className="w-4 h-4" />
+              Export
+            </Button>
+          </div>
         </div>
 
-        <ExpenseList
-          expenses={expenses}
-          onDeleteExpense={deleteExpense}
-          onToggleNeedsCheck={toggleNeedsCheck}
-          onUpdateExpense={updateExpense}
-        />
+        <ExpenseChart expenses={expenses} />
+
+        <div className="mt-6">
+          <ExpenseList
+            expenses={expenses}
+            onDeleteExpense={deleteExpense}
+            onToggleNeedsCheck={toggleNeedsCheck}
+            onUpdateExpense={updateExpense}
+          />
+        </div>
       </div>
     </div>
   );
