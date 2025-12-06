@@ -20,6 +20,7 @@ const ExpenseTracker = () => {
     const newExpense: Expense = {
       ...expense,
       id: crypto.randomUUID(),
+      needsCheck: false,
     };
     setExpenses((prev) => [newExpense, ...prev]);
     toast({
@@ -32,6 +33,23 @@ const ExpenseTracker = () => {
     setExpenses((prev) => prev.filter((exp) => exp.id !== id));
     toast({
       title: "Expense deleted",
+    });
+  };
+
+  const toggleNeedsCheck = (id: string) => {
+    setExpenses((prev) =>
+      prev.map((exp) =>
+        exp.id === id ? { ...exp, needsCheck: !exp.needsCheck } : exp
+      )
+    );
+  };
+
+  const updateExpense = (id: string, updates: Partial<Omit<Expense, "id">>) => {
+    setExpenses((prev) =>
+      prev.map((exp) => (exp.id === id ? { ...exp, ...updates } : exp))
+    );
+    toast({
+      title: "Expense updated",
     });
   };
 
@@ -93,7 +111,12 @@ const ExpenseTracker = () => {
           </Button>
         </div>
 
-        <ExpenseList expenses={expenses} onDeleteExpense={deleteExpense} />
+        <ExpenseList
+          expenses={expenses}
+          onDeleteExpense={deleteExpense}
+          onToggleNeedsCheck={toggleNeedsCheck}
+          onUpdateExpense={updateExpense}
+        />
       </div>
     </div>
   );

@@ -21,6 +21,7 @@ const ExpenseForm = ({ onAddExpense }: ExpenseFormProps) => {
       date,
       description: description.trim(),
       amount: parseFloat(amount),
+      needsCheck: false,
     });
 
     setDescription("");
