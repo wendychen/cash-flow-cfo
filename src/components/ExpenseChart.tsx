@@ -34,14 +34,18 @@ const ExpenseChart = ({ expenses }: ExpenseChartProps) => {
       return { chartData: [], projectedData: [], avgDaily: 0, projection30Days: 0 };
     }
 
-    // Calculate cumulative totals
+    const today = new Date().toISOString().split("T")[0];
+
+    // Calculate cumulative totals and separate past/future
     let cumulative = 0;
     const chartData = sortedDates.map((date) => {
       cumulative += dailyTotals[date];
+      const isFuture = date > today;
       return {
         date,
         daily: dailyTotals[date],
-        cumulative,
+        cumulative: isFuture ? null : cumulative,
+        futureCumulative: isFuture ? cumulative : null,
         label: format(parseISO(date), "MM/dd"),
       };
     });
@@ -81,7 +85,7 @@ const ExpenseChart = ({ expenses }: ExpenseChartProps) => {
   // Merge actual and projected data for the chart
   const combinedData = [
     ...chartData.map((d) => ({ ...d, projected: null })),
-    ...projectedData.map((d) => ({ ...d, daily: null, cumulative: null })),
+    ...projectedData.map((d) => ({ ...d, daily: null, cumulative: null, futureCumulative: null })),
   ];
 
   return (
@@ -121,7 +125,7 @@ const ExpenseChart = ({ expenses }: ExpenseChartProps) => {
               }}
               formatter={(value: number, name: string) => [
                 `NT$${value.toLocaleString()}`,
-                name === "cumulative" ? "Total" : name === "projected" ? "Projected" : "Daily",
+                name === "cumulative" ? "Total" : name === "futureCumulative" ? "Future" : name === "projected" ? "Projected" : "Daily",
               ]}
               labelFormatter={(label) => label}
             />
@@ -129,6 +133,14 @@ const ExpenseChart = ({ expenses }: ExpenseChartProps) => {
               type="monotone"
               dataKey="cumulative"
               stroke="hsl(var(--primary))"
+              strokeWidth={2}
+              dot={false}
+              connectNulls={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="futureCumulative"
+              stroke="hsl(38, 92%, 50%)"
               strokeWidth={2}
               dot={false}
               connectNulls={false}
