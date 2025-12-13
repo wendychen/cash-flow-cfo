@@ -169,8 +169,8 @@ const ExpenseTracker = () => {
     <div className="min-h-screen bg-background py-8 px-4">
       <div className="max-w-2xl mx-auto">
         <header className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Expense Tracker</h1>
-          <p className="text-muted-foreground">Track your daily expenses</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Cash Flow Tracker</h1>
+          <p className="text-muted-foreground">Track your spending and savings</p>
         </header>
 
         <div className="bg-card rounded-xl shadow-card p-5 mb-6">
