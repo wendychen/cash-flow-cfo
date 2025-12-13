@@ -1,7 +1,12 @@
 import ExpenseTracker from "@/components/ExpenseTracker";
+import { CurrencyProvider } from "@/hooks/use-currency";
 
 const Index = () => {
-  return <ExpenseTracker />;
+  return (
+    <CurrencyProvider>
+      <ExpenseTracker />
+    </CurrencyProvider>
+  );
 };
 
 export default Index;

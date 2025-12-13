@@ -12,12 +12,14 @@ import {
 } from "recharts";
 import { Expense } from "@/types/expense";
 import { TrendingUp } from "lucide-react";
+import { useCurrency } from "@/hooks/use-currency";
 
 interface ExpenseChartProps {
   expenses: Expense[];
 }
 
 const ExpenseChart = ({ expenses }: ExpenseChartProps) => {
+  const { format: formatCurrency, convert, symbol } = useCurrency();
   const { chartData, projectedData, avgDaily, projection30Days } = useMemo(() => {
     if (expenses.length === 0) {
       return { chartData: [], projectedData: [], avgDaily: 0, projection30Days: 0 };
@@ -95,7 +97,7 @@ const ExpenseChart = ({ expenses }: ExpenseChartProps) => {
         <div className="flex items-center gap-2 text-sm">
           <TrendingUp className="w-4 h-4 text-primary" />
           <span className="text-muted-foreground">Avg:</span>
-          <span className="font-medium text-foreground">NT${Math.round(avgDaily)}/day</span>
+          <span className="font-medium text-foreground">{formatCurrency(avgDaily)}/day</span>
         </div>
       </div>
 
@@ -114,7 +116,7 @@ const ExpenseChart = ({ expenses }: ExpenseChartProps) => {
               tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
               tickLine={false}
               axisLine={false}
-              tickFormatter={(value) => `${value / 1000}k`}
+              tickFormatter={(value) => `${symbol}${Math.round(convert(value)).toLocaleString()}`}
             />
             <Tooltip
               contentStyle={{
@@ -124,7 +126,7 @@ const ExpenseChart = ({ expenses }: ExpenseChartProps) => {
                 fontSize: "12px",
               }}
               formatter={(value: number, name: string) => [
-                `NT$${value.toLocaleString()}`,
+                formatCurrency(value),
                 name === "cumulative" ? "Total" : name === "futureCumulative" ? "Future" : name === "projected" ? "Projected" : "Daily",
               ]}
               labelFormatter={(label) => label}
@@ -162,7 +164,7 @@ const ExpenseChart = ({ expenses }: ExpenseChartProps) => {
       <div className="mt-4 pt-4 border-t border-border">
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">30-day projection</span>
-          <span className="text-lg font-bold text-foreground">NT${projection30Days.toLocaleString()}</span>
+          <span className="text-lg font-bold text-foreground">{formatCurrency(projection30Days)}</span>
         </div>
       </div>
     </div>
