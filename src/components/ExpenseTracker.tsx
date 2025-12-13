@@ -3,14 +3,23 @@ import { Download, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import ExpenseForm from "./ExpenseForm";
 import ExpenseList from "./ExpenseList";
 import ExpenseChart from "./ExpenseChart";
 import { Expense } from "@/types/expense";
 import { toast } from "@/hooks/use-toast";
+import { useCurrency, Currency } from "@/hooks/use-currency";
 
 const ExpenseTracker = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { format, currency, setCurrency } = useCurrency();
   const [expenses, setExpenses] = useState<Expense[]>(() => {
     const saved = localStorage.getItem("expenses");
     return saved ? JSON.parse(saved) : [];
@@ -29,7 +38,7 @@ const ExpenseTracker = () => {
     setExpenses((prev) => [newExpense, ...prev]);
     toast({
       title: "Expense added",
-      description: `${expense.description} - NT$${expense.amount.toFixed(0)}`,
+      description: `${expense.description} - ${format(expense.amount)}`,
     });
   };
 
@@ -190,9 +199,21 @@ const ExpenseTracker = () => {
         </div>
 
         <div className="flex items-center justify-between mb-6">
-          <div>
-            <p className="text-sm text-muted-foreground">Total</p>
-            <p className="text-2xl font-bold text-foreground">NT${total.toFixed(0)}</p>
+          <div className="flex items-center gap-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Total</p>
+              <p className="text-2xl font-bold text-foreground">{format(total)}</p>
+            </div>
+            <Select value={currency} onValueChange={(val) => setCurrency(val as Currency)}>
+              <SelectTrigger className="w-24">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="NTD">NTD</SelectItem>
+                <SelectItem value="USD">USD</SelectItem>
+                <SelectItem value="CAD">CAD</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex gap-2">
             <input

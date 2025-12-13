@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Expense } from "@/types/expense";
+import { useCurrency } from "@/hooks/use-currency";
 
 interface ExpenseListProps {
   expenses: Expense[];
@@ -19,6 +20,7 @@ const ExpenseList = ({
   onToggleNeedsCheck,
   onUpdateExpense,
 }: ExpenseListProps) => {
+  const { format: formatCurrency } = useCurrency();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDescription, setEditDescription] = useState("");
   const [editAmount, setEditAmount] = useState("");
@@ -79,7 +81,7 @@ const ExpenseList = ({
                 {format(parseISO(date), "EEEE, MMMM d")}
               </h3>
               <span className="text-sm font-medium text-primary">
-                NT${dayTotal.toFixed(0)}
+                {formatCurrency(dayTotal)}
               </span>
             </div>
             <div className="space-y-2">
@@ -142,7 +144,7 @@ const ExpenseList = ({
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-foreground font-semibold tabular-nums">
-                          NT${expense.amount.toFixed(0)}
+                          {formatCurrency(expense.amount)}
                         </span>
                         <Button
                           variant="ghost"
