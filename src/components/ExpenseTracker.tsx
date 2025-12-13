@@ -126,10 +126,10 @@ const ExpenseTracker = () => {
         }
 
         if (importedExpenses.length > 0) {
-          setExpenses((prev) => [...importedExpenses, ...prev]);
+          setExpenses(importedExpenses);
           toast({
             title: "Imported successfully",
-            description: `${importedExpenses.length} expenses imported`,
+            description: `${importedExpenses.length} expenses imported (replaced existing records)`,
           });
         } else {
           toast({
