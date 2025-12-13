@@ -78,7 +78,7 @@ const ExpenseList = ({
           <div key={date} className="animate-fade-in">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-foreground">
-                {format(parseISO(date), "EEEE, MMMM d")}
+                {format(parseISO(date), "EEEE, YYYY MMMM d")}
               </h3>
               <span className="text-sm font-medium text-primary">
                 {formatCurrency(dayTotal)}
