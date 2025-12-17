@@ -11,27 +11,44 @@ import {
   Legend,
 } from "recharts";
 import { Expense } from "@/types/expense";
+import { Income } from "@/types/income";
 import { Saving } from "@/types/saving";
-import { TrendingUp, PiggyBank } from "lucide-react";
+import { TrendingUp, PiggyBank, Wallet } from "lucide-react";
 import { useCurrency } from "@/hooks/use-currency";
 
 interface CombinedChartProps {
   expenses: Expense[];
+  incomes: Income[];
   savings: Saving[];
 }
 
-const CombinedChart = ({ expenses, savings }: CombinedChartProps) => {
+const CombinedChart = ({ expenses, incomes, savings }: CombinedChartProps) => {
   const { format: formatCurrency, convert, symbol } = useCurrency();
 
   const chartData = useMemo(() => {
-    if (expenses.length === 0 && savings.length === 0) {
-      return { data: [], avgDailyExpense: 0, avgDailySavingsGrowth: 0, expenseProjection: 0, savingsProjection: 0 };
+    if (expenses.length === 0 && incomes.length === 0 && savings.length === 0) {
+      return { 
+        data: [], 
+        avgDailyExpense: 0, 
+        avgDailyIncome: 0,
+        avgDailySavingsGrowth: 0, 
+        expenseProjection: 0, 
+        incomeProjection: 0,
+        savingsProjection: 0,
+        netProjection: 0,
+      };
     }
 
     // Group expenses by date
     const dailyExpenses: Record<string, number> = {};
     expenses.forEach((exp) => {
       dailyExpenses[exp.date] = (dailyExpenses[exp.date] || 0) + exp.amount;
+    });
+
+    // Group incomes by date
+    const dailyIncomes: Record<string, number> = {};
+    incomes.forEach((inc) => {
+      dailyIncomes[inc.date] = (dailyIncomes[inc.date] || 0) + inc.amount;
     });
 
     // Get savings by date (latest entry per date)
@@ -41,17 +58,23 @@ const CombinedChart = ({ expenses, savings }: CombinedChartProps) => {
     });
 
     // Get all unique dates
-    const allDates = new Set([...Object.keys(dailyExpenses), ...Object.keys(savingsByDate)]);
+    const allDates = new Set([
+      ...Object.keys(dailyExpenses), 
+      ...Object.keys(dailyIncomes),
+      ...Object.keys(savingsByDate)
+    ]);
     const sortedDates = Array.from(allDates).sort();
 
     const today = new Date().toISOString().split("T")[0];
 
-    // Calculate cumulative expenses
+    // Calculate cumulative values
     let cumulativeExpense = 0;
+    let cumulativeIncome = 0;
     const dataByDate: Record<string, any> = {};
 
     sortedDates.forEach((date) => {
       cumulativeExpense += dailyExpenses[date] || 0;
+      cumulativeIncome += dailyIncomes[date] || 0;
       const isFuture = date > today;
       
       dataByDate[date] = {
@@ -59,6 +82,7 @@ const CombinedChart = ({ expenses, savings }: CombinedChartProps) => {
         label: format(parseISO(date), "MM/dd"),
         expenseCumulative: isFuture ? null : cumulativeExpense,
         futureExpense: isFuture ? cumulativeExpense : null,
+        incomeCumulative: isFuture ? null : cumulativeIncome,
         savings: savingsByDate[date] || null,
       };
     });
@@ -78,6 +102,7 @@ const CombinedChart = ({ expenses, savings }: CombinedChartProps) => {
 
     // Calculate averages for projections
     const expenseDates = Object.keys(dailyExpenses).filter(d => d <= today);
+    const incomeDates = Object.keys(dailyIncomes).filter(d => d <= today);
     const savingsDates = Object.keys(savingsByDate).sort();
 
     let avgDailyExpense = 0;
@@ -87,6 +112,15 @@ const CombinedChart = ({ expenses, savings }: CombinedChartProps) => {
       const daysDiff = Math.max(1, Math.ceil((lastExpenseDate.getTime() - firstExpenseDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
       const totalExpenses = expenses.filter(e => e.date <= today).reduce((sum, exp) => sum + exp.amount, 0);
       avgDailyExpense = totalExpenses / daysDiff;
+    }
+
+    let avgDailyIncome = 0;
+    if (incomeDates.length > 0) {
+      const firstIncomeDate = parseISO(incomeDates.sort()[0]);
+      const lastIncomeDate = parseISO(incomeDates.sort().reverse()[0]);
+      const daysDiff = Math.max(1, Math.ceil((lastIncomeDate.getTime() - firstIncomeDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+      const totalIncomes = incomes.filter(i => i.date <= today).reduce((sum, inc) => sum + inc.amount, 0);
+      avgDailyIncome = totalIncomes / daysDiff;
     }
 
     let avgDailySavingsGrowth = 0;
@@ -101,6 +135,7 @@ const CombinedChart = ({ expenses, savings }: CombinedChartProps) => {
     // Generate projections
     const lastDate = sortedDates.length > 0 ? parseISO(sortedDates[sortedDates.length - 1]) : new Date();
     const lastCumulativeExpense = cumulativeExpense;
+    const lastCumulativeIncome = cumulativeIncome;
     const lastSavingsValue = lastSavings || 0;
 
     for (let i = 1; i <= 30; i++) {
@@ -111,22 +146,35 @@ const CombinedChart = ({ expenses, savings }: CombinedChartProps) => {
         label: format(projDate, "MM/dd"),
         expenseCumulative: null,
         futureExpense: null,
+        incomeCumulative: null,
         savings: null,
         projectedExpense: Math.round(lastCumulativeExpense + avgDailyExpense * i),
+        projectedIncome: Math.round(lastCumulativeIncome + avgDailyIncome * i),
         projectedSavings: Math.round(lastSavingsValue + avgDailySavingsGrowth * i),
       });
     }
 
     const expenseProjection = Math.round(lastCumulativeExpense + avgDailyExpense * 30);
+    const incomeProjection = Math.round(lastCumulativeIncome + avgDailyIncome * 30);
     const savingsProjection = Math.round(lastSavingsValue + avgDailySavingsGrowth * 30);
+    const netProjection = incomeProjection - expenseProjection;
 
-    return { data: chartData, avgDailyExpense, avgDailySavingsGrowth, expenseProjection, savingsProjection };
-  }, [expenses, savings]);
+    return { 
+      data: chartData, 
+      avgDailyExpense, 
+      avgDailyIncome,
+      avgDailySavingsGrowth, 
+      expenseProjection, 
+      incomeProjection,
+      savingsProjection,
+      netProjection,
+    };
+  }, [expenses, incomes, savings]);
 
-  if (expenses.length === 0 && savings.length === 0) {
+  if (expenses.length === 0 && incomes.length === 0 && savings.length === 0) {
     return (
       <div className="bg-card rounded-xl shadow-card p-5 text-center text-muted-foreground">
-        Add expenses or savings to see the chart
+        Add expenses, income, or savings to see the chart
       </div>
     );
   }
@@ -136,6 +184,13 @@ const CombinedChart = ({ expenses, savings }: CombinedChartProps) => {
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <h2 className="text-lg font-semibold text-foreground">Cash Flow Trend</h2>
         <div className="flex items-center gap-4 text-sm flex-wrap">
+          {chartData.avgDailyIncome > 0 && (
+            <div className="flex items-center gap-2">
+              <Wallet className="w-4 h-4 text-violet-500" />
+              <span className="text-muted-foreground">Earn:</span>
+              <span className="font-medium text-violet-600">{formatCurrency(chartData.avgDailyIncome)}/day</span>
+            </div>
+          )}
           {chartData.avgDailyExpense > 0 && (
             <div className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-primary" />
@@ -181,8 +236,10 @@ const CombinedChart = ({ expenses, savings }: CombinedChartProps) => {
                 const labels: Record<string, string> = {
                   expenseCumulative: "Expenses",
                   futureExpense: "Future Expenses",
+                  incomeCumulative: "Income",
                   savings: "Savings",
                   projectedExpense: "Projected Expenses",
+                  projectedIncome: "Projected Income",
                   projectedSavings: "Projected Savings",
                 };
                 return [formatCurrency(value), labels[name] || name];
@@ -195,12 +252,23 @@ const CombinedChart = ({ expenses, savings }: CombinedChartProps) => {
                 const labels: Record<string, string> = {
                   expenseCumulative: "Expenses",
                   futureExpense: "Future",
+                  incomeCumulative: "Income",
                   savings: "Savings",
-                  projectedExpense: "Exp. Projection",
-                  projectedSavings: "Sav. Projection",
+                  projectedExpense: "Exp. Proj.",
+                  projectedIncome: "Inc. Proj.",
+                  projectedSavings: "Sav. Proj.",
                 };
                 return labels[value] || value;
               }}
+            />
+            {/* Income line */}
+            <Line
+              type="monotone"
+              dataKey="incomeCumulative"
+              stroke="hsl(263, 70%, 50%)"
+              strokeWidth={2}
+              dot={false}
+              connectNulls={false}
             />
             {/* Expenses line */}
             <Line
@@ -229,6 +297,17 @@ const CombinedChart = ({ expenses, savings }: CombinedChartProps) => {
               dot={false}
               connectNulls
             />
+            {/* Projected income */}
+            <Line
+              type="monotone"
+              dataKey="projectedIncome"
+              stroke="hsl(263, 70%, 50%)"
+              strokeWidth={2}
+              strokeDasharray="5 5"
+              dot={false}
+              opacity={0.6}
+              connectNulls={false}
+            />
             {/* Projected expenses */}
             <Line
               type="monotone"
@@ -255,14 +334,24 @@ const CombinedChart = ({ expenses, savings }: CombinedChartProps) => {
         </ResponsiveContainer>
       </div>
 
-      <div className="mt-4 pt-4 border-t border-border grid grid-cols-2 gap-4">
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">1-year expense projection</span>
+      <div className="mt-4 pt-4 border-t border-border grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="flex flex-col">
+          <span className="text-xs text-muted-foreground">30-day Income</span>
+          <span className="text-lg font-bold text-violet-600">{formatCurrency(chartData.incomeProjection)}</span>
+        </div>
+        <div className="flex flex-col">
+          <span className="text-xs text-muted-foreground">30-day Expenses</span>
           <span className="text-lg font-bold text-foreground">{formatCurrency(chartData.expenseProjection)}</span>
         </div>
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">1-year savings projection</span>
+        <div className="flex flex-col">
+          <span className="text-xs text-muted-foreground">30-day Savings</span>
           <span className="text-lg font-bold text-emerald-600">{formatCurrency(chartData.savingsProjection)}</span>
+        </div>
+        <div className="flex flex-col">
+          <span className="text-xs text-muted-foreground">Net Cash Flow</span>
+          <span className={`text-lg font-bold ${chartData.netProjection >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+            {chartData.netProjection >= 0 ? '+' : ''}{formatCurrency(chartData.netProjection)}
+          </span>
         </div>
       </div>
     </div>

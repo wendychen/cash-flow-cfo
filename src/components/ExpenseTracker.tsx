@@ -13,10 +13,13 @@ import {
 } from "@/components/ui/select";
 import ExpenseForm from "./ExpenseForm";
 import ExpenseList from "./ExpenseList";
+import IncomeForm from "./IncomeForm";
+import IncomeList from "./IncomeList";
 import SavingForm from "./SavingForm";
 import SavingList from "./SavingList";
 import CombinedChart from "./CombinedChart";
 import { Expense } from "@/types/expense";
+import { Income } from "@/types/income";
 import { Saving } from "@/types/saving";
 import { toast } from "@/hooks/use-toast";
 import { useCurrency, Currency } from "@/hooks/use-currency";
@@ -30,6 +33,11 @@ const ExpenseTracker = () => {
     return saved ? JSON.parse(saved) : [];
   });
 
+  const [incomes, setIncomes] = useState<Income[]>(() => {
+    const saved = localStorage.getItem("incomes");
+    return saved ? JSON.parse(saved) : [];
+  });
+
   const [savings, setSavings] = useState<Saving[]>(() => {
     const saved = localStorage.getItem("savings");
     return saved ? JSON.parse(saved) : [];
@@ -38,6 +46,10 @@ const ExpenseTracker = () => {
   useEffect(() => {
     localStorage.setItem("expenses", JSON.stringify(expenses));
   }, [expenses]);
+
+  useEffect(() => {
+    localStorage.setItem("incomes", JSON.stringify(incomes));
+  }, [incomes]);
 
   useEffect(() => {
     localStorage.setItem("savings", JSON.stringify(savings));
@@ -77,6 +89,31 @@ const ExpenseTracker = () => {
     toast({ title: "Expense updated" });
   };
 
+  // Income handlers
+  const addIncome = (income: Omit<Income, "id">) => {
+    const newIncome: Income = {
+      ...income,
+      id: crypto.randomUUID(),
+    };
+    setIncomes((prev) => [newIncome, ...prev]);
+    toast({
+      title: "Income added",
+      description: `${income.source} - ${format(income.amount)}`,
+    });
+  };
+
+  const deleteIncome = (id: string) => {
+    setIncomes((prev) => prev.filter((inc) => inc.id !== id));
+    toast({ title: "Income deleted" });
+  };
+
+  const updateIncome = (id: string, updates: Partial<Omit<Income, "id">>) => {
+    setIncomes((prev) =>
+      prev.map((inc) => (inc.id === id ? { ...inc, ...updates } : inc))
+    );
+    toast({ title: "Income updated" });
+  };
+
   // Saving handlers
   const addSaving = (saving: Omit<Saving, "id">) => {
     const newSaving: Saving = {
@@ -104,7 +141,7 @@ const ExpenseTracker = () => {
 
   // Export/Import
   const exportToCSV = () => {
-    if (expenses.length === 0 && savings.length === 0) {
+    if (expenses.length === 0 && incomes.length === 0 && savings.length === 0) {
       toast({
         title: "No data to export",
         variant: "destructive",
@@ -120,6 +157,16 @@ const ExpenseTracker = () => {
       csvContent += "Date,Description,Amount\n";
       expenses.forEach((exp) => {
         csvContent += `${exp.date},"${exp.description.replace(/"/g, '""')}",${exp.amount.toFixed(2)}\n`;
+      });
+    }
+
+    // Export incomes
+    if (incomes.length > 0) {
+      if (csvContent) csvContent += "\n";
+      csvContent += "### INCOMES ###\n";
+      csvContent += "Date,Source,Amount,Note\n";
+      incomes.forEach((inc) => {
+        csvContent += `${inc.date},"${inc.source.replace(/"/g, '""')}",${inc.amount.toFixed(2)},"${(inc.note || "").replace(/"/g, '""')}"\n`;
       });
     }
 
@@ -145,7 +192,7 @@ const ExpenseTracker = () => {
 
     toast({
       title: "Exported successfully",
-      description: `${expenses.length} expenses, ${savings.length} savings exported`,
+      description: `${expenses.length} expenses, ${incomes.length} incomes, ${savings.length} savings exported`,
     });
   };
 
@@ -160,12 +207,17 @@ const ExpenseTracker = () => {
         const lines = text.split("\n").filter((line) => line.trim());
 
         const importedExpenses: Expense[] = [];
+        const importedIncomes: Income[] = [];
         const importedSavings: Saving[] = [];
-        let currentSection: "expenses" | "savings" | null = null;
+        let currentSection: "expenses" | "incomes" | "savings" | null = null;
 
         for (const line of lines) {
           if (line.includes("### EXPENSES ###")) {
             currentSection = "expenses";
+            continue;
+          }
+          if (line.includes("### INCOMES ###")) {
+            currentSection = "incomes";
             continue;
           }
           if (line.includes("### SAVINGS ###")) {
@@ -180,6 +232,7 @@ const ExpenseTracker = () => {
           const date = matches[0].replace(/"/g, "").trim();
           const field2 = matches[1].replace(/"/g, "").trim();
           const amount = parseFloat(matches[2].replace(/"/g, "").trim());
+          const field4 = matches[3]?.replace(/"/g, "").trim();
 
           if (!date || isNaN(amount)) continue;
 
@@ -191,6 +244,14 @@ const ExpenseTracker = () => {
               amount,
               needsCheck: false,
             });
+          } else if (currentSection === "incomes" && field2) {
+            importedIncomes.push({
+              id: crypto.randomUUID(),
+              date,
+              source: field2,
+              amount,
+              note: field4 || undefined,
+            });
           } else if (currentSection === "savings") {
             importedSavings.push({
               id: crypto.randomUUID(),
@@ -201,12 +262,13 @@ const ExpenseTracker = () => {
           }
         }
 
-        if (importedExpenses.length > 0 || importedSavings.length > 0) {
+        if (importedExpenses.length > 0 || importedIncomes.length > 0 || importedSavings.length > 0) {
           if (importedExpenses.length > 0) setExpenses(importedExpenses);
+          if (importedIncomes.length > 0) setIncomes(importedIncomes);
           if (importedSavings.length > 0) setSavings(importedSavings);
           toast({
             title: "Imported successfully",
-            description: `${importedExpenses.length} expenses, ${importedSavings.length} savings imported`,
+            description: `${importedExpenses.length} expenses, ${importedIncomes.length} incomes, ${importedSavings.length} savings imported`,
           });
         } else {
           toast({
@@ -231,6 +293,8 @@ const ExpenseTracker = () => {
   };
 
   const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+  const totalIncomes = incomes.reduce((sum, inc) => sum + inc.amount, 0);
+  const netCashFlow = totalIncomes - totalExpenses;
   const latestSavings = savings.length > 0
     ? [...savings].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].amount
     : 0;
@@ -240,12 +304,13 @@ const ExpenseTracker = () => {
       <div className="max-w-2xl mx-auto">
         <header className="text-center mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">Cash Flow Tracker</h1>
-          <p className="text-muted-foreground">Track your spending and savings</p>
+          <p className="text-muted-foreground">Track your income, spending, and savings</p>
         </header>
 
         <Tabs defaultValue="expenses" className="mb-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="expenses">Expenses</TabsTrigger>
+            <TabsTrigger value="income">Income</TabsTrigger>
             <TabsTrigger value="savings">Savings</TabsTrigger>
           </TabsList>
 
@@ -283,6 +348,18 @@ const ExpenseTracker = () => {
             />
           </TabsContent>
 
+          <TabsContent value="income" className="space-y-4">
+            <div className="bg-card rounded-xl shadow-card p-5">
+              <IncomeForm onAddIncome={addIncome} />
+            </div>
+
+            <IncomeList
+              incomes={incomes}
+              onDeleteIncome={deleteIncome}
+              onUpdateIncome={updateIncome}
+            />
+          </TabsContent>
+
           <TabsContent value="savings" className="space-y-4">
             <div className="bg-card rounded-xl shadow-card p-5">
               <SavingForm onAddSaving={addSaving} />
@@ -297,14 +374,24 @@ const ExpenseTracker = () => {
         </Tabs>
 
         <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 flex-wrap">
             <div>
-              <p className="text-sm text-muted-foreground">Total Expenses</p>
-              <p className="text-2xl font-bold text-foreground">{format(totalExpenses)}</p>
+              <p className="text-sm text-muted-foreground">Total Income</p>
+              <p className="text-xl font-bold text-violet-600">{format(totalIncomes)}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Current Savings</p>
-              <p className="text-2xl font-bold text-emerald-600">{format(latestSavings)}</p>
+              <p className="text-sm text-muted-foreground">Total Expenses</p>
+              <p className="text-xl font-bold text-foreground">{format(totalExpenses)}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Net Cash Flow</p>
+              <p className={`text-xl font-bold ${netCashFlow >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                {netCashFlow >= 0 ? '+' : ''}{format(netCashFlow)}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Savings</p>
+              <p className="text-xl font-bold text-emerald-600">{format(latestSavings)}</p>
             </div>
             <Select value={currency} onValueChange={(val) => setCurrency(val as Currency)}>
               <SelectTrigger className="w-24">
@@ -336,7 +423,7 @@ const ExpenseTracker = () => {
           </div>
         </div>
 
-        <CombinedChart expenses={expenses} savings={savings} />
+        <CombinedChart expenses={expenses} incomes={incomes} savings={savings} />
       </div>
     </div>
   );
