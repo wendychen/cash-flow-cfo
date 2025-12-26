@@ -5,12 +5,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Saving } from "@/types/saving";
 import { useCurrency } from "@/hooks/use-currency";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 interface SavingListProps {
   savings: Saving[];
   onDeleteSaving: (id: string) => void;
   onUpdateSaving: (id: string, updates: Partial<Omit<Saving, "id">>) => void;
 }
+
+const ITEMS_PER_PAGE = 10;
 
 const SavingList = ({
   savings,
@@ -21,6 +31,7 @@ const SavingList = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editAmount, setEditAmount] = useState("");
   const [editNote, setEditNote] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const startEdit = (saving: Saving) => {
     setEditingId(saving.id);
@@ -47,6 +58,11 @@ const SavingList = ({
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
+  // Pagination logic
+  const totalPages = Math.ceil(sortedSavings.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedSavings = sortedSavings.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
   if (savings.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
@@ -58,7 +74,7 @@ const SavingList = ({
 
   return (
     <div className="space-y-2">
-      {sortedSavings.map((saving, index) => (
+      {paginatedSavings.map((saving, index) => (
         <div
           key={saving.id}
           className="flex items-center justify-between p-3 bg-card rounded-lg shadow-card hover:shadow-card-hover transition-shadow duration-200 animate-fade-in ring-1 ring-emerald-200 dark:ring-emerald-900"
@@ -137,6 +153,36 @@ const SavingList = ({
           )}
         </div>
       ))}
+
+      {totalPages > 1 && (
+        <Pagination className="mt-6">
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+              />
+            </PaginationItem>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <PaginationItem key={page}>
+                <PaginationLink
+                  onClick={() => setCurrentPage(page)}
+                  isActive={currentPage === page}
+                  className="cursor-pointer"
+                >
+                  {page}
+                </PaginationLink>
+              </PaginationItem>
+            ))}
+            <PaginationItem>
+              <PaginationNext
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
     </div>
   );
 };

@@ -5,12 +5,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Income } from "@/types/income";
 import { useCurrency } from "@/hooks/use-currency";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 interface IncomeListProps {
   incomes: Income[];
   onDeleteIncome: (id: string) => void;
   onUpdateIncome: (id: string, updates: Partial<Omit<Income, "id">>) => void;
 }
+
+const ITEMS_PER_PAGE = 10;
 
 const IncomeList = ({
   incomes,
@@ -22,6 +32,7 @@ const IncomeList = ({
   const [editSource, setEditSource] = useState("");
   const [editAmount, setEditAmount] = useState("");
   const [editNote, setEditNote] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const startEdit = (income: Income) => {
     setEditingId(income.id);
@@ -58,6 +69,11 @@ const IncomeList = ({
     (a, b) => new Date(b).getTime() - new Date(a).getTime()
   );
 
+  // Pagination logic
+  const totalPages = Math.ceil(sortedDates.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedDates = sortedDates.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
   if (incomes.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
@@ -69,7 +85,7 @@ const IncomeList = ({
 
   return (
     <div className="space-y-4">
-      {sortedDates.map((date) => {
+      {paginatedDates.map((date) => {
         const dayIncomes = groupedByDate[date];
         const dayTotal = dayIncomes.reduce((sum, inc) => sum + inc.amount, 0);
 
@@ -174,6 +190,36 @@ const IncomeList = ({
           </div>
         );
       })}
+
+      {totalPages > 1 && (
+        <Pagination className="mt-6">
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+              />
+            </PaginationItem>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <PaginationItem key={page}>
+                <PaginationLink
+                  onClick={() => setCurrentPage(page)}
+                  isActive={currentPage === page}
+                  className="cursor-pointer"
+                >
+                  {page}
+                </PaginationLink>
+              </PaginationItem>
+            ))}
+            <PaginationItem>
+              <PaginationNext
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
     </div>
   );
 };
