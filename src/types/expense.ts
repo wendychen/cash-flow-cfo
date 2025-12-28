@@ -4,4 +4,5 @@ export interface Expense {
   description: string;
   amount: number;
   needsCheck: boolean;
+  reviewCount?: number;
 }

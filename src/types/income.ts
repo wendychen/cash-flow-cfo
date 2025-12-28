@@ -4,4 +4,5 @@ export interface Income {
   source: string;
   amount: number;
   note?: string;
+  reviewCount?: number;
 }

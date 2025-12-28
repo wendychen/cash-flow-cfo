@@ -121,6 +121,14 @@ const SavingList = ({
           ) : (
             <>
               <div className="flex items-center gap-3 flex-1 min-w-0">
+                <Input
+                  type="number"
+                  min="0"
+                  value={saving.reviewCount || ""}
+                  onChange={(e) => onUpdateSaving(saving.id, { reviewCount: e.target.value ? parseInt(e.target.value) : undefined })}
+                  placeholder="0"
+                  className="h-7 w-12 text-xs text-center shrink-0"
+                />
                 <span className="text-sm text-muted-foreground">
                   {format(parseISO(saving.date), "MMM d, yyyy")}
                 </span>

@@ -154,6 +154,14 @@ const IncomeList = ({
                   ) : (
                     <>
                       <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <Input
+                          type="number"
+                          min="0"
+                          value={income.reviewCount || ""}
+                          onChange={(e) => onUpdateIncome(income.id, { reviewCount: e.target.value ? parseInt(e.target.value) : undefined })}
+                          placeholder="0"
+                          className="h-7 w-12 text-xs text-center shrink-0"
+                        />
                         <span className="font-medium text-foreground">{income.source}</span>
                         {income.note && (
                           <span className="text-sm text-muted-foreground truncate">
