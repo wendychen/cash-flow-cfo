@@ -347,6 +347,12 @@ const ExpenseTracker = () => {
           </TabsList>
 
           <TabsContent value="expenses" className="space-y-4">
+            <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-center">
+              <p className="text-amber-800 dark:text-amber-200 text-sm font-medium">
+                🍁 Is spending this money driving you away from living in Canada?
+              </p>
+            </div>
+
             <div className="bg-card rounded-xl shadow-card p-5">
               <ExpenseForm onAddExpense={addExpense} />
             </div>
