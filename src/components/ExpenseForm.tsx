@@ -43,7 +43,7 @@ const ExpenseForm = ({ onAddExpense }: ExpenseFormProps) => {
         <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Description</label>
         <Input
           type="text"
-          placeholder="Coffee, groceries, etc."
+          placeholder="Is spending this money driving you away from living in Canada?"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           className="bg-card"
