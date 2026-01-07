@@ -18,10 +18,12 @@ import IncomeForm from "./IncomeForm";
 import IncomeList from "./IncomeList";
 import SavingForm from "./SavingForm";
 import SavingList from "./SavingList";
+import GoalList from "./GoalList";
 import CombinedChart from "./CombinedChart";
 import { Expense } from "@/types/expense";
 import { Income } from "@/types/income";
 import { Saving } from "@/types/saving";
+import { Goal } from "@/types/goal";
 import { toast } from "@/hooks/use-toast";
 import { useCurrency, Currency } from "@/hooks/use-currency";
 
@@ -44,6 +46,18 @@ const ExpenseTracker = () => {
     return saved ? JSON.parse(saved) : [];
   });
 
+  const [goals, setGoals] = useState<Goal[]>(() => {
+    const saved = localStorage.getItem("goals");
+    if (saved) return JSON.parse(saved);
+    // Initialize with 10 empty goal slots
+    return Array.from({ length: 10 }, (_, i) => ({
+      id: crypto.randomUUID(),
+      title: "",
+      completed: false,
+      createdAt: new Date().toISOString(),
+    }));
+  });
+
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
@@ -57,6 +71,10 @@ const ExpenseTracker = () => {
   useEffect(() => {
     localStorage.setItem("savings", JSON.stringify(savings));
   }, [savings]);
+
+  useEffect(() => {
+    localStorage.setItem("goals", JSON.stringify(goals));
+  }, [goals]);
 
   // Expense handlers
   const addExpense = (expense: Omit<Expense, "id">) => {
@@ -140,6 +158,27 @@ const ExpenseTracker = () => {
       prev.map((sav) => (sav.id === id ? { ...sav, ...updates } : sav))
     );
     toast({ title: "Savings updated" });
+  };
+
+  // Goal handlers
+  const addGoal = (title: string) => {
+    const activeGoals = goals.filter((g) => !g.completed && g.title);
+    if (activeGoals.length >= 10) return;
+
+    const newGoal: Goal = {
+      id: crypto.randomUUID(),
+      title,
+      completed: false,
+      createdAt: new Date().toISOString(),
+    };
+    setGoals((prev) => [...prev, newGoal]);
+    toast({ title: "Goal added", description: title });
+  };
+
+  const updateGoal = (id: string, updates: Partial<Omit<Goal, "id">>) => {
+    setGoals((prev) =>
+      prev.map((goal) => (goal.id === id ? { ...goal, ...updates } : goal))
+    );
   };
 
   // Export/Import
@@ -399,6 +438,14 @@ const ExpenseTracker = () => {
           </TabsContent>
 
           <TabsContent value="savings" className="space-y-4">
+            <div className="bg-card rounded-xl shadow-card p-5">
+              <GoalList
+                goals={goals.filter((g) => g.title)}
+                onUpdateGoal={updateGoal}
+                onAddGoal={addGoal}
+              />
+            </div>
+
             <div className="bg-card rounded-xl shadow-card p-5">
               <SavingForm onAddSaving={addSaving} />
             </div>
