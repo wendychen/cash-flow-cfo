@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PiggyBank } from "lucide-react";
 import { Saving } from "@/types/saving";
+import { useCurrency, Currency } from "@/hooks/use-currency";
 import {
   Select,
   SelectContent,
@@ -11,29 +12,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type InputCurrency = "NTD" | "USD" | "CAD";
-
-const EXCHANGE_TO_NTD: Record<InputCurrency, number> = {
-  NTD: 1,
-  USD: 32.26,
-  CAD: 23.26,
-};
-
 interface SavingFormProps {
   onAddSaving: (saving: Omit<Saving, "id">) => void;
 }
 
 const SavingForm = ({ onAddSaving }: SavingFormProps) => {
+  const { convertToNTD } = useCurrency();
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [amount, setAmount] = useState("");
-  const [inputCurrency, setInputCurrency] = useState<InputCurrency>("NTD");
+  const [inputCurrency, setInputCurrency] = useState<Currency>("NTD");
   const [note, setNote] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!amount || !date) return;
 
-    const amountInNTD = parseFloat(amount) * EXCHANGE_TO_NTD[inputCurrency];
+    const amountInNTD = convertToNTD(parseFloat(amount), inputCurrency);
 
     onAddSaving({
       date,
@@ -78,7 +72,7 @@ const SavingForm = ({ onAddSaving }: SavingFormProps) => {
             onChange={(e) => setAmount(e.target.value)}
             className="bg-card flex-1"
           />
-          <Select value={inputCurrency} onValueChange={(val) => setInputCurrency(val as InputCurrency)}>
+          <Select value={inputCurrency} onValueChange={(val) => setInputCurrency(val as Currency)}>
             <SelectTrigger className="w-20">
               <SelectValue />
             </SelectTrigger>

@@ -4,7 +4,14 @@ import { Trash2, Pencil, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Income } from "@/types/income";
-import { useCurrency } from "@/hooks/use-currency";
+import { useCurrency, Currency } from "@/hooks/use-currency";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Pagination,
   PaginationContent,
@@ -27,10 +34,11 @@ const IncomeList = ({
   onDeleteIncome,
   onUpdateIncome,
 }: IncomeListProps) => {
-  const { format: formatCurrency } = useCurrency();
+  const { format: formatCurrency, currency, convertFromNTD, convertToNTD } = useCurrency();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editSource, setEditSource] = useState("");
   const [editAmount, setEditAmount] = useState("");
+  const [editCurrency, setEditCurrency] = useState<Currency>("NTD");
   const [editNote, setEditNote] = useState("");
   const [editReviewCount, setEditReviewCount] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -38,7 +46,9 @@ const IncomeList = ({
   const startEdit = (income: Income) => {
     setEditingId(income.id);
     setEditSource(income.source);
-    setEditAmount(income.amount.toString());
+    // Convert stored NTD to current display currency for editing
+    setEditAmount(convertFromNTD(income.amount, currency).toFixed(currency === "NTD" ? 0 : 2));
+    setEditCurrency(currency);
     setEditNote(income.note || "");
     setEditReviewCount(income.reviewCount?.toString() || "");
   };
@@ -53,9 +63,10 @@ const IncomeList = ({
 
   const saveEdit = (id: string) => {
     if (!editAmount || !editSource.trim()) return;
+    const amountInNTD = convertToNTD(parseFloat(editAmount), editCurrency);
     onUpdateIncome(id, {
       source: editSource.trim(),
-      amount: parseFloat(editAmount),
+      amount: amountInNTD,
       note: editNote.trim() || undefined,
       reviewCount: editReviewCount ? parseInt(editReviewCount) : undefined,
     });
@@ -134,15 +145,27 @@ const IncomeList = ({
                           placeholder="Note"
                           className="h-8 text-sm flex-1 min-w-24"
                         />
-                        <Input
-                          type="number"
-                          value={editAmount}
-                          onChange={(e) => setEditAmount(e.target.value)}
-                          className="h-8 text-sm w-28"
-                          step="0.01"
-                          min="0"
-                          autoFocus
-                        />
+                        <div className="flex gap-1">
+                          <Input
+                            type="number"
+                            value={editAmount}
+                            onChange={(e) => setEditAmount(e.target.value)}
+                            className="h-8 text-sm w-24"
+                            step="0.01"
+                            min="0"
+                            autoFocus
+                          />
+                          <Select value={editCurrency} onValueChange={(val) => setEditCurrency(val as Currency)}>
+                            <SelectTrigger className="h-8 w-16 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="NTD">NTD</SelectItem>
+                              <SelectItem value="USD">USD</SelectItem>
+                              <SelectItem value="CAD">CAD</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
                       <div className="flex items-center gap-1">
                         <Button

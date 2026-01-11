@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Wallet } from "lucide-react";
 import { Income } from "@/types/income";
+import { useCurrency, Currency } from "@/hooks/use-currency";
 import {
   Select,
   SelectContent,
@@ -11,30 +12,23 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type InputCurrency = "NTD" | "USD" | "CAD";
-
-const EXCHANGE_TO_NTD: Record<InputCurrency, number> = {
-  NTD: 1,
-  USD: 32.26,
-  CAD: 23.26,
-};
-
 interface IncomeFormProps {
   onAddIncome: (income: Omit<Income, "id">) => void;
 }
 
 const IncomeForm = ({ onAddIncome }: IncomeFormProps) => {
+  const { convertToNTD } = useCurrency();
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [source, setSource] = useState("");
   const [amount, setAmount] = useState("");
-  const [inputCurrency, setInputCurrency] = useState<InputCurrency>("NTD");
+  const [inputCurrency, setInputCurrency] = useState<Currency>("NTD");
   const [note, setNote] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!amount || !date || !source.trim()) return;
 
-    const amountInNTD = parseFloat(amount) * EXCHANGE_TO_NTD[inputCurrency];
+    const amountInNTD = convertToNTD(parseFloat(amount), inputCurrency);
 
     onAddIncome({
       date,
@@ -84,7 +78,7 @@ const IncomeForm = ({ onAddIncome }: IncomeFormProps) => {
               className="bg-card flex-1"
               required
             />
-            <Select value={inputCurrency} onValueChange={(val) => setInputCurrency(val as InputCurrency)}>
+            <Select value={inputCurrency} onValueChange={(val) => setInputCurrency(val as Currency)}>
               <SelectTrigger className="w-20">
                 <SelectValue />
               </SelectTrigger>

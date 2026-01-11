@@ -5,7 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Expense } from "@/types/expense";
-import { useCurrency } from "@/hooks/use-currency";
+import { useCurrency, Currency } from "@/hooks/use-currency";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Pagination,
   PaginationContent,
@@ -30,17 +37,20 @@ const ExpenseList = ({
   onToggleNeedsCheck,
   onUpdateExpense,
 }: ExpenseListProps) => {
-  const { format: formatCurrency } = useCurrency();
+  const { format: formatCurrency, currency, convertFromNTD, convertToNTD } = useCurrency();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDescription, setEditDescription] = useState("");
   const [editAmount, setEditAmount] = useState("");
+  const [editCurrency, setEditCurrency] = useState<Currency>("NTD");
   const [editReviewCount, setEditReviewCount] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
   const startEdit = (expense: Expense) => {
     setEditingId(expense.id);
     setEditDescription(expense.description);
-    setEditAmount(expense.amount.toString());
+    // Convert stored NTD to current display currency for editing
+    setEditAmount(convertFromNTD(expense.amount, currency).toFixed(currency === "NTD" ? 0 : 2));
+    setEditCurrency(currency);
     setEditReviewCount(expense.reviewCount?.toString() || "");
   };
 
@@ -53,9 +63,10 @@ const ExpenseList = ({
 
   const saveEdit = (id: string) => {
     if (!editDescription.trim() || !editAmount) return;
+    const amountInNTD = convertToNTD(parseFloat(editAmount), editCurrency);
     onUpdateExpense(id, {
       description: editDescription.trim(),
-      amount: parseFloat(editAmount),
+      amount: amountInNTD,
       reviewCount: editReviewCount ? parseInt(editReviewCount) : undefined,
     });
     setEditingId(null);
@@ -115,7 +126,7 @@ const ExpenseList = ({
                 >
                   {editingId === expense.id ? (
                     <>
-                      <div className="flex-1 flex items-center gap-2 mr-2">
+                      <div className="flex-1 flex items-center gap-2 mr-2 flex-wrap">
                         <Input
                           type="number"
                           value={editReviewCount}
@@ -127,17 +138,29 @@ const ExpenseList = ({
                         <Input
                           value={editDescription}
                           onChange={(e) => setEditDescription(e.target.value)}
-                          className="h-8 text-sm flex-1"
+                          className="h-8 text-sm flex-1 min-w-24"
                           autoFocus
                         />
-                        <Input
-                          type="number"
-                          value={editAmount}
-                          onChange={(e) => setEditAmount(e.target.value)}
-                          className="h-8 text-sm w-24"
-                          step="0.01"
-                          min="0"
-                        />
+                        <div className="flex gap-1">
+                          <Input
+                            type="number"
+                            value={editAmount}
+                            onChange={(e) => setEditAmount(e.target.value)}
+                            className="h-8 text-sm w-24"
+                            step="0.01"
+                            min="0"
+                          />
+                          <Select value={editCurrency} onValueChange={(val) => setEditCurrency(val as Currency)}>
+                            <SelectTrigger className="h-8 w-16 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="NTD">NTD</SelectItem>
+                              <SelectItem value="USD">USD</SelectItem>
+                              <SelectItem value="CAD">CAD</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
                       <div className="flex items-center gap-1">
                         <Button
