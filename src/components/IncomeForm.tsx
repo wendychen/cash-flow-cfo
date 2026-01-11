@@ -3,6 +3,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Wallet } from "lucide-react";
 import { Income } from "@/types/income";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+type InputCurrency = "NTD" | "USD" | "CAD";
+
+const EXCHANGE_TO_NTD: Record<InputCurrency, number> = {
+  NTD: 1,
+  USD: 32.26,
+  CAD: 23.26,
+};
 
 interface IncomeFormProps {
   onAddIncome: (income: Omit<Income, "id">) => void;
@@ -12,16 +27,19 @@ const IncomeForm = ({ onAddIncome }: IncomeFormProps) => {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [source, setSource] = useState("");
   const [amount, setAmount] = useState("");
+  const [inputCurrency, setInputCurrency] = useState<InputCurrency>("NTD");
   const [note, setNote] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!amount || !date || !source.trim()) return;
 
+    const amountInNTD = parseFloat(amount) * EXCHANGE_TO_NTD[inputCurrency];
+
     onAddIncome({
       date,
       source: source.trim(),
-      amount: parseFloat(amount),
+      amount: amountInNTD,
       note: note.trim() || undefined,
     });
 
@@ -55,16 +73,28 @@ const IncomeForm = ({ onAddIncome }: IncomeFormProps) => {
         </div>
         <div className="flex-1 min-w-0">
           <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Amount</label>
-          <Input
-            type="number"
-            placeholder="0.00"
-            step="0.01"
-            min="0"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="bg-card"
-            required
-          />
+          <div className="flex gap-2">
+            <Input
+              type="number"
+              placeholder="0.00"
+              step="0.01"
+              min="0"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="bg-card flex-1"
+              required
+            />
+            <Select value={inputCurrency} onValueChange={(val) => setInputCurrency(val as InputCurrency)}>
+              <SelectTrigger className="w-20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="NTD">NTD</SelectItem>
+                <SelectItem value="USD">USD</SelectItem>
+                <SelectItem value="CAD">CAD</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
