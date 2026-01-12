@@ -41,6 +41,7 @@ const IncomeList = ({
   const [editCurrency, setEditCurrency] = useState<Currency>("NTD");
   const [editNote, setEditNote] = useState("");
   const [editReviewCount, setEditReviewCount] = useState("");
+  const [editDate, setEditDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
   const startEdit = (income: Income) => {
@@ -51,6 +52,7 @@ const IncomeList = ({
     setEditCurrency(currency);
     setEditNote(income.note || "");
     setEditReviewCount(income.reviewCount?.toString() || "");
+    setEditDate(income.date);
   };
 
   const cancelEdit = () => {
@@ -59,16 +61,18 @@ const IncomeList = ({
     setEditAmount("");
     setEditNote("");
     setEditReviewCount("");
+    setEditDate("");
   };
 
   const saveEdit = (id: string) => {
-    if (!editAmount || !editSource.trim()) return;
+    if (!editAmount || !editSource.trim() || !editDate) return;
     const amountInNTD = convertToNTD(parseFloat(editAmount), editCurrency);
     onUpdateIncome(id, {
       source: editSource.trim(),
       amount: amountInNTD,
       note: editNote.trim() || undefined,
       reviewCount: editReviewCount ? parseInt(editReviewCount) : undefined,
+      date: editDate,
     });
     setEditingId(null);
   };
@@ -125,6 +129,12 @@ const IncomeList = ({
                   {editingId === income.id ? (
                     <>
                       <div className="flex-1 flex items-center gap-2 mr-2 flex-wrap">
+                        <Input
+                          type="date"
+                          value={editDate}
+                          onChange={(e) => setEditDate(e.target.value)}
+                          className="h-8 text-sm w-32"
+                        />
                         <Input
                           type="number"
                           value={editReviewCount}

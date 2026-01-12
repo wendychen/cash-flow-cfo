@@ -40,6 +40,7 @@ const SavingList = ({
   const [editCurrency, setEditCurrency] = useState<Currency>("NTD");
   const [editNote, setEditNote] = useState("");
   const [editReviewCount, setEditReviewCount] = useState("");
+  const [editDate, setEditDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
   const startEdit = (saving: Saving) => {
@@ -49,6 +50,7 @@ const SavingList = ({
     setEditCurrency(currency);
     setEditNote(saving.note || "");
     setEditReviewCount(saving.reviewCount?.toString() || "");
+    setEditDate(saving.date);
   };
 
   const cancelEdit = () => {
@@ -56,15 +58,17 @@ const SavingList = ({
     setEditAmount("");
     setEditNote("");
     setEditReviewCount("");
+    setEditDate("");
   };
 
   const saveEdit = (id: string) => {
-    if (!editAmount) return;
+    if (!editAmount || !editDate) return;
     const amountInNTD = convertToNTD(parseFloat(editAmount), editCurrency);
     onUpdateSaving(id, {
       amount: amountInNTD,
       note: editNote.trim() || undefined,
       reviewCount: editReviewCount ? parseInt(editReviewCount) : undefined,
+      date: editDate,
     });
     setEditingId(null);
   };
@@ -98,6 +102,12 @@ const SavingList = ({
           {editingId === saving.id ? (
             <>
               <div className="flex-1 flex items-center gap-2 mr-2 flex-wrap">
+                <Input
+                  type="date"
+                  value={editDate}
+                  onChange={(e) => setEditDate(e.target.value)}
+                  className="h-8 text-sm w-32"
+                />
                 <Input
                   type="number"
                   value={editReviewCount}

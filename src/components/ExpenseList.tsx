@@ -43,6 +43,7 @@ const ExpenseList = ({
   const [editAmount, setEditAmount] = useState("");
   const [editCurrency, setEditCurrency] = useState<Currency>("NTD");
   const [editReviewCount, setEditReviewCount] = useState("");
+  const [editDate, setEditDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
   const startEdit = (expense: Expense) => {
@@ -52,6 +53,7 @@ const ExpenseList = ({
     setEditAmount(convertFromNTD(expense.amount, currency).toFixed(currency === "NTD" ? 0 : 2));
     setEditCurrency(currency);
     setEditReviewCount(expense.reviewCount?.toString() || "");
+    setEditDate(expense.date);
   };
 
   const cancelEdit = () => {
@@ -59,15 +61,17 @@ const ExpenseList = ({
     setEditDescription("");
     setEditAmount("");
     setEditReviewCount("");
+    setEditDate("");
   };
 
   const saveEdit = (id: string) => {
-    if (!editDescription.trim() || !editAmount) return;
+    if (!editDescription.trim() || !editAmount || !editDate) return;
     const amountInNTD = convertToNTD(parseFloat(editAmount), editCurrency);
     onUpdateExpense(id, {
       description: editDescription.trim(),
       amount: amountInNTD,
       reviewCount: editReviewCount ? parseInt(editReviewCount) : undefined,
+      date: editDate,
     });
     setEditingId(null);
   };
@@ -127,6 +131,12 @@ const ExpenseList = ({
                   {editingId === expense.id ? (
                     <>
                       <div className="flex-1 flex items-center gap-2 mr-2 flex-wrap">
+                        <Input
+                          type="date"
+                          value={editDate}
+                          onChange={(e) => setEditDate(e.target.value)}
+                          className="h-8 text-sm w-32"
+                        />
                         <Input
                           type="number"
                           value={editReviewCount}
