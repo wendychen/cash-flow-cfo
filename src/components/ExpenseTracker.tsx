@@ -183,7 +183,8 @@ const ExpenseTracker = () => {
 
   // Export/Import
   const exportToCSV = () => {
-    if (expenses.length === 0 && incomes.length === 0 && savings.length === 0) {
+    const goalsWithContent = goals.filter((g) => g.title.trim());
+    if (expenses.length === 0 && incomes.length === 0 && savings.length === 0 && goalsWithContent.length === 0) {
       toast({
         title: "No data to export",
         variant: "destructive",
@@ -222,6 +223,16 @@ const ExpenseTracker = () => {
       });
     }
 
+    // Export goals
+    if (goalsWithContent.length > 0) {
+      if (csvContent) csvContent += "\n";
+      csvContent += "### GOALS ###\n";
+      csvContent += "Title,Completed,CreatedAt\n";
+      goalsWithContent.forEach((goal) => {
+        csvContent += `"${goal.title.replace(/"/g, '""')}",${goal.completed},${goal.createdAt}\n`;
+      });
+    }
+
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -234,7 +245,7 @@ const ExpenseTracker = () => {
 
     toast({
       title: "Exported successfully",
-      description: `${expenses.length} expenses, ${incomes.length} incomes, ${savings.length} savings exported`,
+      description: `${expenses.length} expenses, ${incomes.length} incomes, ${savings.length} savings, ${goalsWithContent.length} goals exported`,
     });
   };
 
@@ -251,7 +262,8 @@ const ExpenseTracker = () => {
         const importedExpenses: Expense[] = [];
         const importedIncomes: Income[] = [];
         const importedSavings: Saving[] = [];
-        let currentSection: "expenses" | "incomes" | "savings" | null = null;
+        const importedGoals: Goal[] = [];
+        let currentSection: "expenses" | "incomes" | "savings" | "goals" | null = null;
 
         for (const line of lines) {
           if (line.includes("### EXPENSES ###")) {
@@ -266,51 +278,87 @@ const ExpenseTracker = () => {
             currentSection = "savings";
             continue;
           }
-          if (line.toLowerCase().startsWith("date,")) continue;
+          if (line.includes("### GOALS ###")) {
+            currentSection = "goals";
+            continue;
+          }
+          if (line.toLowerCase().startsWith("date,") || line.toLowerCase().startsWith("title,")) continue;
 
           const matches = line.match(/(".*?"|[^,]+)(?=\s*,|\s*$)/g);
-          if (!matches || matches.length < 3) continue;
+          if (!matches) continue;
 
-          const date = matches[0].replace(/"/g, "").trim();
-          const field2 = matches[1].replace(/"/g, "").trim();
-          const amount = parseFloat(matches[2].replace(/"/g, "").trim());
-          const field4 = matches[3]?.replace(/"/g, "").trim();
+          if (currentSection === "goals") {
+            if (matches.length < 2) continue;
+            const title = matches[0].replace(/"/g, "").trim();
+            const completed = matches[1].replace(/"/g, "").trim().toLowerCase() === "true";
+            const createdAt = matches[2]?.replace(/"/g, "").trim() || new Date().toISOString();
 
-          if (!date || isNaN(amount)) continue;
+            if (title) {
+              importedGoals.push({
+                id: crypto.randomUUID(),
+                title,
+                completed,
+                createdAt,
+              });
+            }
+          } else {
+            if (matches.length < 3) continue;
+            const date = matches[0].replace(/"/g, "").trim();
+            const field2 = matches[1].replace(/"/g, "").trim();
+            const amount = parseFloat(matches[2].replace(/"/g, "").trim());
+            const field4 = matches[3]?.replace(/"/g, "").trim();
 
-          if (currentSection === "expenses" && field2) {
-            importedExpenses.push({
-              id: crypto.randomUUID(),
-              date,
-              description: field2,
-              amount,
-              needsCheck: false,
-            });
-          } else if (currentSection === "incomes" && field2) {
-            importedIncomes.push({
-              id: crypto.randomUUID(),
-              date,
-              source: field2,
-              amount,
-              note: field4 || undefined,
-            });
-          } else if (currentSection === "savings") {
-            importedSavings.push({
-              id: crypto.randomUUID(),
-              date,
-              amount,
-              note: field2 || undefined,
-            });
+            if (!date || isNaN(amount)) continue;
+
+            if (currentSection === "expenses" && field2) {
+              importedExpenses.push({
+                id: crypto.randomUUID(),
+                date,
+                description: field2,
+                amount,
+                needsCheck: false,
+              });
+            } else if (currentSection === "incomes" && field2) {
+              importedIncomes.push({
+                id: crypto.randomUUID(),
+                date,
+                source: field2,
+                amount,
+                note: field4 || undefined,
+              });
+            } else if (currentSection === "savings") {
+              importedSavings.push({
+                id: crypto.randomUUID(),
+                date,
+                amount,
+                note: field2 || undefined,
+              });
+            }
           }
         }
 
-        if (importedExpenses.length > 0 || importedIncomes.length > 0 || importedSavings.length > 0) {
+        const hasData = importedExpenses.length > 0 || importedIncomes.length > 0 || importedSavings.length > 0 || importedGoals.length > 0;
+        if (hasData) {
           if (importedExpenses.length > 0) setExpenses(importedExpenses);
           if (importedIncomes.length > 0) setIncomes(importedIncomes);
           if (importedSavings.length > 0) setSavings(importedSavings);
+          if (importedGoals.length > 0) {
+            // Merge imported goals with empty slots to maintain 10 goals max
+            const emptySlots = 10 - importedGoals.length;
+            const finalGoals = [
+              ...importedGoals.slice(0, 10),
+              ...Array.from({ length: Math.max(0, emptySlots) }, () => ({
+                id: crypto.randomUUID(),
+                title: "",
+                completed: false,
+                createdAt: new Date().toISOString(),
+              })),
+            ];
+            setGoals(finalGoals);
+          }
           toast({
             title: "Imported successfully",
-            description: `${importedExpenses.length} expenses, ${importedIncomes.length} incomes, ${importedSavings.length} savings imported`,
+            description: `${importedExpenses.length} expenses, ${importedIncomes.length} incomes, ${importedSavings.length} savings, ${importedGoals.length} goals imported`,
           });
         } else {
           toast({
