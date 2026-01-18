@@ -50,10 +50,11 @@ const ExpenseTracker = () => {
     const saved = localStorage.getItem("goals");
     if (saved) {
       const parsed = JSON.parse(saved);
-      // Migrate old goals without deadline
+      // Migrate old goals without deadline or isMagicWand
       return parsed.map((g: Goal) => ({
         ...g,
         deadline: g.deadline || "",
+        isMagicWand: g.isMagicWand || false,
       }));
     }
     return [];
@@ -171,10 +172,15 @@ const ExpenseTracker = () => {
       title,
       deadline,
       completed: false,
+      isMagicWand: false,
       createdAt: new Date().toISOString(),
     };
     setGoals((prev) => [...prev, newGoal]);
     toast({ title: "Goal added", description: title });
+  };
+
+  const reorderGoals = (newGoals: Goal[]) => {
+    setGoals(newGoals);
   };
 
   const updateGoal = (id: string, updates: Partial<Omit<Goal, "id">>) => {
@@ -229,9 +235,9 @@ const ExpenseTracker = () => {
     if (goalsWithContent.length > 0) {
       if (csvContent) csvContent += "\n";
       csvContent += "### GOALS ###\n";
-      csvContent += "Title,Deadline,Completed,CreatedAt\n";
+      csvContent += "Title,Deadline,Completed,IsMagicWand,CreatedAt\n";
       goalsWithContent.forEach((goal) => {
-        csvContent += `"${goal.title.replace(/"/g, '""')}",${goal.deadline || ""},${goal.completed},${goal.createdAt}\n`;
+        csvContent += `"${goal.title.replace(/"/g, '""')}",${goal.deadline || ""},${goal.completed},${goal.isMagicWand || false},${goal.createdAt}\n`;
       });
     }
 
@@ -294,7 +300,8 @@ const ExpenseTracker = () => {
             const title = matches[0].replace(/"/g, "").trim();
             const deadline = matches[1]?.replace(/"/g, "").trim() || "";
             const completed = matches[2]?.replace(/"/g, "").trim().toLowerCase() === "true";
-            const createdAt = matches[3]?.replace(/"/g, "").trim() || new Date().toISOString();
+            const isMagicWand = matches[3]?.replace(/"/g, "").trim().toLowerCase() === "true";
+            const createdAt = matches[4]?.replace(/"/g, "").trim() || new Date().toISOString();
 
             if (title) {
               importedGoals.push({
@@ -302,6 +309,7 @@ const ExpenseTracker = () => {
                 title,
                 deadline,
                 completed,
+                isMagicWand,
                 createdAt,
               });
             }
@@ -486,8 +494,10 @@ const ExpenseTracker = () => {
             <div className="bg-card rounded-xl shadow-card p-5">
               <GoalList
                 goals={goals.filter((g) => g.title)}
+                allGoals={goals}
                 onUpdateGoal={updateGoal}
                 onAddGoal={addGoal}
+                onReorderGoals={reorderGoals}
               />
             </div>
 

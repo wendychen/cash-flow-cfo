@@ -3,5 +3,6 @@ export interface Goal {
   title: string;
   deadline: string;
   completed: boolean;
+  isMagicWand: boolean;
   createdAt: string;
 }
