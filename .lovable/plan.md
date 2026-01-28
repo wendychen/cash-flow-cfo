@@ -1,32 +1,38 @@
 
-# Monthly Summary Layout
+
+# Enhanced Monthly Summary with Predictions
 
 ## Overview
-Create a new "Monthly Summary" section that displays income, expenses (including fixed expenses), and savings aggregated by month. This will give you a clear month-by-month view of your financial health.
+Upgrade the Monthly Summary to show **all months** (past and future), with the current month on top, followed by past months in descending order. Add a toggle to show **future month predictions** based on historical averages.
 
-## Location in UI
-The monthly summary will appear as a collapsible section between the current totals bar and the CombinedChart, making it easy to access while keeping the interface clean.
-
-## Layout Design
+## New Layout Design
 
 ```text
 ┌────────────────────────────────────────────────────────────────────┐
-│  📊 Monthly Summary                              [▼ Expand/Collapse]│
+│  📊 Monthly Summary                   [Show Predictions ◯───]  [▼] │
 ├────────────────────────────────────────────────────────────────────┤
 │                                                                    │
-│  ┌─── January 2026 ────────────────────────────────────────────┐  │
-│  │  💰 Income        📤 Expenses      💵 Fixed       🏦 Savings │  │
-│  │  +NT$85,000       -NT$32,450       -NT$5,824      NT$120,000 │  │
-│  │  (violet)         (blue)           (orange)       (green)    │  │
-│  │──────────────────────────────────────────────────────────────│  │
+│  ┌─── 🔮 March 2026 (Prediction) ──────────────────────────────┐  │
+│  │  Income         Expenses        Fixed          Savings       │  │
+│  │  +NT$85,000     -NT$32,000      -NT$5,824      ~NT$145,000   │  │
+│  │  (projected)    (projected)     (current)      (projected)   │  │
+│  │────────────────────────────────────────────────────────────  │  │
+│  │  Net: ~+NT$47,176                                            │  │
+│  └──────────────────────────────────────────────────────────────┘  │
+│                                                                    │
+│  ┌─── 🔮 February 2026 (Prediction) ───────────────────────────┐  │
+│  │  ...                                                         │  │
+│  └──────────────────────────────────────────────────────────────┘  │
+│                                                                    │
+│  ┌─── ★ January 2026 (Current Month) ──────────────────────────┐  │
+│  │  Income         Expenses        Fixed          Savings       │  │
+│  │  +NT$85,000     -NT$32,450      -NT$5,824      NT$120,000    │  │
+│  │────────────────────────────────────────────────────────────  │  │
 │  │  Net: +NT$46,726                                              │  │
 │  └──────────────────────────────────────────────────────────────┘  │
 │                                                                    │
 │  ┌─── December 2025 ───────────────────────────────────────────┐  │
-│  │  💰 Income        📤 Expenses      💵 Fixed       🏦 Savings │  │
-│  │  +NT$80,000       -NT$28,900       -NT$5,824      NT$115,000 │  │
-│  │──────────────────────────────────────────────────────────────│  │
-│  │  Net: +NT$45,276                                              │  │
+│  │  ...                                                         │  │
 │  └──────────────────────────────────────────────────────────────┘  │
 │                                                                    │
 │  ... (more months, scrollable)                                     │
@@ -35,45 +41,88 @@ The monthly summary will appear as a collapsible section between the current tot
 
 ## Features
 
-1. **Month-by-month breakdown** showing:
-   - Total income for the month (violet color)
-   - Total one-time expenses for the month (blue color)
-   - Fixed expenses monthly equivalent (orange color)
-   - Latest savings balance for that month (green color)
-   - Net cash flow calculation (income - expenses - fixed)
+1. **Complete month coverage**: Show all months from your earliest data to the current month
+2. **Current month highlighted**: Star icon and "(Current Month)" label
+3. **Future predictions toggle**: Switch to show/hide predicted future months (up to 3 months ahead)
+4. **Prediction indicators**: Crystal ball icon and dashed styling for predicted months
+5. **Smart ordering**: Future months at top (if enabled), then current month, then past months descending
 
-2. **Collapsible design** - The section can be expanded/collapsed to save space
+## Prediction Logic
 
-3. **Sorted by most recent** - Current month appears first
+### Income Prediction
+- Calculate average monthly income from all past complete months
+- Formula: `Total past income / Number of months with income data`
 
-4. **Color-coded** to match the existing chart color scheme
+### Expense Prediction  
+- Calculate average monthly one-time expenses from past complete months
+- Formula: `Total past expenses / Number of months with expense data`
 
-5. **Currency conversion** - All values displayed in the user's selected currency
+### Fixed Expenses
+- Use current active fixed expenses (same as now - these are known recurring costs)
+
+### Savings Prediction
+- Calculate average monthly savings growth from historical data
+- Project forward: `Last savings balance + (avgMonthlySavingsGrowth * monthsAhead)`
+
+### Net Flow Prediction
+- `Predicted Income - Predicted Expenses - Fixed Expenses`
 
 ## Technical Implementation
 
-### New Component: `MonthlySummary.tsx`
-A dedicated component that:
-- Groups expenses and incomes by month (using YYYY-MM format)
-- Calculates monthly totals for each category
-- Displays the latest savings entry per month as the "balance"
-- Computes net cash flow per month
-- Uses Collapsible from Radix UI for expand/collapse
+### Updated MonthData Interface
+```typescript
+interface MonthData {
+  month: string;          // YYYY-MM format
+  displayMonth: string;   // "January 2026" format
+  totalIncome: number;
+  totalExpenses: number;
+  fixedExpensesMonthly: number;
+  savingsBalance: number | null;
+  netFlow: number;
+  isPrediction: boolean;  // NEW: true for future months
+  isCurrentMonth: boolean; // NEW: highlight current month
+}
+```
 
-### Data Aggregation Logic
-- **Income**: Sum all income entries per month
-- **One-time Expenses**: Sum all expense entries per month
-- **Fixed Expenses**: Use the current active fixed expenses and their monthly equivalents (same value shown for all months since these are recurring)
-- **Savings**: Take the last savings entry of each month as the month-end balance
+### Component State Changes
+```typescript
+const [showPredictions, setShowPredictions] = useState(false);
+```
 
-### Files to Create/Modify
+### Calculation Steps
 
-| File | Action | Description |
-|------|--------|-------------|
-| `src/components/MonthlySummary.tsx` | Create | New component for monthly aggregation display |
-| `src/components/ExpenseTracker.tsx` | Modify | Add MonthlySummary between totals and chart |
+1. **Identify current month**: `new Date().toISOString().slice(0, 7)` gives "YYYY-MM"
 
-### Props for MonthlySummary
+2. **Gather all existing months**: From expenses, incomes, and savings data (existing logic)
+
+3. **Calculate averages** from historical data:
+   - Average monthly income
+   - Average monthly expenses
+   - Average monthly savings growth
+
+4. **Generate prediction months**: If toggle is on, add next 1-3 months with projected values
+
+5. **Sort and display**:
+   - Predictions first (furthest future first)
+   - Current month (highlighted)
+   - Past months (most recent first)
+
+### Visual Distinctions
+
+| Month Type | Icon | Border Style | Background |
+|------------|------|--------------|------------|
+| Prediction | 🔮 Crystal ball | Dashed border | Slightly transparent |
+| Current | ★ Star | Solid border | Accent highlight |
+| Past | None | Solid border | Normal muted |
+
+### Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/components/MonthlySummary.tsx` | Add prediction toggle, update sorting logic, add visual indicators for month types, implement prediction calculations |
+
+### Props (No changes needed)
+The component already receives all needed data:
 ```typescript
 interface MonthlySummaryProps {
   expenses: Expense[];
@@ -82,3 +131,4 @@ interface MonthlySummaryProps {
   fixedExpenses: FixedExpense[];
 }
 ```
+
