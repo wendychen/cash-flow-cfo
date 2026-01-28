@@ -22,6 +22,7 @@ import SavingForm from "./SavingForm";
 import SavingList from "./SavingList";
 import GoalList from "./GoalList";
 import CombinedChart from "./CombinedChart";
+import MonthlySummary from "./MonthlySummary";
 import { Expense } from "@/types/expense";
 import { FixedExpense } from "@/types/fixedExpense";
 import { Income } from "@/types/income";
@@ -647,6 +648,13 @@ const ExpenseTracker = () => {
             </Button>
           </div>
         </div>
+
+        <MonthlySummary
+          expenses={expenses}
+          incomes={incomes}
+          savings={savings}
+          fixedExpenses={fixedExpenses}
+        />
 
         <CombinedChart expenses={expenses} incomes={incomes} savings={savings} />
       </div>
