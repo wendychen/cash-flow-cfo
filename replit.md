@@ -24,7 +24,7 @@ Preferred communication style: Simple, everyday language.
 - **Fixed Expenses**: Recurring expenses with frequency options (weekly, monthly, quarterly, yearly)
 - **Income Tracking**: Income entries with source, date, optional notes, and income type (Cash or Accrued Revenue)
 - **Savings Tracking**: Savings entries with type (Balance for actual savings, Goal for desired savings) with bidirectional sync between goal entries and savings targets
-- **Goals**: Financial goals with deadlines, drag-and-drop reordering, sub-tasks (10 max with action/cost/time/deadline), ideations (20 max), key constraint, URL packs with open-all functionality, and linked expenses that sync dates
+- **Goals**: Financial goals with deadlines, drag-and-drop reordering, pre-tasks (10 max, tasks before achieving goal), post-tasks (10 max, tasks after achieving goal), post-dreams (10 future goals with deadlines + magic wand priority marker), ideations (20 max), key constraint, URL packs with open-all functionality, and linked expenses that sync dates. 2026 Goals section is collapsible.
 - **Financial Targets**: Income targets, expense thresholds, and savings targets per currency and period with chart reference lines
 
 ### Data Flow
