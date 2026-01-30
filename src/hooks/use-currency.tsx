@@ -51,12 +51,14 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
 
   const format = (amountInNTD: number): string => {
     const converted = convert(amountInNTD);
-    const symbol = CURRENCY_SYMBOLS[currency];
+    const sym = CURRENCY_SYMBOLS[currency];
     
-    if (currency === "NTD") {
-      return `${symbol}${converted.toFixed(0)}`;
-    }
-    return `${symbol}${converted.toFixed(2)}`;
+    const formatted = converted.toLocaleString("en-US", {
+      minimumFractionDigits: currency === "NTD" ? 0 : 2,
+      maximumFractionDigits: currency === "NTD" ? 0 : 2,
+    });
+    
+    return `${sym}${formatted}`;
   };
 
   const symbol = CURRENCY_SYMBOLS[currency];
