@@ -1,9 +1,28 @@
 import { useState } from "react";
-import { Goal } from "@/types/goal";
+import { Goal, SubTask, Ideation } from "@/types/goal";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Plus, Target, Calendar, GripVertical, Wand2 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { useCurrency } from "@/hooks/use-currency";
+import {
+  Plus,
+  Target,
+  Calendar,
+  GripVertical,
+  Wand2,
+  ChevronDown,
+  ChevronRight,
+  ExternalLink,
+  Trash2,
+  Link,
+  Lightbulb,
+  Lock,
+  ListTodo,
+  DollarSign,
+  Clock,
+} from "lucide-react";
 import { differenceInDays, parseISO, isValid } from "date-fns";
 import {
   DndContext,
@@ -28,32 +47,44 @@ interface GoalListProps {
   allGoals: Goal[];
   onUpdateGoal: (id: string, updates: Partial<Omit<Goal, "id">>) => void;
   onAddGoal: (title: string, deadline: string) => void;
+  onDeleteGoal: (id: string) => void;
   onReorderGoals: (goals: Goal[]) => void;
 }
 
 interface SortableGoalItemProps {
   goal: Goal;
   isEditing: boolean;
+  isExpanded: boolean;
   displayTitle: string;
   displayDeadline: string;
   countdown: { days: number; label: string; color: string } | null;
   onUpdateGoal: (id: string, updates: Partial<Omit<Goal, "id">>) => void;
+  onDeleteGoal: (id: string) => void;
   onFieldChange: (id: string, field: "title" | "deadline", value: string) => void;
   onFieldBlur: (id: string, field: "title" | "deadline") => void;
   onToggleMagicWand: (id: string) => void;
+  onToggleExpand: (id: string) => void;
 }
 
 const SortableGoalItem = ({
   goal,
   isEditing,
+  isExpanded,
   displayTitle,
   displayDeadline,
   countdown,
   onUpdateGoal,
+  onDeleteGoal,
   onFieldChange,
   onFieldBlur,
   onToggleMagicWand,
+  onToggleExpand,
 }: SortableGoalItemProps) => {
+  const { format } = useCurrency();
+  const [newSubTask, setNewSubTask] = useState({ action: "", cost: "", timeCost: "", deadline: "" });
+  const [newIdeation, setNewIdeation] = useState("");
+  const [newUrl, setNewUrl] = useState("");
+
   const {
     attributes,
     listeners,
@@ -68,6 +99,74 @@ const SortableGoalItem = ({
     transition,
     opacity: isDragging ? 0.5 : 1,
   };
+
+  const addSubTask = () => {
+    if (!newSubTask.action.trim() || goal.subTasks.length >= 10) return;
+    const subTask: SubTask = {
+      id: crypto.randomUUID(),
+      action: newSubTask.action.trim(),
+      cost: parseFloat(newSubTask.cost) || 0,
+      timeCost: newSubTask.timeCost,
+      deadline: newSubTask.deadline,
+      isMagicWand: false,
+      completed: false,
+    };
+    onUpdateGoal(goal.id, { subTasks: [...goal.subTasks, subTask] });
+    setNewSubTask({ action: "", cost: "", timeCost: "", deadline: "" });
+  };
+
+  const updateSubTask = (taskId: string, updates: Partial<SubTask>) => {
+    const updated = goal.subTasks.map(t => t.id === taskId ? { ...t, ...updates } : t);
+    if (updates.isMagicWand) {
+      updated.forEach(t => { if (t.id !== taskId) t.isMagicWand = false; });
+    }
+    onUpdateGoal(goal.id, { subTasks: updated });
+  };
+
+  const deleteSubTask = (taskId: string) => {
+    onUpdateGoal(goal.id, { subTasks: goal.subTasks.filter(t => t.id !== taskId) });
+  };
+
+  const addIdeation = () => {
+    if (!newIdeation.trim() || goal.ideations.length >= 20) return;
+    const ideation: Ideation = {
+      id: crypto.randomUUID(),
+      content: newIdeation.trim(),
+      createdAt: new Date().toISOString(),
+    };
+    onUpdateGoal(goal.id, { ideations: [...goal.ideations, ideation] });
+    setNewIdeation("");
+  };
+
+  const deleteIdeation = (ideaId: string) => {
+    onUpdateGoal(goal.id, { ideations: goal.ideations.filter(i => i.id !== ideaId) });
+  };
+
+  const addUrl = () => {
+    if (!newUrl.trim()) return;
+    let url = newUrl.trim();
+    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+      url = "https://" + url;
+    }
+    try {
+      new URL(url);
+      onUpdateGoal(goal.id, { urlPack: [...goal.urlPack, url] });
+      setNewUrl("");
+    } catch {
+      return;
+    }
+  };
+
+  const deleteUrl = (index: number) => {
+    onUpdateGoal(goal.id, { urlPack: goal.urlPack.filter((_, i) => i !== index) });
+  };
+
+  const openAllUrls = () => {
+    goal.urlPack.forEach(url => window.open(url, "_blank"));
+  };
+
+  const magicWandTask = goal.subTasks.find(t => t.isMagicWand);
+  const totalSubTaskCost = goal.subTasks.reduce((sum, t) => sum + t.cost, 0);
 
   return (
     <div
@@ -88,6 +187,9 @@ const SortableGoalItem = ({
           {...listeners}
         >
           <GripVertical className="h-4 w-4" />
+        </button>
+        <button onClick={() => onToggleExpand(goal.id)} className="text-muted-foreground hover:text-foreground">
+          {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         </button>
         <Checkbox
           checked={goal.completed}
@@ -120,8 +222,18 @@ const SortableGoalItem = ({
             className={`h-4 w-4 ${goal.isMagicWand ? "fill-amber-500" : ""}`}
           />
         </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-muted-foreground hover:text-red-500"
+          onClick={() => onDeleteGoal(goal.id)}
+          title="Delete goal"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
       </div>
-      <div className="flex items-center gap-2 ml-10">
+      
+      <div className="flex items-center gap-2 ml-14">
         <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
         <Input
           type="date"
@@ -142,7 +254,178 @@ const SortableGoalItem = ({
             )}
           </span>
         )}
+        {goal.subTasks.length > 0 && (
+          <Badge variant="outline" className="text-xs gap-1">
+            <ListTodo className="h-3 w-3" />
+            {goal.subTasks.filter(t => t.completed).length}/{goal.subTasks.length}
+          </Badge>
+        )}
+        {totalSubTaskCost > 0 && (
+          <Badge variant="outline" className="text-xs gap-1 text-emerald-600">
+            <DollarSign className="h-3 w-3" />
+            {format(totalSubTaskCost)}
+          </Badge>
+        )}
       </div>
+
+      {isExpanded && (
+        <div className="ml-14 mt-2 space-y-4">
+          {magicWandTask && (
+            <div className="p-2 bg-amber-500/10 rounded-md border border-amber-400/30">
+              <div className="flex items-center gap-2 text-amber-600">
+                <Wand2 className="h-4 w-4 fill-amber-500" />
+                <span className="text-sm font-medium">Key Action: {magicWandTask.action}</span>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <ListTodo className="h-4 w-4 text-blue-500" />
+              <span>Sub-tasks ({goal.subTasks.length}/10)</span>
+            </div>
+            {goal.subTasks.map(task => (
+              <div key={task.id} className={`flex items-center gap-2 p-2 rounded border ${task.isMagicWand ? "bg-amber-500/5 border-amber-400/30" : "bg-muted/30"}`}>
+                <Checkbox
+                  checked={task.completed}
+                  onCheckedChange={(checked) => updateSubTask(task.id, { completed: checked === true })}
+                  className="data-[state=checked]:bg-blue-600"
+                />
+                <span className={`flex-1 text-sm ${task.completed ? "line-through text-muted-foreground" : ""}`}>{task.action}</span>
+                {task.cost > 0 && <Badge variant="outline" className="text-xs">{format(task.cost)}</Badge>}
+                {task.timeCost && <Badge variant="outline" className="text-xs gap-1"><Clock className="h-3 w-3" />{task.timeCost}</Badge>}
+                {task.deadline && <Badge variant="outline" className="text-xs">{task.deadline}</Badge>}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`h-6 w-6 ${task.isMagicWand ? "text-amber-500" : "text-muted-foreground"}`}
+                  onClick={() => updateSubTask(task.id, { isMagicWand: !task.isMagicWand })}
+                >
+                  <Wand2 className={`h-3 w-3 ${task.isMagicWand ? "fill-amber-500" : ""}`} />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-red-500" onClick={() => deleteSubTask(task.id)}>
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
+            ))}
+            {goal.subTasks.length < 10 && (
+              <div className="flex gap-2 flex-wrap">
+                <Input
+                  placeholder="Action item..."
+                  value={newSubTask.action}
+                  onChange={(e) => setNewSubTask(prev => ({ ...prev, action: e.target.value }))}
+                  className="flex-1 min-w-[150px] h-8 text-sm"
+                />
+                <Input
+                  placeholder="$ Cost"
+                  type="number"
+                  value={newSubTask.cost}
+                  onChange={(e) => setNewSubTask(prev => ({ ...prev, cost: e.target.value }))}
+                  className="w-20 h-8 text-sm"
+                />
+                <Input
+                  placeholder="Time"
+                  value={newSubTask.timeCost}
+                  onChange={(e) => setNewSubTask(prev => ({ ...prev, timeCost: e.target.value }))}
+                  className="w-20 h-8 text-sm"
+                />
+                <Input
+                  type="date"
+                  value={newSubTask.deadline}
+                  onChange={(e) => setNewSubTask(prev => ({ ...prev, deadline: e.target.value }))}
+                  className="w-32 h-8 text-sm"
+                />
+                <Button size="sm" onClick={addSubTask} disabled={!newSubTask.action.trim()} className="h-8">
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Lightbulb className="h-4 w-4 text-yellow-500" />
+              <span>Ideation ({goal.ideations.length}/20)</span>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {goal.ideations.map(idea => (
+                <Badge key={idea.id} variant="secondary" className="gap-1 group">
+                  <span className="max-w-[200px] truncate">{idea.content}</span>
+                  <button onClick={() => deleteIdeation(idea.id)} className="opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Trash2 className="h-3 w-3 text-muted-foreground hover:text-red-500" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+            {goal.ideations.length < 20 && (
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Add an idea..."
+                  value={newIdeation}
+                  onChange={(e) => setNewIdeation(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && addIdeation()}
+                  className="flex-1 h-8 text-sm"
+                />
+                <Button size="sm" onClick={addIdeation} disabled={!newIdeation.trim()} className="h-8">
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Lock className="h-4 w-4 text-red-500" />
+              <span>Key Constraint</span>
+            </div>
+            <Textarea
+              placeholder="What's the main blocker or constraint for this goal?"
+              value={goal.constraint}
+              onChange={(e) => onUpdateGoal(goal.id, { constraint: e.target.value })}
+              className="min-h-[60px] text-sm resize-none"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Link className="h-4 w-4 text-purple-500" />
+                <span>URL Pack ({goal.urlPack.length})</span>
+              </div>
+              {goal.urlPack.length > 0 && (
+                <Button variant="outline" size="sm" onClick={openAllUrls} className="h-7 text-xs gap-1">
+                  <ExternalLink className="h-3 w-3" />
+                  Open All
+                </Button>
+              )}
+            </div>
+            <div className="space-y-1">
+              {goal.urlPack.map((url, index) => (
+                <div key={index} className="flex items-center gap-2 p-1.5 rounded bg-muted/30 group">
+                  <a href={url} target="_blank" rel="noopener noreferrer" className="flex-1 text-xs text-blue-500 hover:underline truncate">
+                    {url}
+                  </a>
+                  <button onClick={() => deleteUrl(index)} className="opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Trash2 className="h-3 w-3 text-muted-foreground hover:text-red-500" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Add URL..."
+                value={newUrl}
+                onChange={(e) => setNewUrl(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && addUrl()}
+                className="flex-1 h-8 text-sm"
+              />
+              <Button size="sm" onClick={addUrl} disabled={!newUrl.trim()} className="h-8">
+                <Plus className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -152,6 +435,7 @@ const GoalList = ({
   allGoals,
   onUpdateGoal,
   onAddGoal,
+  onDeleteGoal,
   onReorderGoals,
 }: GoalListProps) => {
   const [newGoalTitle, setNewGoalTitle] = useState("");
@@ -159,6 +443,7 @@ const GoalList = ({
   const [editingGoals, setEditingGoals] = useState<
     Record<string, { title: string; deadline: string }>
   >({});
+  const [expandedGoals, setExpandedGoals] = useState<Set<string>>(new Set());
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -174,6 +459,15 @@ const GoalList = ({
   const activeGoals = goals.filter((g) => !g.completed);
   const completedGoals = goals.filter((g) => g.completed);
   const canAddGoal = activeGoals.length < 10;
+
+  const toggleExpand = (id: string) => {
+    setExpandedGoals(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const getCountdown = (
     deadline: string
@@ -254,11 +548,9 @@ const GoalList = ({
     const goal = goals.find((g) => g.id === id);
     if (!goal) return;
 
-    // If this goal is already magic wand, turn it off
     if (goal.isMagicWand) {
       onUpdateGoal(id, { isMagicWand: false });
     } else {
-      // Turn off magic wand for all other goals, turn on for this one
       allGoals.forEach((g) => {
         if (g.id === id) {
           onUpdateGoal(g.id, { isMagicWand: true });
@@ -277,11 +569,7 @@ const GoalList = ({
       const newIndex = activeGoals.findIndex((g) => g.id === over.id);
 
       const reorderedActive = arrayMove(activeGoals, oldIndex, newIndex);
-
-      // Rebuild the full goals array with reordered active goals + completed goals
       const newGoals = [...reorderedActive, ...completedGoals];
-
-      // Also include goals without titles that weren't shown
       const goalsWithoutTitle = allGoals.filter((g) => !g.title);
       onReorderGoals([...newGoals, ...goalsWithoutTitle]);
     }
@@ -299,7 +587,6 @@ const GoalList = ({
         </span>
       </div>
 
-      {/* Active goals with drag and drop */}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -325,13 +612,16 @@ const GoalList = ({
                   key={goal.id}
                   goal={goal}
                   isEditing={isEditing}
+                  isExpanded={expandedGoals.has(goal.id)}
                   displayTitle={displayTitle}
                   displayDeadline={displayDeadline}
                   countdown={countdown}
                   onUpdateGoal={onUpdateGoal}
+                  onDeleteGoal={onDeleteGoal}
                   onFieldChange={handleFieldChange}
                   onFieldBlur={handleFieldBlur}
                   onToggleMagicWand={handleToggleMagicWand}
+                  onToggleExpand={toggleExpand}
                 />
               );
             })}
@@ -339,7 +629,6 @@ const GoalList = ({
         </SortableContext>
       </DndContext>
 
-      {/* Add goal form */}
       {canAddGoal && (
         <div className="flex flex-col gap-2">
           <div className="flex gap-2">
@@ -381,7 +670,6 @@ const GoalList = ({
         </p>
       )}
 
-      {/* Completed goals */}
       {completedGoals.length > 0 && (
         <div className="pt-4 border-t border-border">
           <p className="text-sm text-muted-foreground mb-2">
@@ -403,7 +691,7 @@ const GoalList = ({
                   className="flex flex-col gap-2 p-3 rounded-lg border bg-muted/50 border-muted"
                 >
                   <div className="flex items-center gap-2">
-                    <div className="w-4" /> {/* Spacer for alignment */}
+                    <div className="w-4" />
                     <Checkbox
                       checked={goal.completed}
                       onCheckedChange={(checked) =>

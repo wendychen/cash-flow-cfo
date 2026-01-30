@@ -22,16 +22,22 @@ interface FixedExpenseListProps {
 
 const frequencyLabels: Record<Frequency, string> = {
   weekly: "Weekly",
+  "bi-weekly": "Bi-weekly",
+  "bi-monthly": "Bi-monthly",
   monthly: "Monthly",
   quarterly: "Quarterly",
   yearly: "Yearly",
+  custom: "Custom",
 };
 
 const frequencyColors: Record<Frequency, string> = {
   weekly: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  "bi-weekly": "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400",
+  "bi-monthly": "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400",
   monthly: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
   quarterly: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
   yearly: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+  custom: "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400",
 };
 
 const FixedExpenseList = ({
@@ -144,6 +150,8 @@ const FixedExpenseList = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="bi-weekly">Bi-weekly</SelectItem>
+                  <SelectItem value="bi-monthly">Bi-monthly</SelectItem>
                   <SelectItem value="monthly">Monthly</SelectItem>
                   <SelectItem value="quarterly">Quarterly</SelectItem>
                   <SelectItem value="yearly">Yearly</SelectItem>

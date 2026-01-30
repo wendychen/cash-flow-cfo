@@ -21,6 +21,7 @@ import IncomeList from "./IncomeList";
 import SavingForm from "./SavingForm";
 import SavingList from "./SavingList";
 import GoalList from "./GoalList";
+import ConsciousnessFlow from "./ConsciousnessFlow";
 import CombinedChart from "./CombinedChart";
 import MonthlySummary from "./MonthlySummary";
 import TimeNavigator, { TimePeriod } from "./TimeNavigator";
@@ -63,11 +64,15 @@ const ExpenseTracker = () => {
     const saved = localStorage.getItem("goals");
     if (saved) {
       const parsed = JSON.parse(saved);
-      // Migrate old goals without deadline or isMagicWand
       return parsed.map((g: Goal) => ({
         ...g,
         deadline: g.deadline || "",
         isMagicWand: g.isMagicWand || false,
+        subTasks: g.subTasks || [],
+        ideations: g.ideations || [],
+        constraint: g.constraint || "",
+        urlPack: g.urlPack || [],
+        linkedExpenseId: g.linkedExpenseId || undefined,
       }));
     }
     return [];
@@ -281,14 +286,32 @@ const ExpenseTracker = () => {
     const activeGoals = goals.filter((g) => !g.completed && g.title);
     if (activeGoals.length >= 10) return;
 
+    const goalId = crypto.randomUUID();
+    const expenseId = crypto.randomUUID();
+    
+    const linkedExpense: Expense = {
+      id: expenseId,
+      date: deadline || new Date().toISOString().split("T")[0],
+      description: `Goal: ${title}`,
+      amount: 0,
+      needsCheck: true,
+    };
+    
     const newGoal: Goal = {
-      id: crypto.randomUUID(),
+      id: goalId,
       title,
       deadline,
       completed: false,
       isMagicWand: false,
       createdAt: new Date().toISOString(),
+      linkedExpenseId: expenseId,
+      subTasks: [],
+      ideations: [],
+      constraint: "",
+      urlPack: [],
     };
+    
+    setExpenses((prev) => [...prev, linkedExpense]);
     setGoals((prev) => [...prev, newGoal]);
     toast({ title: "Goal added", description: title });
   };
@@ -298,9 +321,35 @@ const ExpenseTracker = () => {
   };
 
   const updateGoal = (id: string, updates: Partial<Omit<Goal, "id">>) => {
+    const goal = goals.find(g => g.id === id);
+    
     setGoals((prev) =>
-      prev.map((goal) => (goal.id === id ? { ...goal, ...updates } : goal))
+      prev.map((g) => (g.id === id ? { ...g, ...updates } : g))
     );
+    
+    if (goal?.linkedExpenseId) {
+      const expenseUpdates: Partial<Expense> = {};
+      if (updates.deadline) {
+        expenseUpdates.date = updates.deadline;
+      }
+      if (updates.title) {
+        expenseUpdates.description = `Goal: ${updates.title}`;
+      }
+      if (Object.keys(expenseUpdates).length > 0) {
+        setExpenses((prev) =>
+          prev.map((e) => (e.id === goal.linkedExpenseId ? { ...e, ...expenseUpdates } : e))
+        );
+      }
+    }
+  };
+  
+  const deleteGoal = (id: string) => {
+    const goal = goals.find(g => g.id === id);
+    if (goal?.linkedExpenseId) {
+      setExpenses((prev) => prev.filter((e) => e.id !== goal.linkedExpenseId));
+    }
+    setGoals((prev) => prev.filter((g) => g.id !== id));
+    toast({ title: "Goal deleted" });
   };
 
   // Fixed Expense handlers
@@ -499,6 +548,10 @@ const ExpenseTracker = () => {
                 completed,
                 isMagicWand,
                 createdAt,
+                subTasks: [],
+                ideations: [],
+                constraint: "",
+                urlPack: [],
               });
             }
           } else if (currentSection === "targets") {
@@ -604,6 +657,8 @@ const ExpenseTracker = () => {
 
   const totalExpenses = periodFilteredExpenses.reduce((sum, exp) => sum + exp.amount, 0);
   const totalIncomes = periodFilteredIncomes.reduce((sum, inc) => sum + inc.amount, 0);
+  const totalSavings = periodFilteredSavings.filter(s => s.savingType === "balance").reduce((sum, sav) => sum + sav.amount, 0);
+  const activeGoalCount = goals.filter((g) => !g.completed && g.title).length;
   const netCashFlow = totalIncomes - totalExpenses;
   const latestSavings = periodFilteredSavings.length > 0
     ? [...periodFilteredSavings].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].amount
@@ -753,6 +808,7 @@ const ExpenseTracker = () => {
                 allGoals={goals}
                 onUpdateGoal={updateGoal}
                 onAddGoal={addGoal}
+                onDeleteGoal={deleteGoal}
                 onReorderGoals={reorderGoals}
               />
             </div>
@@ -818,6 +874,13 @@ const ExpenseTracker = () => {
                 </Button>
               </div>
             </div>
+
+            <ConsciousnessFlow
+              totalIncome={totalIncomes}
+              totalSavings={totalSavings}
+              goalCount={activeGoalCount}
+              totalExpenses={totalExpenses}
+            />
 
             <MonthlySummary
               expenses={periodFilteredExpenses}

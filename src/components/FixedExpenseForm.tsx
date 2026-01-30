@@ -78,6 +78,8 @@ const FixedExpenseForm = ({ onAddFixedExpense }: FixedExpenseFormProps) => {
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="weekly">Weekly</SelectItem>
+          <SelectItem value="bi-weekly">Bi-weekly</SelectItem>
+          <SelectItem value="bi-monthly">Bi-monthly</SelectItem>
           <SelectItem value="monthly">Monthly</SelectItem>
           <SelectItem value="quarterly">Quarterly</SelectItem>
           <SelectItem value="yearly">Yearly</SelectItem>
