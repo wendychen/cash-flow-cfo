@@ -294,7 +294,7 @@ const MonthlySummary = ({ expenses, incomes, savings, fixedExpenses }: MonthlySu
         </CollapsibleTrigger>
         <CollapsibleContent>
           <CardContent className="pt-0 px-4 pb-4">
-            <ScrollArea className="max-h-96">
+            <ScrollArea className="h-[500px]">
               <div className="space-y-3">
                 {monthlyData.map((data) => (
                   <div

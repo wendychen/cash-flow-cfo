@@ -64,11 +64,13 @@ const ExpenseTracker = () => {
     const saved = localStorage.getItem("goals");
     if (saved) {
       const parsed = JSON.parse(saved);
-      return parsed.map((g: Goal) => ({
+      return parsed.map((g: Goal & { subTasks?: unknown[] }) => ({
         ...g,
         deadline: g.deadline || "",
         isMagicWand: g.isMagicWand || false,
-        subTasks: g.subTasks || [],
+        preTasks: g.preTasks || g.subTasks || [],
+        postTasks: g.postTasks || [],
+        postDreams: g.postDreams || [],
         ideations: g.ideations || [],
         constraint: g.constraint || "",
         urlPack: g.urlPack || [],
@@ -305,7 +307,9 @@ const ExpenseTracker = () => {
       isMagicWand: false,
       createdAt: new Date().toISOString(),
       linkedExpenseId: expenseId,
-      subTasks: [],
+      preTasks: [],
+      postTasks: [],
+      postDreams: [],
       ideations: [],
       constraint: "",
       urlPack: [],
@@ -548,7 +552,9 @@ const ExpenseTracker = () => {
                 completed,
                 isMagicWand,
                 createdAt,
-                subTasks: [],
+                preTasks: [],
+                postTasks: [],
+                postDreams: [],
                 ideations: [],
                 constraint: "",
                 urlPack: [],
