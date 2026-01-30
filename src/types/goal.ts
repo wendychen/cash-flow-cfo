@@ -1,4 +1,4 @@
-export interface SubTask {
+export interface TaskItem {
   id: string;
   action: string;
   cost: number;
@@ -6,6 +6,13 @@ export interface SubTask {
   deadline: string;
   isMagicWand: boolean;
   completed: boolean;
+}
+
+export interface PostDream {
+  id: string;
+  title: string;
+  deadline: string;
+  isMagicWand: boolean;
 }
 
 export interface Ideation {
@@ -22,7 +29,9 @@ export interface Goal {
   isMagicWand: boolean;
   createdAt: string;
   linkedExpenseId?: string;
-  subTasks: SubTask[];
+  preTasks: TaskItem[];
+  postTasks: TaskItem[];
+  postDreams: PostDream[];
   ideations: Ideation[];
   constraint: string;
   urlPack: string[];
