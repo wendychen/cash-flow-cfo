@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Home, Zap, Car, Heart, CreditCard, FileText } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { FixedExpense, Frequency } from "@/types/fixedExpense";
 import { useCurrency, Currency } from "@/hooks/use-currency";
+import { FixedExpenseCategory, FIXED_EXPENSE_CATEGORIES } from "@/types/expenseCategory";
 
 interface FixedExpenseFormProps {
   onAddFixedExpense: (expense: Omit<FixedExpense, "id" | "createdAt">) => void;
@@ -18,6 +19,7 @@ interface FixedExpenseFormProps {
 
 const FixedExpenseForm = ({ onAddFixedExpense }: FixedExpenseFormProps) => {
   const { convertToNTD } = useCurrency();
+  const [category, setCategory] = useState<FixedExpenseCategory>("housing");
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [frequency, setFrequency] = useState<Frequency>("monthly");
@@ -36,15 +38,46 @@ const FixedExpenseForm = ({ onAddFixedExpense }: FixedExpenseFormProps) => {
       amount: amountInNTD,
       frequency,
       isActive: true,
+      category,
     });
 
+    setCategory("housing");
     setDescription("");
     setAmount("");
     setFrequency("monthly");
   };
 
+  const getCategoryIcon = (cat: FixedExpenseCategory) => {
+    switch (cat) {
+      case "housing": return <Home className="h-4 w-4" />;
+      case "utilities": return <Zap className="h-4 w-4" />;
+      case "transportation": return <Car className="h-4 w-4" />;
+      case "health": return <Heart className="h-4 w-4" />;
+      case "financial-obligations": return <CreditCard className="h-4 w-4" />;
+      case "taxes": return <FileText className="h-4 w-4" />;
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-wrap gap-2 items-end">
+      <Select value={category} onValueChange={(val) => setCategory(val as FixedExpenseCategory)}>
+        <SelectTrigger className="w-[180px]">
+          <div className="flex items-center gap-2">
+            {getCategoryIcon(category)}
+            <SelectValue />
+          </div>
+        </SelectTrigger>
+        <SelectContent>
+          {Object.entries(FIXED_EXPENSE_CATEGORIES).map(([key, meta]) => (
+            <SelectItem key={key} value={key}>
+              <div className="flex items-center gap-2">
+                {getCategoryIcon(key as FixedExpenseCategory)}
+                <span>{meta.label}</span>
+              </div>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       <Input
         placeholder="Description (e.g., Health Insurance)"
         value={description}

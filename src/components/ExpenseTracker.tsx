@@ -48,7 +48,14 @@ const ExpenseTracker = () => {
   
   const [expenses, setExpenses] = useState<Expense[]>(() => {
     const saved = localStorage.getItem("expenses");
-    return saved ? JSON.parse(saved) : [];
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return parsed.map((exp: Expense) => ({
+        ...exp,
+        category: exp.category || "miscellaneous",
+      }));
+    }
+    return [];
   });
 
   const [incomes, setIncomes] = useState<Income[]>(() => {
@@ -83,7 +90,14 @@ const ExpenseTracker = () => {
 
   const [fixedExpenses, setFixedExpenses] = useState<FixedExpense[]>(() => {
     const saved = localStorage.getItem("fixedExpenses");
-    return saved ? JSON.parse(saved) : [];
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return parsed.map((exp: FixedExpense) => ({
+        ...exp,
+        category: exp.category || "housing",
+      }));
+    }
+    return [];
   });
 
   const [targets, setTargets] = useState<FinancialTarget[]>(() => {

@@ -9,6 +9,7 @@ import { Goal } from "@/types/goal";
 import { FixedExpense } from "@/types/fixedExpense";
 import { useCurrency } from "@/hooks/use-currency";
 import { TimePeriod } from "./TimeNavigator";
+import { EXPENSE_CATEGORIES, FIXED_EXPENSE_CATEGORIES, ExpenseCategory, FixedExpenseCategory } from "@/types/expenseCategory";
 
 interface SankeyNode {
   id: string;
@@ -38,7 +39,7 @@ interface SankeyFlowChartProps {
   selectedPeriod?: TimePeriod | null;
 }
 
-type DrillDownLevel = "overview" | "income-detail" | "savings-detail" | "goal-detail" | "expense-detail";
+type DrillDownLevel = "overview" | "income-detail" | "savings-detail" | "goal-detail" | "expense-detail" | "fixed-expense-categories" | "onetime-expense-categories";
 
 const SankeyFlowChart = ({
   expenses,
@@ -134,18 +135,107 @@ const SankeyFlowChart = ({
         });
       });
     } else if (drillDownLevel === "expense-detail") {
+      const oneTimeExpenseTotal = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+
       nodes.push(
-        { id: "expenses", name: "Expenses", color: "#ef4444", value: totalExpenses },
+        { id: "expenses", name: "Total Expenses", color: "#ef4444", value: totalExpenses },
         { id: "fixed", name: "Fixed Expenses", color: "#dc2626", value: fixedExpenseTotal },
-        { id: "discretionary", name: "Discretionary", color: "#f87171", value: discretionaryExpenseTotal }
+        { id: "onetime", name: "One-Time Expenses", color: "#f87171", value: oneTimeExpenseTotal }
       );
 
       if (fixedExpenseTotal > 0) {
         links.push({ source: "expenses", target: "fixed", value: fixedExpenseTotal, color: "#dc262680" });
       }
-      if (discretionaryExpenseTotal > 0) {
-        links.push({ source: "expenses", target: "discretionary", value: discretionaryExpenseTotal, color: "#f8717180" });
+      if (oneTimeExpenseTotal > 0) {
+        links.push({ source: "expenses", target: "onetime", value: oneTimeExpenseTotal, color: "#f8717180" });
       }
+    } else if (drillDownLevel === "fixed-expense-categories") {
+      nodes.push({ id: "fixed-expenses", name: "Fixed Expenses", color: "#dc2626", value: fixedExpenseTotal });
+
+      const categoryTotals: Record<FixedExpenseCategory, number> = {
+        housing: 0,
+        utilities: 0,
+        transportation: 0,
+        health: 0,
+        "financial-obligations": 0,
+        taxes: 0,
+      };
+
+      fixedExpenses.filter(f => f.isActive).forEach((expense) => {
+        const category = expense.category || "housing";
+        categoryTotals[category] += expense.amount;
+      });
+
+      Object.entries(categoryTotals).forEach(([category, total]) => {
+        if (total > 0) {
+          const cat = category as FixedExpenseCategory;
+          const meta = FIXED_EXPENSE_CATEGORIES[cat];
+          const colorMap: Record<FixedExpenseCategory, string> = {
+            housing: "#dc2626",
+            utilities: "#ea580c",
+            transportation: "#2563eb",
+            health: "#16a34a",
+            "financial-obligations": "#f97316",
+            taxes: "#6b7280",
+          };
+
+          nodes.push({
+            id: `fixed-cat-${category}`,
+            name: meta.label,
+            color: colorMap[cat],
+            value: total,
+          });
+
+          links.push({
+            source: "fixed-expenses",
+            target: `fixed-cat-${category}`,
+            value: total,
+            color: colorMap[cat] + "80",
+          });
+        }
+      });
+    } else if (drillDownLevel === "onetime-expense-categories") {
+      const oneTimeExpenseTotal = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+      nodes.push({ id: "onetime-expenses", name: "One-Time Expenses", color: "#f87171", value: oneTimeExpenseTotal });
+
+      const categoryTotals: Record<ExpenseCategory, number> = {
+        food: 0,
+        lifestyle: 0,
+        family: 0,
+        miscellaneous: 0,
+      };
+
+      expenses.forEach((expense) => {
+        const category = expense.category || "miscellaneous";
+        categoryTotals[category] += expense.amount;
+      });
+
+      Object.entries(categoryTotals).forEach(([category, total]) => {
+        if (total > 0) {
+          const cat = category as ExpenseCategory;
+          const meta = EXPENSE_CATEGORIES[cat];
+          const colorMap: Record<ExpenseCategory, string> = {
+            food: "#10b981",
+            lifestyle: "#ec4899",
+            family: "#06b6d4",
+            miscellaneous: "#64748b",
+          };
+
+          nodes.push({
+            id: `onetime-cat-${category}`,
+            name: meta.label,
+            color: colorMap[cat],
+            value: total,
+          });
+
+          links.push({
+            source: "onetime-expenses",
+            target: `onetime-cat-${category}`,
+            value: total,
+            color: colorMap[cat] + "80",
+          });
+        }
+      });
     }
 
     return { nodes, links };
@@ -162,11 +252,21 @@ const SankeyFlowChart = ({
       } else if (nodeId === "expenses") {
         setDrillDownLevel("expense-detail");
       }
+    } else if (drillDownLevel === "expense-detail") {
+      if (nodeId === "fixed") {
+        setDrillDownLevel("fixed-expense-categories");
+      } else if (nodeId === "onetime") {
+        setDrillDownLevel("onetime-expense-categories");
+      }
     }
   };
 
   const handleBack = () => {
-    setDrillDownLevel("overview");
+    if (drillDownLevel === "fixed-expense-categories" || drillDownLevel === "onetime-expense-categories") {
+      setDrillDownLevel("expense-detail");
+    } else {
+      setDrillDownLevel("overview");
+    }
     setSelectedNodeId(null);
   };
 
@@ -187,7 +287,9 @@ const SankeyFlowChart = ({
               {drillDownLevel === "overview" && "Click on nodes to drill down into details"}
               {drillDownLevel === "income-detail" && "Income sources breakdown"}
               {drillDownLevel === "goal-detail" && "Savings allocated to goals"}
-              {drillDownLevel === "expense-detail" && "Expense categories breakdown"}
+              {drillDownLevel === "expense-detail" && "Expense categories breakdown - Click to view category details"}
+              {drillDownLevel === "fixed-expense-categories" && "Fixed expense categories breakdown"}
+              {drillDownLevel === "onetime-expense-categories" && "One-time expense categories breakdown"}
             </CardDescription>
           </div>
         </div>

@@ -1,3 +1,5 @@
+import { FixedExpenseCategory } from './expenseCategory';
+
 export type Frequency = "weekly" | "bi-weekly" | "bi-monthly" | "monthly" | "quarterly" | "yearly" | "custom";
 
 export interface FixedExpense {
@@ -8,6 +10,7 @@ export interface FixedExpense {
   customDays?: number;
   isActive: boolean;
   createdAt: string;
+  category: FixedExpenseCategory;
 }
 
 export interface FixedIncome {

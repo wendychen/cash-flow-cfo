@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { format, parseISO } from "date-fns";
-import { Trash2, Pencil, Check, X } from "lucide-react";
+import { Trash2, Pencil, Check, X, UtensilsCrossed, Sparkles, Users, Package, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { Expense } from "@/types/expense";
 import { useCurrency, Currency } from "@/hooks/use-currency";
 import {
@@ -13,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ExpenseCategory, EXPENSE_CATEGORIES } from "@/types/expenseCategory";
 import {
   Pagination,
   PaginationContent,
@@ -44,7 +46,18 @@ const ExpenseList = ({
   const [editCurrency, setEditCurrency] = useState<Currency>("NTD");
   const [editReviewCount, setEditReviewCount] = useState("");
   const [editDate, setEditDate] = useState("");
+  const [editCategory, setEditCategory] = useState<ExpenseCategory>("miscellaneous");
+  const [filterCategory, setFilterCategory] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
+
+  const getCategoryIcon = (cat: ExpenseCategory) => {
+    switch (cat) {
+      case "food": return <UtensilsCrossed className="h-3 w-3" />;
+      case "lifestyle": return <Sparkles className="h-3 w-3" />;
+      case "family": return <Users className="h-3 w-3" />;
+      case "miscellaneous": return <Package className="h-3 w-3" />;
+    }
+  };
 
   const startEdit = (expense: Expense) => {
     setEditingId(expense.id);
@@ -54,6 +67,7 @@ const ExpenseList = ({
     setEditCurrency(currency);
     setEditReviewCount(expense.reviewCount?.toString() || "");
     setEditDate(expense.date);
+    setEditCategory(expense.category || "miscellaneous");
   };
 
   const cancelEdit = () => {
@@ -62,6 +76,7 @@ const ExpenseList = ({
     setEditAmount("");
     setEditReviewCount("");
     setEditDate("");
+    setEditCategory("miscellaneous");
   };
 
   const saveEdit = (id: string) => {
@@ -72,11 +87,17 @@ const ExpenseList = ({
       amount: amountInNTD,
       reviewCount: editReviewCount ? parseInt(editReviewCount) : undefined,
       date: editDate,
+      category: editCategory,
     });
     setEditingId(null);
   };
 
-  const groupedExpenses = expenses.reduce((groups, expense) => {
+  // Filter expenses by category
+  const filteredExpenses = filterCategory === "all"
+    ? expenses
+    : expenses.filter(exp => exp.category === filterCategory);
+
+  const groupedExpenses = filteredExpenses.reduce((groups, expense) => {
     const date = expense.date;
     if (!groups[date]) {
       groups[date] = [];
@@ -105,6 +126,28 @@ const ExpenseList = ({
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-between pb-3 border-b border-border">
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          <Select value={filterCategory} onValueChange={setFilterCategory}>
+            <SelectTrigger className="w-[160px] h-8">
+              <SelectValue placeholder="All Categories" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {Object.entries(EXPENSE_CATEGORIES).map(([key, meta]) => (
+                <SelectItem key={key} value={key}>
+                  {meta.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <span className="text-sm text-muted-foreground">
+          {filteredExpenses.length} expense{filteredExpenses.length !== 1 ? 's' : ''}
+        </span>
+      </div>
+
       {paginatedDates.map((date) => {
         const dayExpenses = groupedExpenses[date];
         const dayTotal = dayExpenses.reduce((sum, exp) => sum + exp.amount, 0);
@@ -137,6 +180,18 @@ const ExpenseList = ({
                           onChange={(e) => setEditDate(e.target.value)}
                           className="h-8 text-sm w-32"
                         />
+                        <Select value={editCategory} onValueChange={(val) => setEditCategory(val as ExpenseCategory)}>
+                          <SelectTrigger className="h-8 w-28 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(EXPENSE_CATEGORIES).map(([key, meta]) => (
+                              <SelectItem key={key} value={key}>
+                                {meta.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <Input
                           type="number"
                           value={editReviewCount}
@@ -207,9 +262,17 @@ const ExpenseList = ({
                           onCheckedChange={() => onToggleNeedsCheck(expense.id)}
                           className="data-[state=checked]:bg-yellow-400 shrink-0"
                         />
-                        <span className="text-foreground font-medium truncate">
-                          {expense.description}
-                        </span>
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <span className="text-foreground font-medium truncate">
+                            {expense.description}
+                          </span>
+                          <Badge variant="outline" className={`text-${EXPENSE_CATEGORIES[expense.category || "miscellaneous"].color} border-current shrink-0`}>
+                            <div className="flex items-center gap-1">
+                              {getCategoryIcon(expense.category || "miscellaneous")}
+                              <span className="text-xs">{EXPENSE_CATEGORIES[expense.category || "miscellaneous"].label}</span>
+                            </div>
+                          </Badge>
+                        </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-foreground font-semibold tabular-nums">

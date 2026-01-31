@@ -1,3 +1,5 @@
+import { ExpenseCategory } from './expenseCategory';
+
 export interface Expense {
   id: string;
   date: string;
@@ -5,4 +7,5 @@ export interface Expense {
   amount: number;
   needsCheck: boolean;
   reviewCount?: number;
+  category: ExpenseCategory;
 }

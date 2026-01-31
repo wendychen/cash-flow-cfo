@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pencil, Trash2, Check, X, RefreshCw } from "lucide-react";
+import { Pencil, Trash2, Check, X, RefreshCw, Home, Zap, Car, Heart, CreditCard, FileText, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { FixedExpense, Frequency, getMonthlyEquivalent } from "@/types/fixedExpense";
 import { useCurrency, Currency } from "@/hooks/use-currency";
+import { FixedExpenseCategory, FIXED_EXPENSE_CATEGORIES } from "@/types/expenseCategory";
 
 interface FixedExpenseListProps {
   fixedExpenses: FixedExpense[];
@@ -51,6 +52,19 @@ const FixedExpenseList = ({
   const [editAmount, setEditAmount] = useState("");
   const [editFrequency, setEditFrequency] = useState<Frequency>("monthly");
   const [editCurrency, setEditCurrency] = useState<Currency>("NTD");
+  const [editCategory, setEditCategory] = useState<FixedExpenseCategory>("housing");
+  const [filterCategory, setFilterCategory] = useState<string>("all");
+
+  const getCategoryIcon = (cat: FixedExpenseCategory) => {
+    switch (cat) {
+      case "housing": return <Home className="h-3 w-3" />;
+      case "utilities": return <Zap className="h-3 w-3" />;
+      case "transportation": return <Car className="h-3 w-3" />;
+      case "health": return <Heart className="h-3 w-3" />;
+      case "financial-obligations": return <CreditCard className="h-3 w-3" />;
+      case "taxes": return <FileText className="h-3 w-3" />;
+    }
+  };
 
   const startEdit = (expense: FixedExpense) => {
     setEditingId(expense.id);
@@ -58,6 +72,7 @@ const FixedExpenseList = ({
     setEditAmount(expense.amount.toString());
     setEditFrequency(expense.frequency);
     setEditCurrency("NTD");
+    setEditCategory(expense.category || "housing");
   };
 
   const cancelEdit = () => {
@@ -66,6 +81,7 @@ const FixedExpenseList = ({
     setEditAmount("");
     setEditFrequency("monthly");
     setEditCurrency("NTD");
+    setEditCategory("housing");
   };
 
   const saveEdit = (id: string) => {
@@ -78,12 +94,18 @@ const FixedExpenseList = ({
       description: editDescription.trim(),
       amount: amountInNTD,
       frequency: editFrequency,
+      category: editCategory,
     });
     cancelEdit();
   };
 
+  // Filter expenses by category
+  const filteredExpenses = filterCategory === "all"
+    ? fixedExpenses
+    : fixedExpenses.filter(exp => exp.category === filterCategory);
+
   // Calculate total monthly equivalent for active expenses
-  const totalMonthlyEquivalent = fixedExpenses
+  const totalMonthlyEquivalent = filteredExpenses
     .filter((exp) => exp.isActive)
     .reduce((sum, exp) => sum + getMonthlyEquivalent(exp.amount, exp.frequency), 0);
 
@@ -97,10 +119,26 @@ const FixedExpenseList = ({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between border-b border-border pb-2">
+      <div className="flex items-center justify-between border-b border-border pb-2 gap-3 flex-wrap">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <RefreshCw className="h-4 w-4" />
-          <span>{fixedExpenses.length} fixed expense{fixedExpenses.length !== 1 ? 's' : ''}</span>
+          <span>{filteredExpenses.length} fixed expense{filteredExpenses.length !== 1 ? 's' : ''}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          <Select value={filterCategory} onValueChange={setFilterCategory}>
+            <SelectTrigger className="w-[160px] h-8">
+              <SelectValue placeholder="All Categories" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {Object.entries(FIXED_EXPENSE_CATEGORIES).map(([key, meta]) => (
+                <SelectItem key={key} value={key}>
+                  {meta.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="text-right">
           <p className="text-xs text-muted-foreground">Monthly Equivalent</p>
@@ -108,7 +146,7 @@ const FixedExpenseList = ({
         </div>
       </div>
 
-      {fixedExpenses.map((expense) => (
+      {filteredExpenses.map((expense) => (
         <div
           key={expense.id}
           className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
@@ -119,6 +157,18 @@ const FixedExpenseList = ({
         >
           {editingId === expense.id ? (
             <div className="flex-1 flex flex-wrap gap-2 items-center">
+              <Select value={editCategory} onValueChange={(val) => setEditCategory(val as FixedExpenseCategory)}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(FIXED_EXPENSE_CATEGORIES).map(([key, meta]) => (
+                    <SelectItem key={key} value={key}>
+                      {meta.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Input
                 value={editDescription}
                 onChange={(e) => setEditDescription(e.target.value)}
@@ -176,9 +226,17 @@ const FixedExpenseList = ({
                 className="data-[state=checked]:bg-primary"
               />
               <div className="flex-1 min-w-0">
-                <p className={`font-medium truncate ${!expense.isActive ? "line-through" : ""}`}>
-                  {expense.description}
-                </p>
+                <div className="flex items-center gap-2 mb-1">
+                  <p className={`font-medium truncate ${!expense.isActive ? "line-through" : ""}`}>
+                    {expense.description}
+                  </p>
+                  <Badge variant="outline" className={`text-${FIXED_EXPENSE_CATEGORIES[expense.category || "housing"].color} border-current`}>
+                    <div className="flex items-center gap-1">
+                      {getCategoryIcon(expense.category || "housing")}
+                      <span className="text-xs">{FIXED_EXPENSE_CATEGORIES[expense.category || "housing"].label}</span>
+                    </div>
+                  </Badge>
+                </div>
                 <p className="text-sm text-muted-foreground">
                   {format(expense.amount)}{" "}
                   {expense.frequency !== "monthly" && (
