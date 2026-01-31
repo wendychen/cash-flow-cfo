@@ -72,7 +72,7 @@ const FixedExpenseForm = ({ onAddFixedExpense }: FixedExpenseFormProps) => {
             <SelectItem key={key} value={key}>
               <div className="flex items-center gap-2">
                 {getCategoryIcon(key as FixedExpenseCategory)}
-
+                <span>{meta.label}</span>
               </div>
             </SelectItem>
           ))}
