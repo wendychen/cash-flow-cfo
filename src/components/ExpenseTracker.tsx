@@ -58,6 +58,9 @@ const ExpenseTracker = () => {
       return parsed.map((exp: Expense) => ({
         ...exp,
         category: exp.category || "misc",
+        linkedGoalId: exp.linkedGoalId || undefined,
+        linkedTaskId: exp.linkedTaskId || undefined,
+        linkedTaskType: exp.linkedTaskType || undefined,
       }));
     }
     return [];
@@ -81,9 +84,21 @@ const ExpenseTracker = () => {
         ...g,
         deadline: g.deadline || "",
         isMagicWand: g.isMagicWand || false,
-        preTasks: g.preTasks || g.subTasks || [],
-        postTasks: g.postTasks || [],
-        postDreams: g.postDreams || [],
+        category: g.category || "misc",
+        preTasks: (g.preTasks || g.subTasks || []).map((t: any) => ({
+          ...t,
+          linkedExpenseId: t.linkedExpenseId || undefined,
+        })),
+        postTasks: (g.postTasks || []).map((t: any) => ({
+          ...t,
+          linkedExpenseId: t.linkedExpenseId || undefined,
+        })),
+        postDreams: (g.postDreams || []).map((d: any) => ({
+          ...d,
+          cost: d.cost || 0,
+          timeCost: d.timeCost || "",
+          linkedExpenseId: d.linkedExpenseId || undefined,
+        })),
         ideations: g.ideations || [],
         constraint: g.constraint || "",
         urlPack: g.urlPack || [],
@@ -310,15 +325,17 @@ const ExpenseTracker = () => {
 
     const goalId = crypto.randomUUID();
     const expenseId = crypto.randomUUID();
-    
+
     const linkedExpense: Expense = {
       id: expenseId,
       date: deadline || new Date().toISOString().split("T")[0],
       description: `Goal: ${title}`,
       amount: 0,
       needsCheck: true,
+      category: "misc",
+      linkedGoalId: goalId,
     };
-    
+
     const newGoal: Goal = {
       id: goalId,
       title,
@@ -327,6 +344,7 @@ const ExpenseTracker = () => {
       isMagicWand: false,
       createdAt: new Date().toISOString(),
       linkedExpenseId: expenseId,
+      category: "misc",
       preTasks: [],
       postTasks: [],
       postDreams: [],
@@ -334,7 +352,7 @@ const ExpenseTracker = () => {
       constraint: "",
       urlPack: [],
     };
-    
+
     setExpenses((prev) => [...prev, linkedExpense]);
     setGoals((prev) => [...prev, newGoal]);
     toast({ title: "Goal added", description: title });
@@ -346,12 +364,16 @@ const ExpenseTracker = () => {
 
   const updateGoal = (id: string, updates: Partial<Omit<Goal, "id">>) => {
     const goal = goals.find(g => g.id === id);
-    
+    if (!goal) return;
+
     setGoals((prev) =>
       prev.map((g) => (g.id === id ? { ...g, ...updates } : g))
     );
-    
-    if (goal?.linkedExpenseId) {
+
+    const expensesToAdd: Expense[] = [];
+    const expensesToDelete: string[] = [];
+
+    if (goal.linkedExpenseId) {
       const expenseUpdates: Partial<Expense> = {};
       if (updates.deadline) {
         expenseUpdates.date = updates.deadline;
@@ -359,19 +381,213 @@ const ExpenseTracker = () => {
       if (updates.title) {
         expenseUpdates.description = `Goal: ${updates.title}`;
       }
+      if (updates.category) {
+        expenseUpdates.category = updates.category;
+      }
       if (Object.keys(expenseUpdates).length > 0) {
         setExpenses((prev) =>
           prev.map((e) => (e.id === goal.linkedExpenseId ? { ...e, ...expenseUpdates } : e))
         );
       }
     }
+
+    if (updates.category) {
+      setExpenses((prev) =>
+        prev.map((e) =>
+          e.linkedGoalId === id ? { ...e, category: updates.category! } : e
+        )
+      );
+    }
+
+    if (updates.preTasks) {
+      const oldTasks = goal.preTasks;
+      const newTasks = updates.preTasks;
+
+      oldTasks.forEach((oldTask) => {
+        const stillExists = newTasks.find((t) => t.id === oldTask.id);
+        if (!stillExists && oldTask.linkedExpenseId) {
+          expensesToDelete.push(oldTask.linkedExpenseId);
+        }
+      });
+
+      newTasks.forEach((newTask) => {
+        const oldTask = oldTasks.find((t) => t.id === newTask.id);
+        if (!oldTask) {
+          const expenseId = crypto.randomUUID();
+          expensesToAdd.push({
+            id: expenseId,
+            date: newTask.deadline || new Date().toISOString().split("T")[0],
+            description: `[Pre-task] ${newTask.action}`,
+            amount: newTask.cost,
+            needsCheck: false,
+            category: updates.category || goal.category,
+            linkedGoalId: id,
+            linkedTaskId: newTask.id,
+            linkedTaskType: "pre",
+          });
+          newTask.linkedExpenseId = expenseId;
+        } else if (
+          newTask.action !== oldTask.action ||
+          newTask.cost !== oldTask.cost ||
+          newTask.deadline !== oldTask.deadline
+        ) {
+          if (oldTask.linkedExpenseId) {
+            setExpenses((prev) =>
+              prev.map((e) =>
+                e.id === oldTask.linkedExpenseId
+                  ? {
+                      ...e,
+                      description: `[Pre-task] ${newTask.action}`,
+                      amount: newTask.cost,
+                      date: newTask.deadline || e.date,
+                    }
+                  : e
+              )
+            );
+          }
+        }
+      });
+    }
+
+    if (updates.postTasks) {
+      const oldTasks = goal.postTasks;
+      const newTasks = updates.postTasks;
+
+      oldTasks.forEach((oldTask) => {
+        const stillExists = newTasks.find((t) => t.id === oldTask.id);
+        if (!stillExists && oldTask.linkedExpenseId) {
+          expensesToDelete.push(oldTask.linkedExpenseId);
+        }
+      });
+
+      newTasks.forEach((newTask) => {
+        const oldTask = oldTasks.find((t) => t.id === newTask.id);
+        if (!oldTask) {
+          const expenseId = crypto.randomUUID();
+          expensesToAdd.push({
+            id: expenseId,
+            date: newTask.deadline || new Date().toISOString().split("T")[0],
+            description: `[Post-task] ${newTask.action}`,
+            amount: newTask.cost,
+            needsCheck: false,
+            category: updates.category || goal.category,
+            linkedGoalId: id,
+            linkedTaskId: newTask.id,
+            linkedTaskType: "post",
+          });
+          newTask.linkedExpenseId = expenseId;
+        } else if (
+          newTask.action !== oldTask.action ||
+          newTask.cost !== oldTask.cost ||
+          newTask.deadline !== oldTask.deadline
+        ) {
+          if (oldTask.linkedExpenseId) {
+            setExpenses((prev) =>
+              prev.map((e) =>
+                e.id === oldTask.linkedExpenseId
+                  ? {
+                      ...e,
+                      description: `[Post-task] ${newTask.action}`,
+                      amount: newTask.cost,
+                      date: newTask.deadline || e.date,
+                    }
+                  : e
+              )
+            );
+          }
+        }
+      });
+    }
+
+    if (updates.postDreams) {
+      const oldDreams = goal.postDreams;
+      const newDreams = updates.postDreams;
+
+      oldDreams.forEach((oldDream) => {
+        const stillExists = newDreams.find((d) => d.id === oldDream.id);
+        if (!stillExists && oldDream.linkedExpenseId) {
+          expensesToDelete.push(oldDream.linkedExpenseId);
+        }
+      });
+
+      newDreams.forEach((newDream) => {
+        const oldDream = oldDreams.find((d) => d.id === newDream.id);
+        if (!oldDream) {
+          const expenseId = crypto.randomUUID();
+          expensesToAdd.push({
+            id: expenseId,
+            date: newDream.deadline || new Date().toISOString().split("T")[0],
+            description: `[Dream] ${newDream.title}`,
+            amount: newDream.cost,
+            needsCheck: false,
+            category: updates.category || goal.category,
+            linkedGoalId: id,
+            linkedTaskId: newDream.id,
+            linkedTaskType: "dream",
+          });
+          newDream.linkedExpenseId = expenseId;
+        } else if (
+          newDream.title !== oldDream.title ||
+          newDream.cost !== oldDream.cost ||
+          newDream.deadline !== oldDream.deadline
+        ) {
+          if (oldDream.linkedExpenseId) {
+            setExpenses((prev) =>
+              prev.map((e) =>
+                e.id === oldDream.linkedExpenseId
+                  ? {
+                      ...e,
+                      description: `[Dream] ${newDream.title}`,
+                      amount: newDream.cost,
+                      date: newDream.deadline || e.date,
+                    }
+                  : e
+              )
+            );
+          }
+        }
+      });
+    }
+
+    if (expensesToAdd.length > 0) {
+      setExpenses((prev) => [...prev, ...expensesToAdd]);
+    }
+
+    if (expensesToDelete.length > 0) {
+      setExpenses((prev) => prev.filter((e) => !expensesToDelete.includes(e.id)));
+    }
   };
   
   const deleteGoal = (id: string) => {
     const goal = goals.find(g => g.id === id);
+
+    const expenseIdsToDelete: string[] = [];
     if (goal?.linkedExpenseId) {
-      setExpenses((prev) => prev.filter((e) => e.id !== goal.linkedExpenseId));
+      expenseIdsToDelete.push(goal.linkedExpenseId);
     }
+
+    goal?.preTasks.forEach((task) => {
+      if (task.linkedExpenseId) {
+        expenseIdsToDelete.push(task.linkedExpenseId);
+      }
+    });
+
+    goal?.postTasks.forEach((task) => {
+      if (task.linkedExpenseId) {
+        expenseIdsToDelete.push(task.linkedExpenseId);
+      }
+    });
+
+    goal?.postDreams.forEach((dream) => {
+      if (dream.linkedExpenseId) {
+        expenseIdsToDelete.push(dream.linkedExpenseId);
+      }
+    });
+
+    if (expenseIdsToDelete.length > 0) {
+      setExpenses((prev) => prev.filter((e) => !expenseIdsToDelete.includes(e.id)));
+    }
+
     setGoals((prev) => prev.filter((g) => g.id !== id));
     toast({ title: "Goal deleted" });
   };

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { format, parseISO } from "date-fns";
-import { Trash2, Pencil, Check, X, UtensilsCrossed, Sparkles, Users, Package, Filter } from "lucide-react";
+import { Trash2, Pencil, Check, X, UtensilsCrossed, Sparkles, Users, Package, Filter, Link } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -288,7 +288,12 @@ const ExpenseList = ({
                             <span className="text-foreground font-medium truncate">
                               {expense.description}
                             </span>
-                            
+                            {expense.linkedGoalId && (
+                              <Link
+                                className="h-3 w-3 text-blue-500 shrink-0"
+                                title={`Linked to goal ${expense.linkedTaskType ? `(${expense.linkedTaskType})` : ''}`}
+                              />
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">

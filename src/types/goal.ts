@@ -1,3 +1,5 @@
+import { ExpenseCategory } from './expenseCategory';
+
 export interface TaskItem {
   id: string;
   action: string;
@@ -6,13 +8,17 @@ export interface TaskItem {
   deadline: string;
   isMagicWand: boolean;
   completed: boolean;
+  linkedExpenseId?: string;
 }
 
 export interface PostDream {
   id: string;
   title: string;
+  cost: number;
+  timeCost: string;
   deadline: string;
   isMagicWand: boolean;
+  linkedExpenseId?: string;
 }
 
 export interface Ideation {
@@ -29,6 +35,7 @@ export interface Goal {
   isMagicWand: boolean;
   createdAt: string;
   linkedExpenseId?: string;
+  category: ExpenseCategory;
   preTasks: TaskItem[];
   postTasks: TaskItem[];
   postDreams: PostDream[];

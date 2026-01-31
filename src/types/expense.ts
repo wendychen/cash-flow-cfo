@@ -8,4 +8,7 @@ export interface Expense {
   needsCheck: boolean;
   reviewCount?: number;
   category: ExpenseCategory;
+  linkedGoalId?: string;
+  linkedTaskId?: string;
+  linkedTaskType?: 'pre' | 'post' | 'dream';
 }

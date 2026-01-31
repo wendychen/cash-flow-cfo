@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCurrency } from "@/hooks/use-currency";
+import { EXPENSE_CATEGORIES, ExpenseCategory } from "@/types/expenseCategory";
 import {
   Plus,
   Target,
@@ -26,6 +28,9 @@ import {
   Sparkles,
   ArrowRight,
   ArrowLeft,
+  UtensilsCrossed,
+  Users,
+  Package,
 } from "lucide-react";
 import { differenceInDays, parseISO, isValid } from "date-fns";
 import {
@@ -45,6 +50,16 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+
+const getCategoryIcon = (iconName: string) => {
+  const iconMap: Record<string, any> = {
+    UtensilsCrossed,
+    Sparkles,
+    Users,
+    Package,
+  };
+  return iconMap[iconName] || Package;
+};
 
 interface GoalListProps {
   goals: Goal[];
@@ -113,6 +128,9 @@ const SortableTaskItem = ({ task, tasks, onUpdate, onDelete, format }: SortableT
           onCheckedChange={(checked) => onUpdate(task.id, { completed: checked === true })}
           className="data-[state=checked]:bg-blue-600"
         />
+        {task.linkedExpenseId && (
+          <Link className="h-3 w-3 text-blue-500" title="Synced with expense" />
+        )}
         <Input
           value={task.action}
           onChange={(e) => onUpdate(task.id, { action: e.target.value })}
@@ -354,6 +372,9 @@ const SortableDreamItem = ({ dream, dreams, onUpdate, onDelete }: SortableDreamI
           <GripVertical className="h-3 w-3" />
         </button>
         <Sparkles className="h-4 w-4 text-purple-400" />
+        {dream.linkedExpenseId && (
+          <Link className="h-3 w-3 text-blue-500" title="Synced with expense" />
+        )}
         <Input
           value={dream.title}
           onChange={(e) => onUpdate(dream.id, { title: e.target.value })}
@@ -384,15 +405,36 @@ const SortableDreamItem = ({ dream, dreams, onUpdate, onDelete }: SortableDreamI
           <Trash2 className="h-3 w-3" />
         </Button>
       </div>
-      <div className="flex items-center gap-2 ml-6">
-        <Calendar className="h-3 w-3 text-muted-foreground" />
-        <Input
-          type="date"
-          value={dream.deadline || ""}
-          onChange={(e) => onUpdate(dream.id, { deadline: e.target.value })}
-          className="w-32 h-6 text-xs"
-          placeholder="Deadline"
-        />
+      <div className="flex items-center gap-2 ml-6 flex-wrap">
+        <div className="flex items-center gap-1">
+          <DollarSign className="h-3 w-3 text-muted-foreground" />
+          <Input
+            type="number"
+            value={dream.cost || ""}
+            onChange={(e) => onUpdate(dream.id, { cost: parseFloat(e.target.value) || 0 })}
+            className="w-20 h-6 text-xs"
+            placeholder="Cost"
+          />
+        </div>
+        <div className="flex items-center gap-1">
+          <Clock className="h-3 w-3 text-muted-foreground" />
+          <Input
+            value={dream.timeCost || ""}
+            onChange={(e) => onUpdate(dream.id, { timeCost: e.target.value })}
+            className="w-20 h-6 text-xs"
+            placeholder="Time"
+          />
+        </div>
+        <div className="flex items-center gap-1">
+          <Calendar className="h-3 w-3 text-muted-foreground" />
+          <Input
+            type="date"
+            value={dream.deadline || ""}
+            onChange={(e) => onUpdate(dream.id, { deadline: e.target.value })}
+            className="w-32 h-6 text-xs"
+            placeholder="Deadline"
+          />
+        </div>
       </div>
     </div>
   );
@@ -411,7 +453,7 @@ const PostDreamsSection = ({
   onDelete: (dreamId: string) => void;
   onReorder: (dreams: PostDream[]) => void;
 }) => {
-  const [newDream, setNewDream] = useState({ title: "", deadline: "" });
+  const [newDream, setNewDream] = useState({ title: "", cost: "", timeCost: "", deadline: "" });
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -429,11 +471,13 @@ const PostDreamsSection = ({
     const dream: PostDream = {
       id: crypto.randomUUID(),
       title: newDream.title.trim(),
+      cost: parseFloat(newDream.cost) || 0,
+      timeCost: newDream.timeCost,
       deadline: newDream.deadline,
       isMagicWand: false,
     };
     onAdd(dream);
-    setNewDream({ title: "", deadline: "" });
+    setNewDream({ title: "", cost: "", timeCost: "", deadline: "" });
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -489,12 +533,25 @@ const PostDreamsSection = ({
       </DndContext>
       
       {dreams.length < 10 && (
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Input
             placeholder="Dream goal..."
             value={newDream.title}
             onChange={(e) => setNewDream(prev => ({ ...prev, title: e.target.value }))}
-            className="flex-1 h-8 text-sm"
+            className="flex-1 min-w-[150px] h-8 text-sm"
+          />
+          <Input
+            placeholder="$ Cost"
+            type="number"
+            value={newDream.cost}
+            onChange={(e) => setNewDream(prev => ({ ...prev, cost: e.target.value }))}
+            className="w-20 h-8 text-sm"
+          />
+          <Input
+            placeholder="Time"
+            value={newDream.timeCost}
+            onChange={(e) => setNewDream(prev => ({ ...prev, timeCost: e.target.value }))}
+            className="w-20 h-8 text-sm"
           />
           <Input
             type="date"
@@ -790,7 +847,7 @@ const SortableGoalItem = ({
         </Button>
       </div>
       
-      <div className="flex items-center gap-2 ml-14">
+      <div className="flex items-center gap-2 ml-14 flex-wrap">
         <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
         <Input
           type="date"
@@ -811,6 +868,38 @@ const SortableGoalItem = ({
             )}
           </span>
         )}
+        <Select
+          value={goal.category}
+          onValueChange={(value) => onUpdateGoal(goal.id, { category: value as ExpenseCategory })}
+        >
+          <SelectTrigger className="h-7 w-32 text-xs border-dashed">
+            <SelectValue>
+              {(() => {
+                const categoryData = EXPENSE_CATEGORIES[goal.category];
+                const IconComponent = getCategoryIcon(categoryData.icon);
+                return (
+                  <div className="flex items-center gap-1">
+                    <IconComponent className={`h-3 w-3 ${categoryData.color}`} />
+                    <span>{categoryData.label}</span>
+                  </div>
+                );
+              })()}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(EXPENSE_CATEGORIES).map(([key, data]) => {
+              const IconComponent = getCategoryIcon(data.icon);
+              return (
+                <SelectItem key={key} value={key}>
+                  <div className="flex items-center gap-2">
+                    <IconComponent className={`h-3.5 w-3.5 ${data.color}`} />
+                    <span>{data.label}</span>
+                  </div>
+                </SelectItem>
+              );
+            })}
+          </SelectContent>
+        </Select>
         {totalTaskCount > 0 && (
           <Badge variant="outline" className="text-xs gap-1">
             <ListTodo className="h-3 w-3" />
