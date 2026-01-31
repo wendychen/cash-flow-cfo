@@ -51,7 +51,11 @@ const ExpenseList = ({
   const [currentPage, setCurrentPage] = useState(1);
 
   const getCategoryIcon = (cat: ExpenseCategory) => {
-    const iconName = EXPENSE_CATEGORIES[cat].icon;
+    const category = EXPENSE_CATEGORIES[cat];
+    if (!category) {
+      return <Package className="h-3 w-3" />;
+    }
+    const iconName = category.icon;
     
     switch (iconName) {
       case "UtensilsCrossed": return <UtensilsCrossed className="h-3 w-3" />;
