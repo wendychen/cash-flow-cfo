@@ -70,6 +70,113 @@ interface SortableGoalItemProps {
   onToggleExpand: (id: string) => void;
 }
 
+interface SortableTaskItemProps {
+  task: TaskItem;
+  tasks: TaskItem[];
+  onUpdate: (taskId: string, updates: Partial<TaskItem>) => void;
+  onDelete: (taskId: string) => void;
+  format: (amount: number) => string;
+}
+
+const SortableTaskItem = ({ task, tasks, onUpdate, onDelete, format }: SortableTaskItemProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: task.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex flex-col gap-2 p-2 rounded border ${task.isMagicWand ? "bg-amber-500/5 border-amber-400/30" : "bg-muted/30"}`}
+    >
+      <div className="flex items-center gap-2">
+        <button
+          className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="h-3 w-3" />
+        </button>
+        <Checkbox
+          checked={task.completed}
+          onCheckedChange={(checked) => onUpdate(task.id, { completed: checked === true })}
+          className="data-[state=checked]:bg-blue-600"
+        />
+        <Input
+          value={task.action}
+          onChange={(e) => onUpdate(task.id, { action: e.target.value })}
+          className={`flex-1 h-7 text-sm border-0 bg-transparent px-1 focus-visible:ring-1 ${task.completed ? "line-through text-muted-foreground" : ""}`}
+          placeholder="Action..."
+        />
+        <Button
+          variant="ghost"
+          size="icon"
+          className={`h-6 w-6 ${task.isMagicWand ? "text-amber-500" : "text-muted-foreground"}`}
+          onClick={() => {
+            if (task.isMagicWand) {
+              onUpdate(task.id, { isMagicWand: false });
+            } else {
+              tasks.forEach(t => {
+                if (t.id === task.id) {
+                  onUpdate(t.id, { isMagicWand: true });
+                } else if (t.isMagicWand) {
+                  onUpdate(t.id, { isMagicWand: false });
+                }
+              });
+            }
+          }}
+        >
+          <Wand2 className={`h-3 w-3 ${task.isMagicWand ? "fill-amber-500" : ""}`} />
+        </Button>
+        <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-red-500" onClick={() => onDelete(task.id)}>
+          <Trash2 className="h-3 w-3" />
+        </Button>
+      </div>
+      <div className="flex items-center gap-2 ml-6">
+        <div className="flex items-center gap-1">
+          <DollarSign className="h-3 w-3 text-muted-foreground" />
+          <Input
+            type="number"
+            value={task.cost || ""}
+            onChange={(e) => onUpdate(task.id, { cost: parseFloat(e.target.value) || 0 })}
+            className="w-20 h-6 text-xs"
+            placeholder="Cost"
+          />
+        </div>
+        <div className="flex items-center gap-1">
+          <Clock className="h-3 w-3 text-muted-foreground" />
+          <Input
+            value={task.timeCost || ""}
+            onChange={(e) => onUpdate(task.id, { timeCost: e.target.value })}
+            className="w-20 h-6 text-xs"
+            placeholder="Time"
+          />
+        </div>
+        <div className="flex items-center gap-1">
+          <Calendar className="h-3 w-3 text-muted-foreground" />
+          <Input
+            type="date"
+            value={task.deadline || ""}
+            onChange={(e) => onUpdate(task.id, { deadline: e.target.value })}
+            className="w-32 h-6 text-xs"
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const TaskSection = ({
   title,
   icon: Icon,
@@ -79,6 +186,7 @@ const TaskSection = ({
   onAdd,
   onUpdate,
   onDelete,
+  onReorder,
   format,
 }: {
   title: string;
@@ -89,9 +197,21 @@ const TaskSection = ({
   onAdd: (task: TaskItem) => void;
   onUpdate: (taskId: string, updates: Partial<TaskItem>) => void;
   onDelete: (taskId: string) => void;
+  onReorder: (tasks: TaskItem[]) => void;
   format: (amount: number) => string;
 }) => {
   const [newTask, setNewTask] = useState({ action: "", cost: "", timeCost: "", deadline: "" });
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const addTask = () => {
     if (!newTask.action.trim() || tasks.length >= maxTasks) return;
@@ -108,6 +228,16 @@ const TaskSection = ({
     setNewTask({ action: "", cost: "", timeCost: "", deadline: "" });
   };
 
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = tasks.findIndex((t) => t.id === active.id);
+      const newIndex = tasks.findIndex((t) => t.id === over.id);
+      onReorder(arrayMove(tasks, oldIndex, newIndex));
+    }
+  };
+
   const magicWandTask = tasks.find(t => t.isMagicWand);
 
   return (
@@ -116,7 +246,7 @@ const TaskSection = ({
         <Icon className={`h-4 w-4 ${iconColor}`} />
         <span>{title} ({tasks.length}/{maxTasks})</span>
       </div>
-      
+
       {magicWandTask && (
         <div className="p-2 bg-amber-500/10 rounded-md border border-amber-400/30">
           <div className="flex items-center gap-2 text-amber-600">
@@ -125,77 +255,30 @@ const TaskSection = ({
           </div>
         </div>
       )}
-      
-      {tasks.map(task => (
-        <div key={task.id} className={`flex flex-col gap-2 p-2 rounded border ${task.isMagicWand ? "bg-amber-500/5 border-amber-400/30" : "bg-muted/30"}`}>
-          <div className="flex items-center gap-2">
-            <Checkbox
-              checked={task.completed}
-              onCheckedChange={(checked) => onUpdate(task.id, { completed: checked === true })}
-              className="data-[state=checked]:bg-blue-600"
-            />
-            <Input
-              value={task.action}
-              onChange={(e) => onUpdate(task.id, { action: e.target.value })}
-              className={`flex-1 h-7 text-sm border-0 bg-transparent px-1 focus-visible:ring-1 ${task.completed ? "line-through text-muted-foreground" : ""}`}
-              placeholder="Action..."
-            />
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`h-6 w-6 ${task.isMagicWand ? "text-amber-500" : "text-muted-foreground"}`}
-              onClick={() => {
-                if (task.isMagicWand) {
-                  onUpdate(task.id, { isMagicWand: false });
-                } else {
-                  tasks.forEach(t => {
-                    if (t.id === task.id) {
-                      onUpdate(t.id, { isMagicWand: true });
-                    } else if (t.isMagicWand) {
-                      onUpdate(t.id, { isMagicWand: false });
-                    }
-                  });
-                }
-              }}
-            >
-              <Wand2 className={`h-3 w-3 ${task.isMagicWand ? "fill-amber-500" : ""}`} />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-red-500" onClick={() => onDelete(task.id)}>
-              <Trash2 className="h-3 w-3" />
-            </Button>
+
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={tasks.map((t) => t.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          <div className="space-y-2">
+            {tasks.map(task => (
+              <SortableTaskItem
+                key={task.id}
+                task={task}
+                tasks={tasks}
+                onUpdate={onUpdate}
+                onDelete={onDelete}
+                format={format}
+              />
+            ))}
           </div>
-          <div className="flex items-center gap-2 ml-6">
-            <div className="flex items-center gap-1">
-              <DollarSign className="h-3 w-3 text-muted-foreground" />
-              <Input
-                type="number"
-                value={task.cost || ""}
-                onChange={(e) => onUpdate(task.id, { cost: parseFloat(e.target.value) || 0 })}
-                className="w-20 h-6 text-xs"
-                placeholder="Cost"
-              />
-            </div>
-            <div className="flex items-center gap-1">
-              <Clock className="h-3 w-3 text-muted-foreground" />
-              <Input
-                value={task.timeCost || ""}
-                onChange={(e) => onUpdate(task.id, { timeCost: e.target.value })}
-                className="w-20 h-6 text-xs"
-                placeholder="Time"
-              />
-            </div>
-            <div className="flex items-center gap-1">
-              <Calendar className="h-3 w-3 text-muted-foreground" />
-              <Input
-                type="date"
-                value={task.deadline || ""}
-                onChange={(e) => onUpdate(task.id, { deadline: e.target.value })}
-                className="w-32 h-6 text-xs"
-              />
-            </div>
-          </div>
-        </div>
-      ))}
+        </SortableContext>
+      </DndContext>
       
       {tasks.length < maxTasks && (
         <div className="flex gap-2 flex-wrap">
@@ -233,18 +316,113 @@ const TaskSection = ({
   );
 };
 
+interface SortableDreamItemProps {
+  dream: PostDream;
+  dreams: PostDream[];
+  onUpdate: (dreamId: string, updates: Partial<PostDream>) => void;
+  onDelete: (dreamId: string) => void;
+}
+
+const SortableDreamItem = ({ dream, dreams, onUpdate, onDelete }: SortableDreamItemProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: dream.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex flex-col gap-2 p-2 rounded border ${dream.isMagicWand ? "bg-purple-500/5 border-purple-400/30" : "bg-muted/30"}`}
+    >
+      <div className="flex items-center gap-2">
+        <button
+          className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="h-3 w-3" />
+        </button>
+        <Sparkles className="h-4 w-4 text-purple-400" />
+        <Input
+          value={dream.title}
+          onChange={(e) => onUpdate(dream.id, { title: e.target.value })}
+          className="flex-1 h-7 text-sm border-0 bg-transparent px-1 focus-visible:ring-1"
+          placeholder="Dream goal..."
+        />
+        <Button
+          variant="ghost"
+          size="icon"
+          className={`h-6 w-6 ${dream.isMagicWand ? "text-purple-500" : "text-muted-foreground"}`}
+          onClick={() => {
+            if (dream.isMagicWand) {
+              onUpdate(dream.id, { isMagicWand: false });
+            } else {
+              dreams.forEach(d => {
+                if (d.id === dream.id) {
+                  onUpdate(d.id, { isMagicWand: true });
+                } else if (d.isMagicWand) {
+                  onUpdate(d.id, { isMagicWand: false });
+                }
+              });
+            }
+          }}
+        >
+          <Wand2 className={`h-3 w-3 ${dream.isMagicWand ? "fill-purple-500" : ""}`} />
+        </Button>
+        <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-red-500" onClick={() => onDelete(dream.id)}>
+          <Trash2 className="h-3 w-3" />
+        </Button>
+      </div>
+      <div className="flex items-center gap-2 ml-6">
+        <Calendar className="h-3 w-3 text-muted-foreground" />
+        <Input
+          type="date"
+          value={dream.deadline || ""}
+          onChange={(e) => onUpdate(dream.id, { deadline: e.target.value })}
+          className="w-32 h-6 text-xs"
+          placeholder="Deadline"
+        />
+      </div>
+    </div>
+  );
+};
+
 const PostDreamsSection = ({
   dreams,
   onAdd,
   onUpdate,
   onDelete,
+  onReorder,
 }: {
   dreams: PostDream[];
   onAdd: (dream: PostDream) => void;
   onUpdate: (dreamId: string, updates: Partial<PostDream>) => void;
   onDelete: (dreamId: string) => void;
+  onReorder: (dreams: PostDream[]) => void;
 }) => {
   const [newDream, setNewDream] = useState({ title: "", deadline: "" });
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const addDream = () => {
     if (!newDream.title.trim() || dreams.length >= 10) return;
@@ -258,6 +436,16 @@ const PostDreamsSection = ({
     setNewDream({ title: "", deadline: "" });
   };
 
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = dreams.findIndex((d) => d.id === active.id);
+      const newIndex = dreams.findIndex((d) => d.id === over.id);
+      onReorder(arrayMove(dreams, oldIndex, newIndex));
+    }
+  };
+
   const magicWandDream = dreams.find(d => d.isMagicWand);
 
   return (
@@ -267,7 +455,7 @@ const PostDreamsSection = ({
         <span>Post-Dreams ({dreams.length}/10)</span>
       </div>
       <p className="text-xs text-muted-foreground">Goals to pursue after achieving this one</p>
-      
+
       {magicWandDream && (
         <div className="p-2 bg-purple-500/10 rounded-md border border-purple-400/30">
           <div className="flex items-center gap-2 text-purple-600">
@@ -276,53 +464,29 @@ const PostDreamsSection = ({
           </div>
         </div>
       )}
-      
-      {dreams.map(dream => (
-        <div key={dream.id} className={`flex flex-col gap-2 p-2 rounded border ${dream.isMagicWand ? "bg-purple-500/5 border-purple-400/30" : "bg-muted/30"}`}>
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-purple-400" />
-            <Input
-              value={dream.title}
-              onChange={(e) => onUpdate(dream.id, { title: e.target.value })}
-              className="flex-1 h-7 text-sm border-0 bg-transparent px-1 focus-visible:ring-1"
-              placeholder="Dream goal..."
-            />
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`h-6 w-6 ${dream.isMagicWand ? "text-purple-500" : "text-muted-foreground"}`}
-              onClick={() => {
-                if (dream.isMagicWand) {
-                  onUpdate(dream.id, { isMagicWand: false });
-                } else {
-                  dreams.forEach(d => {
-                    if (d.id === dream.id) {
-                      onUpdate(d.id, { isMagicWand: true });
-                    } else if (d.isMagicWand) {
-                      onUpdate(d.id, { isMagicWand: false });
-                    }
-                  });
-                }
-              }}
-            >
-              <Wand2 className={`h-3 w-3 ${dream.isMagicWand ? "fill-purple-500" : ""}`} />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-red-500" onClick={() => onDelete(dream.id)}>
-              <Trash2 className="h-3 w-3" />
-            </Button>
+
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={dreams.map((d) => d.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          <div className="space-y-2">
+            {dreams.map(dream => (
+              <SortableDreamItem
+                key={dream.id}
+                dream={dream}
+                dreams={dreams}
+                onUpdate={onUpdate}
+                onDelete={onDelete}
+              />
+            ))}
           </div>
-          <div className="flex items-center gap-2 ml-6">
-            <Calendar className="h-3 w-3 text-muted-foreground" />
-            <Input
-              type="date"
-              value={dream.deadline || ""}
-              onChange={(e) => onUpdate(dream.id, { deadline: e.target.value })}
-              className="w-32 h-6 text-xs"
-              placeholder="Deadline"
-            />
-          </div>
-        </div>
-      ))}
+        </SortableContext>
+      </DndContext>
       
       {dreams.length < 10 && (
         <div className="flex gap-2">
@@ -347,6 +511,126 @@ const PostDreamsSection = ({
   );
 };
 
+interface SortableIdeationItemProps {
+  idea: Ideation;
+  ideations: Ideation[];
+  onUpdateGoal: (goalId: string, updates: Partial<Omit<Goal, "id">>) => void;
+  onDelete: (ideaId: string) => void;
+  goalId: string;
+}
+
+const SortableIdeationItem = ({ idea, ideations, onUpdateGoal, onDelete, goalId }: SortableIdeationItemProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: idea.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-2 p-2 rounded border bg-muted/30"
+    >
+      <button
+        className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="h-3 w-3" />
+      </button>
+      <Lightbulb className="h-3 w-3 text-yellow-500" />
+      <Input
+        value={idea.content}
+        onChange={(e) => {
+          const updated = ideations.map(i =>
+            i.id === idea.id ? { ...i, content: e.target.value } : i
+          );
+          onUpdateGoal(goalId, { ideations: updated });
+        }}
+        className="flex-1 h-6 text-sm border-0 bg-transparent px-1 focus-visible:ring-1"
+        placeholder="Idea..."
+      />
+      <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-red-500" onClick={() => onDelete(idea.id)}>
+        <Trash2 className="h-3 w-3" />
+      </Button>
+    </div>
+  );
+};
+
+interface SortableUrlItemProps {
+  url: string;
+  index: number;
+  urlPack: string[];
+  onUpdateGoal: (goalId: string, updates: Partial<Omit<Goal, "id">>) => void;
+  onDelete: (index: number) => void;
+  goalId: string;
+}
+
+const SortableUrlItem = ({ url, index, urlPack, onUpdateGoal, onDelete, goalId }: SortableUrlItemProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: `url-${index}` });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-2 p-1.5 rounded bg-muted/30 group"
+    >
+      <button
+        className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="h-3 w-3" />
+      </button>
+      <Input
+        value={url}
+        onChange={(e) => {
+          const updated = [...urlPack];
+          updated[index] = e.target.value;
+          onUpdateGoal(goalId, { urlPack: updated });
+        }}
+        className="flex-1 h-6 text-xs"
+        placeholder="URL..."
+      />
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-6 w-6"
+        onClick={() => window.open(url, "_blank")}
+        title="Open URL"
+      >
+        <ExternalLink className="h-3 w-3 text-blue-500" />
+      </Button>
+      <button onClick={() => onDelete(index)} className="opacity-0 group-hover:opacity-100 transition-opacity">
+        <Trash2 className="h-3 w-3 text-muted-foreground hover:text-red-500" />
+      </button>
+    </div>
+  );
+};
+
 const SortableGoalItem = ({
   goal,
   isEditing,
@@ -364,6 +648,17 @@ const SortableGoalItem = ({
   const { format } = useCurrency();
   const [newIdeation, setNewIdeation] = useState("");
   const [newUrl, setNewUrl] = useState("");
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const {
     attributes,
@@ -553,6 +848,7 @@ const SortableGoalItem = ({
               onUpdateGoal(goal.id, { preTasks: updated });
             }}
             onDelete={(taskId) => onUpdateGoal(goal.id, { preTasks: preTasks.filter(t => t.id !== taskId) })}
+            onReorder={(reordered) => onUpdateGoal(goal.id, { preTasks: reordered })}
             format={format}
           />
 
@@ -571,6 +867,7 @@ const SortableGoalItem = ({
               onUpdateGoal(goal.id, { postTasks: updated });
             }}
             onDelete={(taskId) => onUpdateGoal(goal.id, { postTasks: postTasks.filter(t => t.id !== taskId) })}
+            onReorder={(reordered) => onUpdateGoal(goal.id, { postTasks: reordered })}
             format={format}
           />
 
@@ -585,6 +882,7 @@ const SortableGoalItem = ({
               onUpdateGoal(goal.id, { postDreams: updated });
             }}
             onDelete={(dreamId) => onUpdateGoal(goal.id, { postDreams: postDreams.filter(d => d.id !== dreamId) })}
+            onReorder={(reordered) => onUpdateGoal(goal.id, { postDreams: reordered })}
           />
 
           <div className="space-y-2">
@@ -592,27 +890,36 @@ const SortableGoalItem = ({
               <Lightbulb className="h-4 w-4 text-yellow-500" />
               <span>Ideation ({ideations.length}/20)</span>
             </div>
-            <div className="space-y-1">
-              {ideations.map(idea => (
-                <div key={idea.id} className="flex items-center gap-2 p-2 rounded border bg-muted/30">
-                  <Lightbulb className="h-3 w-3 text-yellow-500" />
-                  <Input
-                    value={idea.content}
-                    onChange={(e) => {
-                      const updated = ideations.map(i =>
-                        i.id === idea.id ? { ...i, content: e.target.value } : i
-                      );
-                      onUpdateGoal(goal.id, { ideations: updated });
-                    }}
-                    className="flex-1 h-6 text-sm border-0 bg-transparent px-1 focus-visible:ring-1"
-                    placeholder="Idea..."
-                  />
-                  <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-red-500" onClick={() => deleteIdeation(idea.id)}>
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={(event: DragEndEvent) => {
+                const { active, over } = event;
+                if (over && active.id !== over.id) {
+                  const oldIndex = ideations.findIndex((i) => i.id === active.id);
+                  const newIndex = ideations.findIndex((i) => i.id === over.id);
+                  onUpdateGoal(goal.id, { ideations: arrayMove(ideations, oldIndex, newIndex) });
+                }
+              }}
+            >
+              <SortableContext
+                items={ideations.map((i) => i.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-1">
+                  {ideations.map(idea => (
+                    <SortableIdeationItem
+                      key={idea.id}
+                      idea={idea}
+                      ideations={ideations}
+                      onUpdateGoal={onUpdateGoal}
+                      onDelete={deleteIdeation}
+                      goalId={goal.id}
+                    />
+                  ))}
                 </div>
-              ))}
-            </div>
+              </SortableContext>
+            </DndContext>
             {ideations.length < 20 && (
               <div className="flex gap-2">
                 <Input
@@ -655,34 +962,37 @@ const SortableGoalItem = ({
                 </Button>
               )}
             </div>
-            <div className="space-y-1">
-              {urlPack.map((url, index) => (
-                <div key={index} className="flex items-center gap-2 p-1.5 rounded bg-muted/30 group">
-                  <Input
-                    value={url}
-                    onChange={(e) => {
-                      const updated = [...urlPack];
-                      updated[index] = e.target.value;
-                      onUpdateGoal(goal.id, { urlPack: updated });
-                    }}
-                    className="flex-1 h-6 text-xs"
-                    placeholder="URL..."
-                  />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6"
-                    onClick={() => window.open(url, "_blank")}
-                    title="Open URL"
-                  >
-                    <ExternalLink className="h-3 w-3 text-blue-500" />
-                  </Button>
-                  <button onClick={() => deleteUrl(index)} className="opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Trash2 className="h-3 w-3 text-muted-foreground hover:text-red-500" />
-                  </button>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={(event: DragEndEvent) => {
+                const { active, over } = event;
+                if (over && active.id !== over.id) {
+                  const oldIndex = parseInt(active.id.toString().replace('url-', ''));
+                  const newIndex = parseInt(over.id.toString().replace('url-', ''));
+                  onUpdateGoal(goal.id, { urlPack: arrayMove(urlPack, oldIndex, newIndex) });
+                }
+              }}
+            >
+              <SortableContext
+                items={urlPack.map((_, index) => `url-${index}`)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-1">
+                  {urlPack.map((url, index) => (
+                    <SortableUrlItem
+                      key={`url-${index}`}
+                      url={url}
+                      index={index}
+                      urlPack={urlPack}
+                      onUpdateGoal={onUpdateGoal}
+                      onDelete={deleteUrl}
+                      goalId={goal.id}
+                    />
+                  ))}
                 </div>
-              ))}
-            </div>
+              </SortableContext>
+            </DndContext>
             <div className="flex gap-2">
               <Input
                 placeholder="Add URL..."
