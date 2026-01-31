@@ -264,7 +264,7 @@ const ExpenseList = ({
                         />
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                           <span className="text-foreground font-medium truncate">
-                            {expense.description}
+                            111{expense.description}
                           </span>
                           <Badge variant="outline" className={`text-${EXPENSE_CATEGORIES[expense.category || "miscellaneous"].color} border-current shrink-0`}>
                             <div className="flex items-center gap-1">
