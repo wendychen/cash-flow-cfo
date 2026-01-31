@@ -351,6 +351,7 @@ interface SankeyVisualizationProps {
   data: SankeyData;
   onNodeClick: (nodeId: string) => void;
   formatCurrency: (amount: number) => string;
+  drillDownLevel: DrillDownLevel;
 }
 
 const SankeyVisualization = ({ data, onNodeClick, formatCurrency }: SankeyVisualizationProps) => {
