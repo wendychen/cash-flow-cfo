@@ -263,7 +263,7 @@ const ExpenseList = ({
                           className="data-[state=checked]:bg-yellow-400 shrink-0"
                         />
                         <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <Badge variant="outline" className={`text-${EXPENSE_CATEGORIES[expense.category || "Misc"].color} border-current shrink-0`}>
+                          <Badge variant="outline" className={`text-${EXPENSE_CATEGORIES[expense.category || "misc"].color} border-current shrink-0`}>
                             <div className="flex items-center gap-1">
                               {getCategoryIcon(expense.category || "misc")}
                               <span className="text-xs">{EXPENSE_CATEGORIES[expense.category || "misc"].label}</span>
