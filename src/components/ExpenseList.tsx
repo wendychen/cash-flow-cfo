@@ -51,11 +51,14 @@ const ExpenseList = ({
   const [currentPage, setCurrentPage] = useState(1);
 
   const getCategoryIcon = (cat: ExpenseCategory) => {
-    switch (cat) {
-      case "food": return <UtensilsCrossed className="h-3 w-3" />;
-      case "lifestyle": return <Sparkles className="h-3 w-3" />;
-      case "family": return <Users className="h-3 w-3" />;
-      case "misc": return <Package className="h-3 w-3" />;
+    const iconName = EXPENSE_CATEGORIES[cat].icon;
+    
+    switch (iconName) {
+      case "UtensilsCrossed": return <UtensilsCrossed className="h-3 w-3" />;
+      case "Sparkles": return <Sparkles className="h-3 w-3" />;
+      case "Users": return <Users className="h-3 w-3" />;
+      case "Package": return <Package className="h-3 w-3" />;
+      default: return <Package className="h-3 w-3" />;
     }
   };
 
