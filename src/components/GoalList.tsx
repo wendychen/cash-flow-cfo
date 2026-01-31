@@ -127,39 +127,73 @@ const TaskSection = ({
       )}
       
       {tasks.map(task => (
-        <div key={task.id} className={`flex items-center gap-2 p-2 rounded border ${task.isMagicWand ? "bg-amber-500/5 border-amber-400/30" : "bg-muted/30"}`}>
-          <Checkbox
-            checked={task.completed}
-            onCheckedChange={(checked) => onUpdate(task.id, { completed: checked === true })}
-            className="data-[state=checked]:bg-blue-600"
-          />
-          <span className={`flex-1 text-sm ${task.completed ? "line-through text-muted-foreground" : ""}`}>{task.action}</span>
-          {task.cost > 0 && <Badge variant="outline" className="text-xs">{format(task.cost)}</Badge>}
-          {task.timeCost && <Badge variant="outline" className="text-xs gap-1"><Clock className="h-3 w-3" />{task.timeCost}</Badge>}
-          {task.deadline && <Badge variant="outline" className="text-xs">{task.deadline}</Badge>}
-          <Button
-            variant="ghost"
-            size="icon"
-            className={`h-6 w-6 ${task.isMagicWand ? "text-amber-500" : "text-muted-foreground"}`}
-            onClick={() => {
-              if (task.isMagicWand) {
-                onUpdate(task.id, { isMagicWand: false });
-              } else {
-                tasks.forEach(t => {
-                  if (t.id === task.id) {
-                    onUpdate(t.id, { isMagicWand: true });
-                  } else if (t.isMagicWand) {
-                    onUpdate(t.id, { isMagicWand: false });
-                  }
-                });
-              }
-            }}
-          >
-            <Wand2 className={`h-3 w-3 ${task.isMagicWand ? "fill-amber-500" : ""}`} />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-red-500" onClick={() => onDelete(task.id)}>
-            <Trash2 className="h-3 w-3" />
-          </Button>
+        <div key={task.id} className={`flex flex-col gap-2 p-2 rounded border ${task.isMagicWand ? "bg-amber-500/5 border-amber-400/30" : "bg-muted/30"}`}>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              checked={task.completed}
+              onCheckedChange={(checked) => onUpdate(task.id, { completed: checked === true })}
+              className="data-[state=checked]:bg-blue-600"
+            />
+            <Input
+              value={task.action}
+              onChange={(e) => onUpdate(task.id, { action: e.target.value })}
+              className={`flex-1 h-7 text-sm border-0 bg-transparent px-1 focus-visible:ring-1 ${task.completed ? "line-through text-muted-foreground" : ""}`}
+              placeholder="Action..."
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`h-6 w-6 ${task.isMagicWand ? "text-amber-500" : "text-muted-foreground"}`}
+              onClick={() => {
+                if (task.isMagicWand) {
+                  onUpdate(task.id, { isMagicWand: false });
+                } else {
+                  tasks.forEach(t => {
+                    if (t.id === task.id) {
+                      onUpdate(t.id, { isMagicWand: true });
+                    } else if (t.isMagicWand) {
+                      onUpdate(t.id, { isMagicWand: false });
+                    }
+                  });
+                }
+              }}
+            >
+              <Wand2 className={`h-3 w-3 ${task.isMagicWand ? "fill-amber-500" : ""}`} />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-red-500" onClick={() => onDelete(task.id)}>
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </div>
+          <div className="flex items-center gap-2 ml-6">
+            <div className="flex items-center gap-1">
+              <DollarSign className="h-3 w-3 text-muted-foreground" />
+              <Input
+                type="number"
+                value={task.cost || ""}
+                onChange={(e) => onUpdate(task.id, { cost: parseFloat(e.target.value) || 0 })}
+                className="w-20 h-6 text-xs"
+                placeholder="Cost"
+              />
+            </div>
+            <div className="flex items-center gap-1">
+              <Clock className="h-3 w-3 text-muted-foreground" />
+              <Input
+                value={task.timeCost || ""}
+                onChange={(e) => onUpdate(task.id, { timeCost: e.target.value })}
+                className="w-20 h-6 text-xs"
+                placeholder="Time"
+              />
+            </div>
+            <div className="flex items-center gap-1">
+              <Calendar className="h-3 w-3 text-muted-foreground" />
+              <Input
+                type="date"
+                value={task.deadline || ""}
+                onChange={(e) => onUpdate(task.id, { deadline: e.target.value })}
+                className="w-32 h-6 text-xs"
+              />
+            </div>
+          </div>
         </div>
       ))}
       
@@ -244,33 +278,49 @@ const PostDreamsSection = ({
       )}
       
       {dreams.map(dream => (
-        <div key={dream.id} className={`flex items-center gap-2 p-2 rounded border ${dream.isMagicWand ? "bg-purple-500/5 border-purple-400/30" : "bg-muted/30"}`}>
-          <Sparkles className="h-4 w-4 text-purple-400" />
-          <span className="flex-1 text-sm">{dream.title}</span>
-          {dream.deadline && <Badge variant="outline" className="text-xs">{dream.deadline}</Badge>}
-          <Button
-            variant="ghost"
-            size="icon"
-            className={`h-6 w-6 ${dream.isMagicWand ? "text-purple-500" : "text-muted-foreground"}`}
-            onClick={() => {
-              if (dream.isMagicWand) {
-                onUpdate(dream.id, { isMagicWand: false });
-              } else {
-                dreams.forEach(d => {
-                  if (d.id === dream.id) {
-                    onUpdate(d.id, { isMagicWand: true });
-                  } else if (d.isMagicWand) {
-                    onUpdate(d.id, { isMagicWand: false });
-                  }
-                });
-              }
-            }}
-          >
-            <Wand2 className={`h-3 w-3 ${dream.isMagicWand ? "fill-purple-500" : ""}`} />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-red-500" onClick={() => onDelete(dream.id)}>
-            <Trash2 className="h-3 w-3" />
-          </Button>
+        <div key={dream.id} className={`flex flex-col gap-2 p-2 rounded border ${dream.isMagicWand ? "bg-purple-500/5 border-purple-400/30" : "bg-muted/30"}`}>
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-purple-400" />
+            <Input
+              value={dream.title}
+              onChange={(e) => onUpdate(dream.id, { title: e.target.value })}
+              className="flex-1 h-7 text-sm border-0 bg-transparent px-1 focus-visible:ring-1"
+              placeholder="Dream goal..."
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`h-6 w-6 ${dream.isMagicWand ? "text-purple-500" : "text-muted-foreground"}`}
+              onClick={() => {
+                if (dream.isMagicWand) {
+                  onUpdate(dream.id, { isMagicWand: false });
+                } else {
+                  dreams.forEach(d => {
+                    if (d.id === dream.id) {
+                      onUpdate(d.id, { isMagicWand: true });
+                    } else if (d.isMagicWand) {
+                      onUpdate(d.id, { isMagicWand: false });
+                    }
+                  });
+                }
+              }}
+            >
+              <Wand2 className={`h-3 w-3 ${dream.isMagicWand ? "fill-purple-500" : ""}`} />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-red-500" onClick={() => onDelete(dream.id)}>
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </div>
+          <div className="flex items-center gap-2 ml-6">
+            <Calendar className="h-3 w-3 text-muted-foreground" />
+            <Input
+              type="date"
+              value={dream.deadline || ""}
+              onChange={(e) => onUpdate(dream.id, { deadline: e.target.value })}
+              className="w-32 h-6 text-xs"
+              placeholder="Deadline"
+            />
+          </div>
         </div>
       ))}
       
@@ -542,14 +592,25 @@ const SortableGoalItem = ({
               <Lightbulb className="h-4 w-4 text-yellow-500" />
               <span>Ideation ({ideations.length}/20)</span>
             </div>
-            <div className="flex flex-wrap gap-1">
+            <div className="space-y-1">
               {ideations.map(idea => (
-                <Badge key={idea.id} variant="secondary" className="gap-1 group">
-                  <span className="max-w-[200px] truncate">{idea.content}</span>
-                  <button onClick={() => deleteIdeation(idea.id)} className="opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Trash2 className="h-3 w-3 text-muted-foreground hover:text-red-500" />
-                  </button>
-                </Badge>
+                <div key={idea.id} className="flex items-center gap-2 p-2 rounded border bg-muted/30">
+                  <Lightbulb className="h-3 w-3 text-yellow-500" />
+                  <Input
+                    value={idea.content}
+                    onChange={(e) => {
+                      const updated = ideations.map(i =>
+                        i.id === idea.id ? { ...i, content: e.target.value } : i
+                      );
+                      onUpdateGoal(goal.id, { ideations: updated });
+                    }}
+                    className="flex-1 h-6 text-sm border-0 bg-transparent px-1 focus-visible:ring-1"
+                    placeholder="Idea..."
+                  />
+                  <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-red-500" onClick={() => deleteIdeation(idea.id)}>
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
               ))}
             </div>
             {ideations.length < 20 && (
@@ -597,9 +658,25 @@ const SortableGoalItem = ({
             <div className="space-y-1">
               {urlPack.map((url, index) => (
                 <div key={index} className="flex items-center gap-2 p-1.5 rounded bg-muted/30 group">
-                  <a href={url} target="_blank" rel="noopener noreferrer" className="flex-1 text-xs text-blue-500 hover:underline truncate">
-                    {url}
-                  </a>
+                  <Input
+                    value={url}
+                    onChange={(e) => {
+                      const updated = [...urlPack];
+                      updated[index] = e.target.value;
+                      onUpdateGoal(goal.id, { urlPack: updated });
+                    }}
+                    className="flex-1 h-6 text-xs"
+                    placeholder="URL..."
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => window.open(url, "_blank")}
+                    title="Open URL"
+                  >
+                    <ExternalLink className="h-3 w-3 text-blue-500" />
+                  </Button>
                   <button onClick={() => deleteUrl(index)} className="opacity-0 group-hover:opacity-100 transition-opacity">
                     <Trash2 className="h-3 w-3 text-muted-foreground hover:text-red-500" />
                   </button>
