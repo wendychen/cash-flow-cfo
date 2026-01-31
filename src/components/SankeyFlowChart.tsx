@@ -354,7 +354,12 @@ interface SankeyVisualizationProps {
   drillDownLevel: DrillDownLevel;
 }
 
-const SankeyVisualization = ({ data, onNodeClick, formatCurrency }: SankeyVisualizationProps) => {
+const SankeyVisualization = ({ 
+  data, 
+  onNodeClick, 
+  formatCurrency,
+  drillDownLevel 
+}: SankeyVisualizationProps) => {
   const svgWidth = 800;
   const svgHeight = 400;
   const nodeWidth = 20;
