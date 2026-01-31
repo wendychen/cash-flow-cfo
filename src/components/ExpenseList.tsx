@@ -266,7 +266,7 @@ const ExpenseList = ({
                           <Badge variant="outline" className={`text-${EXPENSE_CATEGORIES[expense.category || "misc"].color} border-current shrink-0`}>
                             <div className="flex items-center gap-1">
                               {getCategoryIcon(expense.category || "misc")}
-                              <span className="text-xs">{EXPENSE_CATEGORIES[expense.category || "misc"].label}</span>
+                              <span className="text-xs">{EXPENSE_CATEGORIES[expense.category || "Misc"].label}</span>
                             </div>
                           </Badge>
                           <span className="text-foreground font-medium truncate">
