@@ -60,7 +60,7 @@ const FixedExpenseForm = ({ onAddFixedExpense }: FixedExpenseFormProps) => {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-wrap gap-2 items-end">
-      <Select onValueChange={(val) => setCategory(val as FixedExpenseCategory)}>
+      <Select value={category} onValueChange={(val) => setCategory(val as FixedExpenseCategory)}>
         <SelectTrigger className="w-[180px]">
           <div className="flex items-center gap-2">
             {getCategoryIcon(category)}
