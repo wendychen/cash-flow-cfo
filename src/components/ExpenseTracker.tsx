@@ -24,6 +24,7 @@ import GoalList from "./GoalList";
 import ConsciousnessFlow from "./ConsciousnessFlow";
 import CombinedChart from "./CombinedChart";
 import MonthlySummary from "./MonthlySummary";
+import SankeyFlowChart from "./SankeyFlowChart";
 import TimeNavigator, { TimePeriod } from "./TimeNavigator";
 import { Expense } from "@/types/expense";
 import { FixedExpense } from "@/types/fixedExpense";
@@ -895,12 +896,21 @@ const ExpenseTracker = () => {
               fixedExpenses={fixedExpenses}
             />
 
-            <CombinedChart 
-              expenses={periodFilteredExpenses} 
-              incomes={periodFilteredIncomes} 
+            <CombinedChart
+              expenses={periodFilteredExpenses}
+              incomes={periodFilteredIncomes}
               savings={periodFilteredSavings}
               targets={targets}
               onUpdateTarget={updateTarget}
+              selectedPeriod={selectedPeriod}
+            />
+
+            <SankeyFlowChart
+              expenses={periodFilteredExpenses}
+              incomes={periodFilteredIncomes}
+              savings={periodFilteredSavings}
+              goals={goals}
+              fixedExpenses={fixedExpenses}
               selectedPeriod={selectedPeriod}
             />
           </main>
