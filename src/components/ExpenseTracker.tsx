@@ -700,8 +700,8 @@ const ExpenseTracker = () => {
     <div className="min-h-screen bg-background py-6 px-4">
       <div className="max-w-6xl mx-auto">
         <header className="text-center mb-6">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Cash Flow Tracker</h1>
-          <p className="text-muted-foreground">Track your income, spending, and savings</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Cash Flow CFO</h1>
+          <p className="text-muted-foreground">I'm your cash flow CFO to help you fulfill your future goals.</p>
         </header>
 
         <div className="flex gap-6">
