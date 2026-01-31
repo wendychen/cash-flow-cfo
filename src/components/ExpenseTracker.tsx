@@ -52,7 +52,7 @@ const ExpenseTracker = () => {
       const parsed = JSON.parse(saved);
       return parsed.map((exp: Expense) => ({
         ...exp,
-        category: exp.category || "miscellaneous",
+        category: exp.category || "misc",
       }));
     }
     return [];
