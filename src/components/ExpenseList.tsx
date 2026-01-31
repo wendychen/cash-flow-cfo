@@ -167,6 +167,10 @@ const ExpenseList = ({
             </div>
             <div className="space-y-2">
               {dayExpenses.map((expense, index) => (
+                const categoryKey = (expense.category || "misc") as ExpenseCategory;
+                const categoryMeta = EXPENSE_CATEGORIES[categoryKey];
+                return (
+              
                 <div
                   key={expense.id}
                   className={`flex items-center justify-between p-3 bg-card rounded-lg shadow-card hover:shadow-card-hover transition-shadow duration-200 animate-slide-in ${
@@ -268,8 +272,8 @@ const ExpenseList = ({
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                           <Badge variant="outline" className={`text-${EXPENSE_CATEGORIES[expense.category || "misc"].color} border-current shrink-0`}>
                             <div className="flex items-center gap-1">
-                              {getCategoryIcon(expense.category || "misc")}
-                              <span className="text-xs">{EXPENSE_CATEGORIES[expense.category || "misc"].label}</span>
+                              {getCategoryIcon(categoryKey)}
+                              <span className="text-xs">{categoryMeta.label}</span>
                             </div>
                           </Badge>
                           <span className="text-foreground font-medium truncate">
