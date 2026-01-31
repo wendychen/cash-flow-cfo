@@ -170,7 +170,6 @@ const ExpenseList = ({
                 const categoryKey = (expense.category || "misc") as ExpenseCategory;
                 const categoryMeta = EXPENSE_CATEGORIES[categoryKey];
                 return (
-                <>
                 <div
                   key={expense.id}
                   className={`flex items-center justify-between p-3 bg-card rounded-lg shadow-card hover:shadow-card-hover transition-shadow duration-200 animate-slide-in ${
