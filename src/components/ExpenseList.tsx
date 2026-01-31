@@ -309,7 +309,7 @@ const ExpenseList = ({
                     )}
                   </div>
               )
-            }}
+            })}
             </div>
           </div>
         );
