@@ -71,9 +71,7 @@ const FixedExpenseForm = ({ onAddFixedExpense }: FixedExpenseFormProps) => {
           {Object.entries(FIXED_EXPENSE_CATEGORIES).map(([key, meta]) => (
             <SelectItem>
               <div className="flex items-center gap-2">
-                1
                 {getCategoryIcon(key as FixedExpenseCategory)}
-                1
                 <span>{meta.label}</span>
               </div>
             </SelectItem>
