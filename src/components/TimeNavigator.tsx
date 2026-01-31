@@ -1,6 +1,8 @@
 import { useState, useMemo } from "react";
 import { ChevronRight, ChevronDown, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 export type TimePeriod = {
   type: "year" | "quarter" | "month" | "week";
@@ -73,6 +75,7 @@ export default function TimeNavigator({ selectedPeriod, onSelectPeriod, currentY
   const [expandedYear, setExpandedYear] = useState<number | null>(year);
   const [expandedQuarters, setExpandedQuarters] = useState<Set<number>>(new Set());
   const [expandedMonths, setExpandedMonths] = useState<Set<number>>(new Set());
+  const [expandAll, setExpandAll] = useState(false);
 
   const yearPeriod: TimePeriod = useMemo(() => ({
     type: "year",
@@ -86,6 +89,7 @@ export default function TimeNavigator({ selectedPeriod, onSelectPeriod, currentY
     const newSet = new Set(expandedQuarters);
     if (newSet.has(quarterIndex)) {
       newSet.delete(quarterIndex);
+      setExpandAll(false);
     } else {
       newSet.add(quarterIndex);
     }
@@ -96,6 +100,7 @@ export default function TimeNavigator({ selectedPeriod, onSelectPeriod, currentY
     const newSet = new Set(expandedMonths);
     if (newSet.has(monthIndex)) {
       newSet.delete(monthIndex);
+      setExpandAll(false);
     } else {
       newSet.add(monthIndex);
     }
@@ -121,11 +126,35 @@ export default function TimeNavigator({ selectedPeriod, onSelectPeriod, currentY
     }
   };
 
+  const handleExpandAllToggle = (checked: boolean) => {
+    setExpandAll(checked);
+    if (checked) {
+      setExpandedYear(year);
+      setExpandedQuarters(new Set([0, 1, 2, 3]));
+      setExpandedMonths(new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]));
+    } else {
+      setExpandedYear(null);
+      setExpandedQuarters(new Set());
+      setExpandedMonths(new Set());
+    }
+  };
+
   return (
     <div className="bg-card rounded-xl shadow-card p-4 w-full" data-testid="time-navigator">
       <div className="flex items-center gap-2 mb-3 pb-2 border-b">
         <Calendar className="h-4 w-4 text-muted-foreground" />
         <span className="text-sm font-medium text-foreground">Time Navigator</span>
+      </div>
+
+      <div className="flex items-center gap-2 mb-3 pb-2 border-b">
+        <Switch
+          id="expand-all"
+          checked={expandAll}
+          onCheckedChange={handleExpandAllToggle}
+        />
+        <Label htmlFor="expand-all" className="text-sm text-muted-foreground cursor-pointer">
+          Expand All
+        </Label>
       </div>
 
       <div className="space-y-1">

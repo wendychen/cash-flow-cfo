@@ -33,6 +33,7 @@ import { Income } from "@/types/income";
 import { Saving } from "@/types/saving";
 import { Goal } from "@/types/goal";
 import { FinancialTarget } from "@/types/target";
+import { ExpenseCategory, FixedExpenseCategory } from "@/types/expenseCategory";
 import { toast } from "@/hooks/use-toast";
 import { useCurrency, Currency } from "@/hooks/use-currency";
 
@@ -417,9 +418,9 @@ const ExpenseTracker = () => {
     // Export fixed expenses
     if (fixedExpenses.length > 0) {
       csvContent += "### FIXED EXPENSES ###\n";
-      csvContent += "Description,Amount,Frequency,IsActive,CreatedAt\n";
+      csvContent += "Description,Amount,Frequency,IsActive,Category,CreatedAt\n";
       fixedExpenses.forEach((exp) => {
-        csvContent += `"${exp.description.replace(/"/g, '""')}",${exp.amount.toFixed(2)},${exp.frequency},${exp.isActive},${exp.createdAt}\n`;
+        csvContent += `"${exp.description.replace(/"/g, '""')}",${exp.amount.toFixed(2)},${exp.frequency},${exp.isActive},${exp.category},${exp.createdAt}\n`;
       });
     }
 
@@ -427,9 +428,9 @@ const ExpenseTracker = () => {
     if (expenses.length > 0) {
       if (csvContent) csvContent += "\n";
       csvContent += "### EXPENSES ###\n";
-      csvContent += "Date,Description,Amount\n";
+      csvContent += "Date,Description,Amount,Category\n";
       expenses.forEach((exp) => {
-        csvContent += `${exp.date},"${exp.description.replace(/"/g, '""')}",${exp.amount.toFixed(2)}\n`;
+        csvContent += `${exp.date},"${exp.description.replace(/"/g, '""')}",${exp.amount.toFixed(2)},${exp.category}\n`;
       });
     }
 
@@ -543,7 +544,8 @@ const ExpenseTracker = () => {
             const amount = parseFloat(matches[1].replace(/"/g, "").trim());
             const frequency = matches[2]?.replace(/"/g, "").trim() as "weekly" | "monthly" | "quarterly" | "yearly";
             const isActive = matches[3]?.replace(/"/g, "").trim().toLowerCase() !== "false";
-            const createdAt = matches[4]?.replace(/"/g, "").trim() || new Date().toISOString();
+            const category = matches[4]?.replace(/"/g, "").trim() as FixedExpenseCategory || "utilities";
+            const createdAt = matches[5]?.replace(/"/g, "").trim() || new Date().toISOString();
 
             if (description && !isNaN(amount)) {
               importedFixedExpenses.push({
@@ -552,6 +554,7 @@ const ExpenseTracker = () => {
                 amount,
                 frequency: frequency || "monthly",
                 isActive,
+                category,
                 createdAt,
               });
             }
@@ -609,11 +612,13 @@ const ExpenseTracker = () => {
             if (!date || isNaN(amount)) continue;
 
             if (currentSection === "expenses" && field2) {
+              const category = field4 as ExpenseCategory || "misc";
               importedExpenses.push({
                 id: crypto.randomUUID(),
                 date,
                 description: field2,
                 amount,
+                category,
                 needsCheck: false,
               });
             } else if (currentSection === "incomes" && field2) {
@@ -779,10 +784,9 @@ const ExpenseTracker = () => {
           </TabsList>
 
           <TabsContent value="expenses" className="space-y-4">
-            {/* Fixed Expenses Section */}
             <div className="bg-card rounded-xl shadow-card p-5">
               <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                🔄 Fixed Expenses
+                💰 Fixed Expenses
               </h3>
               <FixedExpenseForm onAddFixedExpense={addFixedExpense} />
               <div className="mt-4">
@@ -801,7 +805,7 @@ const ExpenseTracker = () => {
             </div>
 
             <div className="bg-card rounded-xl shadow-card p-5">
-              <h3 className="text-sm font-semibold text-foreground mb-3">One-time Expenses</h3>
+              <h3 className="text-sm font-semibold text-foreground mb-3">💰 One-time Expenses</h3>
               <ExpenseForm onAddExpense={addExpense} />
             </div>
 

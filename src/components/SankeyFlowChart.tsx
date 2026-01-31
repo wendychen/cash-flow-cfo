@@ -373,10 +373,26 @@ const SankeyVisualization = ({ data, onNodeClick, formatCurrency }: SankeyVisual
   const columnCount = Object.keys(columns).length;
   const columnWidth = svgWidth / (columnCount + 1);
 
+  const isDetailView = drillDownLevel !== "overview";
+
   const positionedNodes = nodes.map((node, idx) => {
-    const col = idx % 3;
-    const rowIdx = columns[col].indexOf(node);
-    const totalInCol = columns[col].length;
+    let col: number;
+    let rowIdx: number;
+    let totalInCol: number;
+
+    if (isDetailView && links.some(link => link.source === node.id)) {
+      col = 0;
+      rowIdx = 0;
+      totalInCol = 1;
+    } else if (isDetailView) {
+      col = 2;
+      rowIdx = nodes.filter((n, i) => i > 0).indexOf(node);
+      totalInCol = nodes.length - 1;
+    } else {
+      col = idx % 3;
+      rowIdx = columns[col].indexOf(node);
+      totalInCol = columns[col].length;
+    }
 
     const x = (col + 1) * columnWidth - nodeWidth / 2;
     const nodeHeight = Math.max(40, (node.value / maxValue) * 200);
