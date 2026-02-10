@@ -151,6 +151,43 @@ const ExpenseTracker = () => {
     localStorage.setItem("financialTargets", JSON.stringify(targets));
   }, [targets]);
 
+  useEffect(() => {
+    const goalsWithTitle = goals.filter(g => g.title);
+    const missingExpenseGoals = goalsWithTitle.filter(g => {
+      if (g.linkedExpenseId) {
+        const expenseExists = expenses.some(e => e.id === g.linkedExpenseId);
+        if (expenseExists) return false;
+      }
+      const hasLinkedExpense = expenses.some(e => e.linkedGoalId === g.id && !e.linkedTaskId);
+      return !hasLinkedExpense;
+    });
+
+    if (missingExpenseGoals.length === 0) return;
+
+    const newExpenses: Expense[] = [];
+    const goalUpdates: { id: string; linkedExpenseId: string }[] = [];
+
+    missingExpenseGoals.forEach(goal => {
+      const expenseId = crypto.randomUUID();
+      newExpenses.push({
+        id: expenseId,
+        date: goal.deadline || new Date().toISOString().split("T")[0],
+        description: `Goal: ${goal.title}`,
+        amount: 0,
+        needsCheck: true,
+        category: goal.category || "misc",
+        linkedGoalId: goal.id,
+      });
+      goalUpdates.push({ id: goal.id, linkedExpenseId: expenseId });
+    });
+
+    setExpenses(prev => [...prev, ...newExpenses]);
+    setGoals(prev => prev.map(g => {
+      const update = goalUpdates.find(u => u.id === g.id);
+      return update ? { ...g, linkedExpenseId: update.linkedExpenseId } : g;
+    }));
+  }, []);
+
   // Target handlers with bidirectional sync for savings
   const updateTarget = (type: FinancialTarget["type"], amount: number, period: FinancialTarget["period"], targetCurrency: Currency, skipSavingSync = false) => {
     setTargets(prev => {
@@ -238,9 +275,87 @@ const ExpenseTracker = () => {
   };
 
   const updateExpense = (id: string, updates: Partial<Omit<Expense, "id">>) => {
+    const expense = expenses.find(e => e.id === id);
     setExpenses((prev) =>
       prev.map((exp) => (exp.id === id ? { ...exp, ...updates } : exp))
     );
+
+    if (expense?.linkedGoalId && !expense.linkedTaskId) {
+      const goalUpdates: Partial<Goal> = {};
+      if (updates.description !== undefined) {
+        goalUpdates.title = updates.description.replace(/^Goal:\s*/i, "");
+      }
+      if (updates.date !== undefined) {
+        goalUpdates.deadline = updates.date;
+      }
+      if (updates.category !== undefined) {
+        goalUpdates.category = updates.category;
+      }
+      if (Object.keys(goalUpdates).length > 0) {
+        setGoals((prev) =>
+          prev.map((g) => (g.id === expense.linkedGoalId ? { ...g, ...goalUpdates } : g))
+        );
+      }
+    }
+
+    if (expense?.linkedGoalId && expense.linkedTaskId && expense.linkedTaskType) {
+      const goalId = expense.linkedGoalId;
+      const taskId = expense.linkedTaskId;
+      const taskType = expense.linkedTaskType;
+
+      setGoals((prev) =>
+        prev.map((g) => {
+          if (g.id !== goalId) return g;
+          if (taskType === "pre") {
+            return {
+              ...g,
+              preTasks: g.preTasks.map((t) =>
+                t.id === taskId
+                  ? {
+                      ...t,
+                      action: updates.description !== undefined ? updates.description.replace(/^\[Pre-task\]\s*/i, "") : t.action,
+                      cost: updates.amount !== undefined ? updates.amount : t.cost,
+                      deadline: updates.date !== undefined ? updates.date : t.deadline,
+                    }
+                  : t
+              ),
+            };
+          }
+          if (taskType === "post") {
+            return {
+              ...g,
+              postTasks: g.postTasks.map((t) =>
+                t.id === taskId
+                  ? {
+                      ...t,
+                      action: updates.description !== undefined ? updates.description.replace(/^\[Post-task\]\s*/i, "") : t.action,
+                      cost: updates.amount !== undefined ? updates.amount : t.cost,
+                      deadline: updates.date !== undefined ? updates.date : t.deadline,
+                    }
+                  : t
+              ),
+            };
+          }
+          if (taskType === "dream") {
+            return {
+              ...g,
+              postDreams: g.postDreams.map((d) =>
+                d.id === taskId
+                  ? {
+                      ...d,
+                      title: updates.description !== undefined ? updates.description.replace(/^\[Dream\]\s*/i, "") : d.title,
+                      cost: updates.amount !== undefined ? updates.amount : d.cost,
+                      deadline: updates.date !== undefined ? updates.date : d.deadline,
+                    }
+                  : d
+              ),
+            };
+          }
+          return g;
+        })
+      );
+    }
+
     toast({ title: "Expense updated" });
   };
 
@@ -1133,17 +1248,6 @@ const ExpenseTracker = () => {
               onToggleNeedsCheck={toggleNeedsCheck}
               onUpdateExpense={updateExpense}
             />
-
-            <div className="bg-card rounded-xl shadow-card p-5">
-              <GoalList
-                goals={goals.filter((g) => g.title)}
-                allGoals={goals}
-                onUpdateGoal={updateGoal}
-                onAddGoal={addGoal}
-                onDeleteGoal={deleteGoal}
-                onReorderGoals={reorderGoals}
-              />
-            </div>
           </TabsContent>
 
           <TabsContent value="income" className="space-y-4">
