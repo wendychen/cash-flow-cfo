@@ -36,10 +36,11 @@ export interface Goal {
   createdAt: string;
   linkedExpenseId?: string;
   category: ExpenseCategory;
-  preTasks: TaskItem[];
-  postTasks: TaskItem[];
-  postDreams: PostDream[];
+  budget: number;
   ideations: Ideation[];
   constraint: string;
   urlPack: string[];
+  preTasks?: TaskItem[];
+  postTasks?: TaskItem[];
+  postDreams?: PostDream[];
 }

@@ -22,6 +22,7 @@ import IncomeList from "./IncomeList";
 import SavingForm from "./SavingForm";
 import SavingList from "./SavingList";
 import GoalList from "./GoalList";
+import GoalBudgetAllocator from "./GoalBudgetAllocator";
 import ConsciousnessFlow from "./ConsciousnessFlow";
 import CombinedChart from "./CombinedChart";
 import MonthlySummary from "./MonthlySummary";
@@ -32,6 +33,7 @@ import { FixedExpense } from "@/types/fixedExpense";
 import { Income } from "@/types/income";
 import { Saving } from "@/types/saving";
 import { Goal } from "@/types/goal";
+import { TaskNode, TaskType } from "@/types/task";
 import { FinancialTarget } from "@/types/target";
 import { ExpenseCategory, FixedExpenseCategory } from "@/types/expenseCategory";
 import { toast } from "@/hooks/use-toast";
@@ -43,6 +45,12 @@ const isDateInPeriod = (dateStr: string, period: TimePeriod | null): boolean => 
   return date >= period.startDate && date <= period.endDate;
 };
 
+const TASK_PREFIX: Record<TaskType, string> = {
+  pre: "[Pre-task]",
+  post: "[Post-task]",
+  dream: "[Dream]",
+};
+
 const ExpenseTracker = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { format, currency, setCurrency, convertToNTD, convertFromNTD } = useCurrency();
@@ -50,7 +58,7 @@ const ExpenseTracker = () => {
   const [isTimeNavOpen, setIsTimeNavOpen] = useState(true);
   const [isCashFlowOpen, setIsCashFlowOpen] = useState(true);
   const [isSankeyOpen, setIsSankeyOpen] = useState(true);
-  
+
   const [expenses, setExpenses] = useState<Expense[]>(() => {
     const saved = localStorage.getItem("expenses");
     if (saved) {
@@ -76,33 +84,95 @@ const ExpenseTracker = () => {
     return saved ? JSON.parse(saved) : [];
   });
 
+  const [tasks, setTasks] = useState<TaskNode[]>(() => {
+    const saved = localStorage.getItem("tasks");
+    if (saved) return JSON.parse(saved);
+
+    const goalsData = localStorage.getItem("goals");
+    if (!goalsData) return [];
+
+    const parsedGoals = JSON.parse(goalsData);
+    const migrated: TaskNode[] = [];
+
+    for (const goal of parsedGoals) {
+      const preTasks = goal.preTasks || goal.subTasks || [];
+      preTasks.forEach((task: any, i: number) => {
+        migrated.push({
+          id: task.id,
+          goalId: goal.id,
+          parentId: null,
+          taskType: "pre" as const,
+          sortOrder: i,
+          title: task.action || "",
+          cost: task.cost || 0,
+          timeCost: task.timeCost || "",
+          deadline: task.deadline || "",
+          isMagicWand: task.isMagicWand || false,
+          completed: task.completed || false,
+          linkedExpenseId: task.linkedExpenseId || undefined,
+          createdAt: new Date().toISOString(),
+        });
+      });
+
+      const postTasks = goal.postTasks || [];
+      postTasks.forEach((task: any, i: number) => {
+        migrated.push({
+          id: task.id,
+          goalId: goal.id,
+          parentId: null,
+          taskType: "post" as const,
+          sortOrder: i,
+          title: task.action || "",
+          cost: task.cost || 0,
+          timeCost: task.timeCost || "",
+          deadline: task.deadline || "",
+          isMagicWand: task.isMagicWand || false,
+          completed: task.completed || false,
+          linkedExpenseId: task.linkedExpenseId || undefined,
+          createdAt: new Date().toISOString(),
+        });
+      });
+
+      const postDreams = goal.postDreams || [];
+      postDreams.forEach((dream: any, i: number) => {
+        migrated.push({
+          id: dream.id,
+          goalId: goal.id,
+          parentId: null,
+          taskType: "dream" as const,
+          sortOrder: i,
+          title: dream.title || "",
+          cost: dream.cost || 0,
+          timeCost: dream.timeCost || "",
+          deadline: dream.deadline || "",
+          isMagicWand: dream.isMagicWand || false,
+          completed: false,
+          linkedExpenseId: dream.linkedExpenseId || undefined,
+          createdAt: new Date().toISOString(),
+        });
+      });
+    }
+
+    return migrated;
+  });
+
   const [goals, setGoals] = useState<Goal[]>(() => {
     const saved = localStorage.getItem("goals");
     if (saved) {
       const parsed = JSON.parse(saved);
-      return parsed.map((g: Goal & { subTasks?: unknown[] }) => ({
-        ...g,
+      return parsed.map((g: any) => ({
+        id: g.id,
+        title: g.title || "",
         deadline: g.deadline || "",
+        completed: g.completed || false,
         isMagicWand: g.isMagicWand || false,
+        createdAt: g.createdAt || new Date().toISOString(),
+        linkedExpenseId: g.linkedExpenseId || undefined,
         category: g.category || "misc",
-        preTasks: (g.preTasks || g.subTasks || []).map((t: any) => ({
-          ...t,
-          linkedExpenseId: t.linkedExpenseId || undefined,
-        })),
-        postTasks: (g.postTasks || []).map((t: any) => ({
-          ...t,
-          linkedExpenseId: t.linkedExpenseId || undefined,
-        })),
-        postDreams: (g.postDreams || []).map((d: any) => ({
-          ...d,
-          cost: d.cost || 0,
-          timeCost: d.timeCost || "",
-          linkedExpenseId: d.linkedExpenseId || undefined,
-        })),
+        budget: g.budget || 0,
         ideations: g.ideations || [],
         constraint: g.constraint || "",
         urlPack: g.urlPack || [],
-        linkedExpenseId: g.linkedExpenseId || undefined,
       }));
     }
     return [];
@@ -142,6 +212,10 @@ const ExpenseTracker = () => {
   useEffect(() => {
     localStorage.setItem("goals", JSON.stringify(goals));
   }, [goals]);
+
+  useEffect(() => {
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+  }, [tasks]);
 
   useEffect(() => {
     localStorage.setItem("fixedExpenses", JSON.stringify(fixedExpenses));
@@ -188,12 +262,11 @@ const ExpenseTracker = () => {
     }));
   }, []);
 
-  // Target handlers with bidirectional sync for savings
   const updateTarget = (type: FinancialTarget["type"], amount: number, period: FinancialTarget["period"], targetCurrency: Currency, skipSavingSync = false) => {
     setTargets(prev => {
       const existingIndex = prev.findIndex(t => t.type === type && t.period === period && t.currency === targetCurrency);
       const now = new Date().toISOString();
-      
+
       if (existingIndex >= 0) {
         const updated = [...prev];
         updated[existingIndex] = {
@@ -215,22 +288,17 @@ const ExpenseTracker = () => {
       }
     });
 
-    // When updating a savings target, sync to the latest goal saving entry
     if (type === "savings" && !skipSavingSync) {
-      // Convert target amount (in targetCurrency) to NTD for storage
       const amountInNTD = convertToNTD(amount, targetCurrency);
       const today = new Date().toISOString().split("T")[0];
-      
+
       setSavings(prev => {
-        // Find the latest goal saving by date
         const goalSavings = prev.filter(s => s.savingType === "goal");
         const latestGoal = goalSavings.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
-        
+
         if (latestGoal) {
-          // Update the latest goal saving
           return prev.map(s => s.id === latestGoal.id ? { ...s, amount: amountInNTD } : s);
         } else {
-          // Create a new goal saving for today
           return [{
             id: crypto.randomUUID(),
             date: today,
@@ -247,7 +315,6 @@ const ExpenseTracker = () => {
     return targets.find(t => t.type === type && t.period === period && t.currency === targetCurrency);
   };
 
-  // Expense handlers
   const addExpense = (expense: Omit<Expense, "id">) => {
     const newExpense: Expense = {
       ...expense,
@@ -298,68 +365,31 @@ const ExpenseTracker = () => {
       }
     }
 
-    if (expense?.linkedGoalId && expense.linkedTaskId && expense.linkedTaskType) {
-      const goalId = expense.linkedGoalId;
+    if (expense?.linkedGoalId && expense.linkedTaskId) {
       const taskId = expense.linkedTaskId;
-      const taskType = expense.linkedTaskType;
+      const taskType = expense.linkedTaskType || "pre";
+      const prefix = TASK_PREFIX[taskType as TaskType] || "";
+      const taskUpdates: Partial<TaskNode> = {};
 
-      setGoals((prev) =>
-        prev.map((g) => {
-          if (g.id !== goalId) return g;
-          if (taskType === "pre") {
-            return {
-              ...g,
-              preTasks: g.preTasks.map((t) =>
-                t.id === taskId
-                  ? {
-                      ...t,
-                      action: updates.description !== undefined ? updates.description.replace(/^\[Pre-task\]\s*/i, "") : t.action,
-                      cost: updates.amount !== undefined ? updates.amount : t.cost,
-                      deadline: updates.date !== undefined ? updates.date : t.deadline,
-                    }
-                  : t
-              ),
-            };
-          }
-          if (taskType === "post") {
-            return {
-              ...g,
-              postTasks: g.postTasks.map((t) =>
-                t.id === taskId
-                  ? {
-                      ...t,
-                      action: updates.description !== undefined ? updates.description.replace(/^\[Post-task\]\s*/i, "") : t.action,
-                      cost: updates.amount !== undefined ? updates.amount : t.cost,
-                      deadline: updates.date !== undefined ? updates.date : t.deadline,
-                    }
-                  : t
-              ),
-            };
-          }
-          if (taskType === "dream") {
-            return {
-              ...g,
-              postDreams: g.postDreams.map((d) =>
-                d.id === taskId
-                  ? {
-                      ...d,
-                      title: updates.description !== undefined ? updates.description.replace(/^\[Dream\]\s*/i, "") : d.title,
-                      cost: updates.amount !== undefined ? updates.amount : d.cost,
-                      deadline: updates.date !== undefined ? updates.date : d.deadline,
-                    }
-                  : d
-              ),
-            };
-          }
-          return g;
-        })
-      );
+      if (updates.description !== undefined) {
+        taskUpdates.title = updates.description.replace(new RegExp(`^\\${prefix.replace("[", "\\[").replace("]", "\\]")}\\s*`, "i"), "");
+      }
+      if (updates.amount !== undefined) {
+        taskUpdates.cost = updates.amount;
+      }
+      if (updates.date !== undefined) {
+        taskUpdates.deadline = updates.date;
+      }
+      if (Object.keys(taskUpdates).length > 0) {
+        setTasks((prev) =>
+          prev.map((t) => (t.id === taskId ? { ...t, ...taskUpdates } : t))
+        );
+      }
     }
 
     toast({ title: "Expense updated" });
   };
 
-  // Income handlers
   const addIncome = (income: Omit<Income, "id">) => {
     const newIncome: Income = {
       ...income,
@@ -384,21 +414,18 @@ const ExpenseTracker = () => {
     toast({ title: "Income updated" });
   };
 
-  // Saving handlers with bidirectional sync for goals
   const addSaving = (saving: Omit<Saving, "id">) => {
     const newSaving: Saving = {
       ...saving,
       id: crypto.randomUUID(),
     };
     setSavings((prev) => [newSaving, ...prev]);
-    
-    // If adding a goal saving, sync to savings target (using skipSavingSync to prevent loop)
-    // Note: saving.amount is already in NTD, need to convert to current display currency for target
+
     if (saving.savingType === "goal") {
       const amountInDisplayCurrency = convertFromNTD(saving.amount, currency);
       updateTarget("savings", amountInDisplayCurrency, "monthly", currency, true);
     }
-    
+
     toast({
       title: saving.savingType === "goal" ? "Savings goal set" : "Savings recorded",
       description: `${saving.savingType === "goal" ? "Goal" : "Balance"}: ${format(saving.amount)}`,
@@ -412,32 +439,25 @@ const ExpenseTracker = () => {
 
   const updateSaving = (id: string, updates: Partial<Omit<Saving, "id">>) => {
     const existingSaving = savings.find(s => s.id === id);
-    
+
     setSavings((prev) =>
       prev.map((sav) => (sav.id === id ? { ...sav, ...updates } : sav))
     );
-    
-    // Sync to target if:
-    // 1. Amount changed and saving is/becomes a goal
-    // 2. Type changed to goal (regardless of amount change)
+
     const newType = updates.savingType ?? existingSaving?.savingType;
     const newAmount = updates.amount ?? existingSaving?.amount;
     const wasGoal = existingSaving?.savingType === "goal";
     const isGoal = newType === "goal";
-    
+
     if (isGoal && newAmount !== undefined && (updates.amount !== undefined || (!wasGoal && isGoal))) {
       const amountInDisplayCurrency = convertFromNTD(newAmount, currency);
       updateTarget("savings", amountInDisplayCurrency, "monthly", currency, true);
     }
-    
+
     toast({ title: "Savings updated" });
   };
 
-  // Goal handlers
   const addGoal = (title: string, deadline: string) => {
-    const activeGoals = goals.filter((g) => !g.completed && g.title);
-    if (activeGoals.length >= 10) return;
-
     const goalId = crypto.randomUUID();
     const expenseId = crypto.randomUUID();
 
@@ -460,9 +480,7 @@ const ExpenseTracker = () => {
       createdAt: new Date().toISOString(),
       linkedExpenseId: expenseId,
       category: "misc",
-      preTasks: [],
-      postTasks: [],
-      postDreams: [],
+      budget: 0,
       ideations: [],
       constraint: "",
       urlPack: [],
@@ -484,9 +502,6 @@ const ExpenseTracker = () => {
     setGoals((prev) =>
       prev.map((g) => (g.id === id ? { ...g, ...updates } : g))
     );
-
-    const expensesToAdd: Expense[] = [];
-    const expensesToDelete: string[] = [];
 
     if (goal.linkedExpenseId) {
       const expenseUpdates: Partial<Expense> = {};
@@ -513,166 +528,8 @@ const ExpenseTracker = () => {
         )
       );
     }
-
-    if (updates.preTasks) {
-      const oldTasks = goal.preTasks;
-      const newTasks = updates.preTasks;
-
-      oldTasks.forEach((oldTask) => {
-        const stillExists = newTasks.find((t) => t.id === oldTask.id);
-        if (!stillExists && oldTask.linkedExpenseId) {
-          expensesToDelete.push(oldTask.linkedExpenseId);
-        }
-      });
-
-      newTasks.forEach((newTask) => {
-        const oldTask = oldTasks.find((t) => t.id === newTask.id);
-        if (!oldTask) {
-          const expenseId = crypto.randomUUID();
-          expensesToAdd.push({
-            id: expenseId,
-            date: newTask.deadline || new Date().toISOString().split("T")[0],
-            description: `[Pre-task] ${newTask.action}`,
-            amount: newTask.cost,
-            needsCheck: false,
-            category: updates.category || goal.category,
-            linkedGoalId: id,
-            linkedTaskId: newTask.id,
-            linkedTaskType: "pre",
-          });
-          newTask.linkedExpenseId = expenseId;
-        } else if (
-          newTask.action !== oldTask.action ||
-          newTask.cost !== oldTask.cost ||
-          newTask.deadline !== oldTask.deadline
-        ) {
-          if (oldTask.linkedExpenseId) {
-            setExpenses((prev) =>
-              prev.map((e) =>
-                e.id === oldTask.linkedExpenseId
-                  ? {
-                      ...e,
-                      description: `[Pre-task] ${newTask.action}`,
-                      amount: newTask.cost,
-                      date: newTask.deadline || e.date,
-                    }
-                  : e
-              )
-            );
-          }
-        }
-      });
-    }
-
-    if (updates.postTasks) {
-      const oldTasks = goal.postTasks;
-      const newTasks = updates.postTasks;
-
-      oldTasks.forEach((oldTask) => {
-        const stillExists = newTasks.find((t) => t.id === oldTask.id);
-        if (!stillExists && oldTask.linkedExpenseId) {
-          expensesToDelete.push(oldTask.linkedExpenseId);
-        }
-      });
-
-      newTasks.forEach((newTask) => {
-        const oldTask = oldTasks.find((t) => t.id === newTask.id);
-        if (!oldTask) {
-          const expenseId = crypto.randomUUID();
-          expensesToAdd.push({
-            id: expenseId,
-            date: newTask.deadline || new Date().toISOString().split("T")[0],
-            description: `[Post-task] ${newTask.action}`,
-            amount: newTask.cost,
-            needsCheck: false,
-            category: updates.category || goal.category,
-            linkedGoalId: id,
-            linkedTaskId: newTask.id,
-            linkedTaskType: "post",
-          });
-          newTask.linkedExpenseId = expenseId;
-        } else if (
-          newTask.action !== oldTask.action ||
-          newTask.cost !== oldTask.cost ||
-          newTask.deadline !== oldTask.deadline
-        ) {
-          if (oldTask.linkedExpenseId) {
-            setExpenses((prev) =>
-              prev.map((e) =>
-                e.id === oldTask.linkedExpenseId
-                  ? {
-                      ...e,
-                      description: `[Post-task] ${newTask.action}`,
-                      amount: newTask.cost,
-                      date: newTask.deadline || e.date,
-                    }
-                  : e
-              )
-            );
-          }
-        }
-      });
-    }
-
-    if (updates.postDreams) {
-      const oldDreams = goal.postDreams;
-      const newDreams = updates.postDreams;
-
-      oldDreams.forEach((oldDream) => {
-        const stillExists = newDreams.find((d) => d.id === oldDream.id);
-        if (!stillExists && oldDream.linkedExpenseId) {
-          expensesToDelete.push(oldDream.linkedExpenseId);
-        }
-      });
-
-      newDreams.forEach((newDream) => {
-        const oldDream = oldDreams.find((d) => d.id === newDream.id);
-        if (!oldDream) {
-          const expenseId = crypto.randomUUID();
-          expensesToAdd.push({
-            id: expenseId,
-            date: newDream.deadline || new Date().toISOString().split("T")[0],
-            description: `[Dream] ${newDream.title}`,
-            amount: newDream.cost,
-            needsCheck: false,
-            category: updates.category || goal.category,
-            linkedGoalId: id,
-            linkedTaskId: newDream.id,
-            linkedTaskType: "dream",
-          });
-          newDream.linkedExpenseId = expenseId;
-        } else if (
-          newDream.title !== oldDream.title ||
-          newDream.cost !== oldDream.cost ||
-          newDream.deadline !== oldDream.deadline
-        ) {
-          if (oldDream.linkedExpenseId) {
-            setExpenses((prev) =>
-              prev.map((e) =>
-                e.id === oldDream.linkedExpenseId
-                  ? {
-                      ...e,
-                      description: `[Dream] ${newDream.title}`,
-                      amount: newDream.cost,
-                      date: newDream.deadline || e.date,
-                    }
-                  : e
-              )
-            );
-          }
-        }
-      });
-    }
-
-    if (expensesToAdd.length > 0) {
-      setExpenses((prev) => [...prev, ...expensesToAdd]);
-    }
-
-    if (expensesToDelete.length > 0) {
-      setExpenses((prev) => prev.filter((e) => !expensesToDelete.includes(e.id)));
-    }
   };
-  
+
   const deleteGoal = (id: string) => {
     const goal = goals.find(g => g.id === id);
 
@@ -681,21 +538,10 @@ const ExpenseTracker = () => {
       expenseIdsToDelete.push(goal.linkedExpenseId);
     }
 
-    goal?.preTasks.forEach((task) => {
-      if (task.linkedExpenseId) {
-        expenseIdsToDelete.push(task.linkedExpenseId);
-      }
-    });
-
-    goal?.postTasks.forEach((task) => {
-      if (task.linkedExpenseId) {
-        expenseIdsToDelete.push(task.linkedExpenseId);
-      }
-    });
-
-    goal?.postDreams.forEach((dream) => {
-      if (dream.linkedExpenseId) {
-        expenseIdsToDelete.push(dream.linkedExpenseId);
+    const goalTasks = tasks.filter(t => t.goalId === id);
+    goalTasks.forEach(t => {
+      if (t.linkedExpenseId) {
+        expenseIdsToDelete.push(t.linkedExpenseId);
       }
     });
 
@@ -703,11 +549,118 @@ const ExpenseTracker = () => {
       setExpenses((prev) => prev.filter((e) => !expenseIdsToDelete.includes(e.id)));
     }
 
+    setTasks((prev) => prev.filter((t) => t.goalId !== id));
     setGoals((prev) => prev.filter((g) => g.id !== id));
     toast({ title: "Goal deleted" });
   };
 
-  // Fixed Expense handlers
+  const addTask = (
+    goalId: string,
+    parentId: string | null,
+    taskType: TaskType,
+    data: { title: string; cost: number; timeCost: string; deadline: string }
+  ) => {
+    const goal = goals.find(g => g.id === goalId);
+    const taskId = crypto.randomUUID();
+    const expenseId = crypto.randomUUID();
+
+    const siblings = tasks.filter(
+      t => t.goalId === goalId && t.taskType === taskType && t.parentId === parentId
+    );
+
+    const linkedExpense: Expense = {
+      id: expenseId,
+      date: data.deadline || new Date().toISOString().split("T")[0],
+      description: `${TASK_PREFIX[taskType]} ${data.title}`,
+      amount: data.cost,
+      needsCheck: false,
+      category: goal?.category || "misc",
+      linkedGoalId: goalId,
+      linkedTaskId: taskId,
+      linkedTaskType: taskType,
+    };
+
+    const newTask: TaskNode = {
+      id: taskId,
+      goalId,
+      parentId,
+      taskType,
+      sortOrder: siblings.length,
+      title: data.title,
+      cost: data.cost,
+      timeCost: data.timeCost,
+      deadline: data.deadline,
+      isMagicWand: false,
+      completed: false,
+      linkedExpenseId: expenseId,
+      createdAt: new Date().toISOString(),
+    };
+
+    setTasks(prev => [...prev, newTask]);
+    setExpenses(prev => [...prev, linkedExpense]);
+  };
+
+  const updateTask = (taskId: string, updates: Partial<TaskNode>) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates } : t));
+
+    if (task.linkedExpenseId) {
+      const expenseUpdates: Partial<Expense> = {};
+      if (updates.title !== undefined) {
+        expenseUpdates.description = `${TASK_PREFIX[task.taskType]} ${updates.title}`;
+      }
+      if (updates.cost !== undefined) {
+        expenseUpdates.amount = updates.cost;
+      }
+      if (updates.deadline !== undefined && updates.deadline) {
+        expenseUpdates.date = updates.deadline;
+      }
+      if (Object.keys(expenseUpdates).length > 0) {
+        setExpenses(prev =>
+          prev.map(e => e.id === task.linkedExpenseId ? { ...e, ...expenseUpdates } : e)
+        );
+      }
+    }
+  };
+
+  const deleteTask = (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    setTasks(prev => {
+      const updated = prev.map(t => {
+        if (t.parentId === taskId) {
+          return { ...t, parentId: task.parentId };
+        }
+        return t;
+      });
+      return updated.filter(t => t.id !== taskId);
+    });
+
+    if (task.linkedExpenseId) {
+      setExpenses(prev => prev.filter(e => e.id !== task.linkedExpenseId));
+    }
+  };
+
+  const reorderTasks = (reordered: TaskNode[]) => {
+    setTasks(prev => {
+      const updated = [...prev];
+      for (const task of reordered) {
+        const idx = updated.findIndex(t => t.id === task.id);
+        if (idx >= 0) {
+          updated[idx] = { ...updated[idx], sortOrder: task.sortOrder, parentId: task.parentId };
+        }
+      }
+      return updated;
+    });
+  };
+
+  const moveTask = (taskId: string, newParentId: string | null) => {
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, parentId: newParentId } : t));
+  };
+
   const addFixedExpense = (expense: Omit<FixedExpense, "id" | "createdAt">) => {
     const newExpense: FixedExpense = {
       ...expense,
@@ -733,17 +686,13 @@ const ExpenseTracker = () => {
     toast({ title: "Fixed expense updated" });
   };
 
-  // Export/Import
   const escCsv = (val: string) => `"${val.replace(/"/g, '""')}"`;
   const jsonCsv = (val: unknown) => `"${JSON.stringify(val).replace(/"/g, '""')}"`;
 
   const exportToCSV = () => {
     const goalsWithContent = goals.filter((g) => g.title.trim());
-    if (expenses.length === 0 && incomes.length === 0 && savings.length === 0 && goalsWithContent.length === 0 && fixedExpenses.length === 0 && targets.length === 0) {
-      toast({
-        title: "No data to export",
-        variant: "destructive",
-      });
+    if (expenses.length === 0 && incomes.length === 0 && savings.length === 0 && goalsWithContent.length === 0 && fixedExpenses.length === 0 && targets.length === 0 && tasks.length === 0) {
+      toast({ title: "No data to export", variant: "destructive" });
       return;
     }
 
@@ -787,9 +736,18 @@ const ExpenseTracker = () => {
     if (goalsWithContent.length > 0) {
       if (csvContent) csvContent += "\n";
       csvContent += "### GOALS ###\n";
-      csvContent += "Title,Deadline,Completed,IsMagicWand,Category,Constraint,CreatedAt,UrlPack,PreTasks,PostTasks,PostDreams,Ideations\n";
+      csvContent += "Title,Deadline,Completed,IsMagicWand,Category,Constraint,CreatedAt,UrlPack,Ideations,Budget\n";
       goalsWithContent.forEach((goal) => {
-        csvContent += `${escCsv(goal.title)},${goal.deadline || ""},${goal.completed},${goal.isMagicWand || false},${goal.category || "misc"},${escCsv(goal.constraint || "")},${goal.createdAt},${jsonCsv(goal.urlPack || [])},${jsonCsv(goal.preTasks || [])},${jsonCsv(goal.postTasks || [])},${jsonCsv(goal.postDreams || [])},${jsonCsv(goal.ideations || [])}\n`;
+        csvContent += `${escCsv(goal.title)},${goal.deadline || ""},${goal.completed},${goal.isMagicWand || false},${goal.category || "misc"},${escCsv(goal.constraint || "")},${goal.createdAt},${jsonCsv(goal.urlPack || [])},${jsonCsv(goal.ideations || [])},${goal.budget || 0}\n`;
+      });
+    }
+
+    if (tasks.length > 0) {
+      if (csvContent) csvContent += "\n";
+      csvContent += "### TASKS ###\n";
+      csvContent += "Id,GoalId,ParentId,TaskType,SortOrder,Title,Cost,TimeCost,Deadline,IsMagicWand,Completed,LinkedExpenseId,CreatedAt\n";
+      tasks.forEach((t) => {
+        csvContent += `${t.id},${t.goalId},${t.parentId || ""},${t.taskType},${t.sortOrder},${escCsv(t.title)},${t.cost},${escCsv(t.timeCost || "")},${t.deadline || ""},${t.isMagicWand},${t.completed},${t.linkedExpenseId || ""},${t.createdAt}\n`;
       });
     }
 
@@ -814,7 +772,7 @@ const ExpenseTracker = () => {
 
     toast({
       title: "Exported successfully",
-      description: `${fixedExpenses.length} fixed, ${expenses.length} expenses, ${incomes.length} incomes, ${savings.length} savings, ${goalsWithContent.length} goals, ${targets.length} targets`,
+      description: `${fixedExpenses.length} fixed, ${expenses.length} expenses, ${incomes.length} incomes, ${savings.length} savings, ${goalsWithContent.length} goals, ${tasks.length} tasks, ${targets.length} targets`,
     });
   };
 
@@ -873,9 +831,11 @@ const ExpenseTracker = () => {
         const importedIncomes: Income[] = [];
         const importedSavings: Saving[] = [];
         const importedGoals: Goal[] = [];
+        const importedTasks: TaskNode[] = [];
         const importedFixedExpenses: FixedExpense[] = [];
         const importedTargets: FinancialTarget[] = [];
-        let currentSection: "expenses" | "incomes" | "savings" | "goals" | "fixedExpenses" | "targets" | null = null;
+        let currentSection: "expenses" | "incomes" | "savings" | "goals" | "tasks" | "fixedExpenses" | "targets" | null = null;
+        let goalsFormat: "old" | "new" | null = null;
 
         for (const line of lines) {
           if (line.includes("### FIXED EXPENSES ###")) {
@@ -898,11 +858,21 @@ const ExpenseTracker = () => {
             currentSection = "goals";
             continue;
           }
+          if (line.includes("### TASKS ###")) {
+            currentSection = "tasks";
+            continue;
+          }
           if (line.includes("### TARGETS ###")) {
             currentSection = "targets";
             continue;
           }
-          if (line.toLowerCase().startsWith("date,") || line.toLowerCase().startsWith("title,") || line.toLowerCase().startsWith("description,") || line.toLowerCase().startsWith("type,")) continue;
+
+          if (currentSection === "goals" && goalsFormat === null && line.toLowerCase().startsWith("title,")) {
+            goalsFormat = line.includes("PreTasks") ? "old" : "new";
+            continue;
+          }
+
+          if (line.toLowerCase().startsWith("date,") || line.toLowerCase().startsWith("title,") || line.toLowerCase().startsWith("description,") || line.toLowerCase().startsWith("type,") || line.toLowerCase().startsWith("id,")) continue;
 
           const f = parseCsvFields(line);
           if (f.length < 2) continue;
@@ -932,38 +902,157 @@ const ExpenseTracker = () => {
               });
             }
           } else if (currentSection === "goals") {
-            const title = f[0];
-            const deadline = f[1] || "";
-            const completed = f[2]?.toLowerCase() === "true";
-            const isMagicWand = f[3]?.toLowerCase() === "true";
-            const categoryField = f[4];
-            const validCategories: ExpenseCategory[] = ["food", "lifestyle", "family", "misc"];
-            const category = (categoryField && validCategories.includes(categoryField as ExpenseCategory))
-              ? (categoryField as ExpenseCategory)
-              : "misc";
-            const constraint = f[5] || "";
-            const createdAt = f[6] || new Date().toISOString();
-            const urlPack = parseJsonField<string[]>(f[7], []);
-            const preTasks = parseJsonField(f[8], []);
-            const postTasks = parseJsonField(f[9], []);
-            const postDreams = parseJsonField(f[10], []);
-            const ideations = parseJsonField(f[11], []);
+            if (goalsFormat === "old") {
+              const title = f[0];
+              const deadline = f[1] || "";
+              const completed = f[2]?.toLowerCase() === "true";
+              const isMagicWand = f[3]?.toLowerCase() === "true";
+              const categoryField = f[4];
+              const validCategories: ExpenseCategory[] = ["food", "lifestyle", "family", "misc"];
+              const category = (categoryField && validCategories.includes(categoryField as ExpenseCategory))
+                ? (categoryField as ExpenseCategory)
+                : "misc";
+              const constraint = f[5] || "";
+              const createdAt = f[6] || new Date().toISOString();
+              const urlPack = parseJsonField<string[]>(f[7], []);
+              const preTasks = parseJsonField<any[]>(f[8], []);
+              const postTasks = parseJsonField<any[]>(f[9], []);
+              const postDreams = parseJsonField<any[]>(f[10], []);
+              const ideations = parseJsonField(f[11], []);
 
-            if (title) {
-              importedGoals.push({
-                id: crypto.randomUUID(),
+              if (title) {
+                const goalId = crypto.randomUUID();
+                importedGoals.push({
+                  id: goalId,
+                  title,
+                  deadline,
+                  completed,
+                  isMagicWand,
+                  category,
+                  createdAt,
+                  constraint,
+                  urlPack,
+                  ideations,
+                  budget: 0,
+                });
+
+                preTasks.forEach((task: any, i: number) => {
+                  importedTasks.push({
+                    id: task.id || crypto.randomUUID(),
+                    goalId,
+                    parentId: null,
+                    taskType: "pre",
+                    sortOrder: i,
+                    title: task.action || "",
+                    cost: task.cost || 0,
+                    timeCost: task.timeCost || "",
+                    deadline: task.deadline || "",
+                    isMagicWand: task.isMagicWand || false,
+                    completed: task.completed || false,
+                    linkedExpenseId: task.linkedExpenseId || undefined,
+                    createdAt: new Date().toISOString(),
+                  });
+                });
+
+                postTasks.forEach((task: any, i: number) => {
+                  importedTasks.push({
+                    id: task.id || crypto.randomUUID(),
+                    goalId,
+                    parentId: null,
+                    taskType: "post",
+                    sortOrder: i,
+                    title: task.action || "",
+                    cost: task.cost || 0,
+                    timeCost: task.timeCost || "",
+                    deadline: task.deadline || "",
+                    isMagicWand: task.isMagicWand || false,
+                    completed: task.completed || false,
+                    linkedExpenseId: task.linkedExpenseId || undefined,
+                    createdAt: new Date().toISOString(),
+                  });
+                });
+
+                postDreams.forEach((dream: any, i: number) => {
+                  importedTasks.push({
+                    id: dream.id || crypto.randomUUID(),
+                    goalId,
+                    parentId: null,
+                    taskType: "dream",
+                    sortOrder: i,
+                    title: dream.title || "",
+                    cost: dream.cost || 0,
+                    timeCost: dream.timeCost || "",
+                    deadline: dream.deadline || "",
+                    isMagicWand: dream.isMagicWand || false,
+                    completed: false,
+                    linkedExpenseId: dream.linkedExpenseId || undefined,
+                    createdAt: new Date().toISOString(),
+                  });
+                });
+              }
+            } else {
+              const title = f[0];
+              const deadline = f[1] || "";
+              const completed = f[2]?.toLowerCase() === "true";
+              const isMagicWand = f[3]?.toLowerCase() === "true";
+              const categoryField = f[4];
+              const validCategories: ExpenseCategory[] = ["food", "lifestyle", "family", "misc"];
+              const category = (categoryField && validCategories.includes(categoryField as ExpenseCategory))
+                ? (categoryField as ExpenseCategory)
+                : "misc";
+              const constraint = f[5] || "";
+              const createdAt = f[6] || new Date().toISOString();
+              const urlPack = parseJsonField<string[]>(f[7], []);
+              const ideations = parseJsonField(f[8], []);
+              const budget = parseFloat(f[9]) || 0;
+
+              if (title) {
+                importedGoals.push({
+                  id: crypto.randomUUID(),
+                  title,
+                  deadline,
+                  completed,
+                  isMagicWand,
+                  category,
+                  createdAt,
+                  constraint,
+                  urlPack,
+                  ideations,
+                  budget,
+                });
+              }
+            }
+          } else if (currentSection === "tasks") {
+            if (f.length < 11) continue;
+            const id = f[0];
+            const goalId = f[1];
+            const parentId = f[2] || null;
+            const taskType = f[3] as TaskType;
+            const sortOrder = parseInt(f[4]) || 0;
+            const title = f[5];
+            const cost = parseFloat(f[6]) || 0;
+            const timeCost = f[7] || "";
+            const deadline = f[8] || "";
+            const isMagicWand = f[9]?.toLowerCase() === "true";
+            const completed = f[10]?.toLowerCase() === "true";
+            const linkedExpenseId = f[11] || undefined;
+            const createdAt = f[12] || new Date().toISOString();
+
+            if (id && goalId && ["pre", "post", "dream"].includes(taskType)) {
+              importedTasks.push({
+                id,
+                goalId,
+                parentId,
+                taskType,
+                sortOrder,
                 title,
+                cost,
+                timeCost,
                 deadline,
-                completed,
                 isMagicWand,
-                category,
+                completed,
+                linkedExpenseId,
                 createdAt,
-                constraint,
-                urlPack,
-                preTasks,
-                postTasks,
-                postDreams,
-                ideations,
               });
             }
           } else if (currentSection === "targets") {
@@ -1056,20 +1145,18 @@ const ExpenseTracker = () => {
           }
         }
 
-        const hasData = importedExpenses.length > 0 || importedIncomes.length > 0 || importedSavings.length > 0 || importedGoals.length > 0 || importedFixedExpenses.length > 0 || importedTargets.length > 0;
+        const hasData = importedExpenses.length > 0 || importedIncomes.length > 0 || importedSavings.length > 0 || importedGoals.length > 0 || importedTasks.length > 0 || importedFixedExpenses.length > 0 || importedTargets.length > 0;
         if (hasData) {
           if (importedFixedExpenses.length > 0) setFixedExpenses(importedFixedExpenses);
           if (importedExpenses.length > 0) setExpenses(importedExpenses);
           if (importedIncomes.length > 0) setIncomes(importedIncomes);
           if (importedSavings.length > 0) setSavings(importedSavings);
-          if (importedGoals.length > 0) {
-            const finalGoals = [...importedGoals.slice(0, 10)];
-            setGoals(finalGoals);
-          }
+          if (importedGoals.length > 0) setGoals(importedGoals);
+          if (importedTasks.length > 0) setTasks(importedTasks);
           if (importedTargets.length > 0) setTargets(importedTargets);
           toast({
             title: "Imported successfully",
-            description: `${importedFixedExpenses.length} fixed, ${importedExpenses.length} expenses, ${importedIncomes.length} incomes, ${importedSavings.length} savings, ${importedGoals.length} goals, ${importedTargets.length} targets`,
+            description: `${importedFixedExpenses.length} fixed, ${importedExpenses.length} expenses, ${importedIncomes.length} incomes, ${importedSavings.length} savings, ${importedGoals.length} goals, ${importedTasks.length} tasks, ${importedTargets.length} targets`,
           });
         } else {
           toast({
@@ -1104,6 +1191,9 @@ const ExpenseTracker = () => {
   const netCashFlow = totalIncomes - totalExpenses;
   const latestSavings = periodFilteredSavings.length > 0
     ? [...periodFilteredSavings].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].amount
+    : 0;
+  const latestSavingsBalance = periodFilteredSavings.filter(s => s.savingType === "balance").length > 0
+    ? [...periodFilteredSavings.filter(s => s.savingType === "balance")].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].amount
     : 0;
 
   const filteredExpenses = expenses.filter((exp) =>
@@ -1189,101 +1279,119 @@ const ExpenseTracker = () => {
             </div>
 
             <Tabs defaultValue="expenses" className="mb-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="expenses">Expenses</TabsTrigger>
-            <TabsTrigger value="income">Income</TabsTrigger>
-            <TabsTrigger value="savings">Savings</TabsTrigger>
-          </TabsList>
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="expenses">Expenses</TabsTrigger>
+                <TabsTrigger value="income">Income</TabsTrigger>
+                <TabsTrigger value="savings">Savings</TabsTrigger>
+                <TabsTrigger value="goals">Goals</TabsTrigger>
+              </TabsList>
 
-          <TabsContent value="expenses" className="space-y-4">
-            <div className="bg-card rounded-xl shadow-card p-5">
-              <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                💰 Fixed Expenses
-              </h3>
-              <FixedExpenseForm onAddFixedExpense={addFixedExpense} />
-              <div className="mt-4">
-                <FixedExpenseList
-                  fixedExpenses={fixedExpenses}
-                  onUpdateFixedExpense={updateFixedExpense}
-                  onDeleteFixedExpense={deleteFixedExpense}
+              <TabsContent value="expenses" className="space-y-4">
+                <div className="bg-card rounded-xl shadow-card p-5">
+                  <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                    Fixed Expenses
+                  </h3>
+                  <FixedExpenseForm onAddFixedExpense={addFixedExpense} />
+                  <div className="mt-4">
+                    <FixedExpenseList
+                      fixedExpenses={fixedExpenses}
+                      onUpdateFixedExpense={updateFixedExpense}
+                      onDeleteFixedExpense={deleteFixedExpense}
+                    />
+                  </div>
+                </div>
+
+                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-center">
+                  <p className="text-amber-800 dark:text-amber-200 text-sm font-medium">
+                    Is spending this money driving you away from living in Canada?
+                  </p>
+                </div>
+
+                <div className="bg-card rounded-xl shadow-card p-5">
+                  <h3 className="text-sm font-semibold text-foreground mb-3">One-time Expenses</h3>
+                  <ExpenseForm onAddExpense={addExpense} />
+                </div>
+
+                <div className="flex items-center gap-3 p-3 bg-card rounded-lg shadow-card">
+                  <Switch
+                    id="future-check"
+                    checked={expenses.some(
+                      (exp) => exp.date > new Date().toISOString().split("T")[0] && exp.needsCheck
+                    )}
+                    onCheckedChange={(checked) => {
+                      const today = new Date().toISOString().split("T")[0];
+                      setExpenses((prev) =>
+                        prev.map((exp) =>
+                          exp.date > today ? { ...exp, needsCheck: checked } : exp
+                        )
+                      );
+                    }}
+                    className="data-[state=checked]:bg-yellow-400"
+                  />
+                  <Label htmlFor="future-check" className="text-sm text-muted-foreground cursor-pointer">
+                    Mark all future transactions for review
+                  </Label>
+                </div>
+
+                <ExpenseList
+                  expenses={filteredExpenses}
+                  onDeleteExpense={deleteExpense}
+                  onToggleNeedsCheck={toggleNeedsCheck}
+                  onUpdateExpense={updateExpense}
                 />
-              </div>
-            </div>
+              </TabsContent>
 
-            <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-center">
-              <p className="text-amber-800 dark:text-amber-200 text-sm font-medium">
-                🍁 Is spending this money driving you away from living in Canada?
-              </p>
-            </div>
+              <TabsContent value="income" className="space-y-4">
+                <div className="bg-card rounded-xl shadow-card p-5">
+                  <IncomeForm onAddIncome={addIncome} />
+                </div>
 
-            <div className="bg-card rounded-xl shadow-card p-5">
-              <h3 className="text-sm font-semibold text-foreground mb-3">💰 One-time Expenses</h3>
-              <ExpenseForm onAddExpense={addExpense} />
-            </div>
+                <IncomeList
+                  incomes={filteredIncomes}
+                  onDeleteIncome={deleteIncome}
+                  onUpdateIncome={updateIncome}
+                />
+              </TabsContent>
 
-            <div className="flex items-center gap-3 p-3 bg-card rounded-lg shadow-card">
-              <Switch
-                id="future-check"
-                checked={expenses.some(
-                  (exp) => exp.date > new Date().toISOString().split("T")[0] && exp.needsCheck
-                )}
-                onCheckedChange={(checked) => {
-                  const today = new Date().toISOString().split("T")[0];
-                  setExpenses((prev) =>
-                    prev.map((exp) =>
-                      exp.date > today ? { ...exp, needsCheck: checked } : exp
-                    )
-                  );
-                }}
-                className="data-[state=checked]:bg-yellow-400"
-              />
-              <Label htmlFor="future-check" className="text-sm text-muted-foreground cursor-pointer">
-                Mark all future transactions for review
-              </Label>
-            </div>
+              <TabsContent value="savings" className="space-y-4">
+                <div className="bg-card rounded-xl shadow-card p-5">
+                  <SavingForm onAddSaving={addSaving} />
+                </div>
 
-            <ExpenseList
-              expenses={filteredExpenses}
-              onDeleteExpense={deleteExpense}
-              onToggleNeedsCheck={toggleNeedsCheck}
-              onUpdateExpense={updateExpense}
-            />
-          </TabsContent>
+                <SavingList
+                  savings={filteredSavings}
+                  onDeleteSaving={deleteSaving}
+                  onUpdateSaving={updateSaving}
+                />
 
-          <TabsContent value="income" className="space-y-4">
-            <div className="bg-card rounded-xl shadow-card p-5">
-              <IncomeForm onAddIncome={addIncome} />
-            </div>
+                <div className="bg-card rounded-xl shadow-card p-5">
+                  <GoalBudgetAllocator
+                    goals={goals}
+                    tasks={tasks}
+                    latestSavingsBalance={latestSavingsBalance}
+                    onUpdateGoal={updateGoal}
+                  />
+                </div>
+              </TabsContent>
 
-            <IncomeList
-              incomes={filteredIncomes}
-              onDeleteIncome={deleteIncome}
-              onUpdateIncome={updateIncome}
-            />
-          </TabsContent>
-
-          <TabsContent value="savings" className="space-y-4">
-            <div className="bg-card rounded-xl shadow-card p-5">
-              <GoalList
-                goals={goals.filter((g) => g.title)}
-                allGoals={goals}
-                onUpdateGoal={updateGoal}
-                onAddGoal={addGoal}
-                onDeleteGoal={deleteGoal}
-                onReorderGoals={reorderGoals}
-              />
-            </div>
-
-            <div className="bg-card rounded-xl shadow-card p-5">
-              <SavingForm onAddSaving={addSaving} />
-            </div>
-
-            <SavingList
-              savings={filteredSavings}
-              onDeleteSaving={deleteSaving}
-              onUpdateSaving={updateSaving}
-              />
-            </TabsContent>
+              <TabsContent value="goals" className="space-y-4">
+                <div className="bg-card rounded-xl shadow-card p-5">
+                  <GoalList
+                    goals={goals.filter((g) => g.title)}
+                    allGoals={goals}
+                    tasks={tasks}
+                    onUpdateGoal={updateGoal}
+                    onAddGoal={addGoal}
+                    onDeleteGoal={deleteGoal}
+                    onReorderGoals={reorderGoals}
+                    onAddTask={addTask}
+                    onUpdateTask={updateTask}
+                    onDeleteTask={deleteTask}
+                    onReorderTasks={reorderTasks}
+                    onMoveTask={moveTask}
+                  />
+                </div>
+              </TabsContent>
             </Tabs>
 
             <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
