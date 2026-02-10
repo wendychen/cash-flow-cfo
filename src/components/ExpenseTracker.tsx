@@ -1133,6 +1133,17 @@ const ExpenseTracker = () => {
               onToggleNeedsCheck={toggleNeedsCheck}
               onUpdateExpense={updateExpense}
             />
+
+            <div className="bg-card rounded-xl shadow-card p-5">
+              <GoalList
+                goals={goals.filter((g) => g.title)}
+                allGoals={goals}
+                onUpdateGoal={updateGoal}
+                onAddGoal={addGoal}
+                onDeleteGoal={deleteGoal}
+                onReorderGoals={reorderGoals}
+              />
+            </div>
           </TabsContent>
 
           <TabsContent value="income" className="space-y-4">
