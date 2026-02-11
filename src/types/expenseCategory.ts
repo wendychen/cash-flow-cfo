@@ -2,7 +2,10 @@ export type ExpenseCategory =
   | 'food'
   | 'lifestyle'
   | 'family'
-  | 'misc';
+  | 'misc'
+  | 'opex'
+  | 'capex'
+  | 'gna';
 
 export type FixedExpenseCategory =
   | 'housing'
@@ -43,6 +46,24 @@ export const EXPENSE_CATEGORIES: Record<ExpenseCategory, CategoryMetadata> = {
     color: 'text-slate-500',
     icon: 'Package',
     description: 'Other uncategorized expenses',
+  },
+  opex: {
+    label: 'OPEX',
+    color: 'text-blue-500',
+    icon: 'Repeat',
+    description: 'Operating Expenses - recurring costs for business operations',
+  },
+  capex: {
+    label: 'CAPEX',
+    color: 'text-purple-500',
+    icon: 'TrendingUp',
+    description: 'Capital Expenditures - long-term assets and investments',
+  },
+  gna: {
+    label: 'G&A',
+    color: 'text-orange-500',
+    icon: 'Building2',
+    description: 'General & Administrative - overhead and support costs',
   },
 };
 
