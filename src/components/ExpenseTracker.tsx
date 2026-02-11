@@ -56,6 +56,7 @@ const ExpenseTracker = () => {
   const { format, currency, setCurrency, convertToNTD, convertFromNTD } = useCurrency();
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod | null>(null);
   const [isTimeNavOpen, setIsTimeNavOpen] = useState(true);
+  const [isFixedExpensesOpen, setIsFixedExpensesOpen] = useState(true);
   const [isCashFlowOpen, setIsCashFlowOpen] = useState(true);
   const [isSankeyOpen, setIsSankeyOpen] = useState(true);
 
@@ -1461,28 +1462,44 @@ const ExpenseTracker = () => {
               </Collapsible>
             </div>
 
-            <Tabs defaultValue="expenses" className="mb-6">
+            <Tabs defaultValue="goals" className="mb-6">
               <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="goals">Goals</TabsTrigger>
                 <TabsTrigger value="expenses">Expenses</TabsTrigger>
                 <TabsTrigger value="income">Income</TabsTrigger>
                 <TabsTrigger value="savings">Savings</TabsTrigger>
-                <TabsTrigger value="goals">Goals</TabsTrigger>
               </TabsList>
 
               <TabsContent value="expenses" className="space-y-4">
-                <div className="bg-card rounded-xl shadow-card p-5">
-                  <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                    Fixed Expenses
-                  </h3>
-                  <FixedExpenseForm onAddFixedExpense={addFixedExpense} />
-                  <div className="mt-4">
-                    <FixedExpenseList
-                      fixedExpenses={fixedExpenses}
-                      onUpdateFixedExpense={updateFixedExpense}
-                      onDeleteFixedExpense={deleteFixedExpense}
-                    />
+                <Collapsible open={isFixedExpensesOpen} onOpenChange={setIsFixedExpensesOpen}>
+                  <div className="bg-card rounded-xl shadow-card">
+                    <CollapsibleTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className="w-full flex items-center justify-between p-5 hover:bg-accent"
+                      >
+                        <span className="text-sm font-semibold text-foreground flex items-center gap-2">
+                          Fixed Expenses
+                        </span>
+                        {isFixedExpensesOpen ? (
+                          <ChevronUp className="h-4 w-4" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="p-5 pt-0">
+                      <FixedExpenseForm onAddFixedExpense={addFixedExpense} />
+                      <div className="mt-4">
+                        <FixedExpenseList
+                          fixedExpenses={fixedExpenses}
+                          onUpdateFixedExpense={updateFixedExpense}
+                          onDeleteFixedExpense={deleteFixedExpense}
+                        />
+                      </div>
+                    </CollapsibleContent>
                   </div>
-                </div>
+                </Collapsible>
 
                 <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-center">
                   <p className="text-amber-800 dark:text-amber-200 text-sm font-medium">

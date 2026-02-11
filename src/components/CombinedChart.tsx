@@ -118,6 +118,16 @@ const CombinedChart = ({ expenses, incomes, savings, targets = [], onUpdateTarge
   };
 
   const chartData = useMemo(() => {
+    const safeParseISO = (dateStr: string) => {
+      if (!dateStr) return null;
+      try {
+        const parsed = parseISO(dateStr);
+        return isNaN(parsed.getTime()) ? null : parsed;
+      } catch {
+        return null;
+      }
+    };
+
     if (expenses.length === 0 && incomes.length === 0 && savings.length === 0) {
       return { 
         data: [], 
@@ -164,29 +174,32 @@ const CombinedChart = ({ expenses, incomes, savings, targets = [], onUpdateTarge
     let cumulativeIncome = 0;
     const dataByDate: Record<string, any> = {};
 
-    sortedDates.forEach((date) => {
-      cumulativeExpense += dailyExpenses[date] || 0;
-      cumulativeIncome += dailyIncomes[date] || 0;
-      const isFuture = date > today;
+    sortedDates.forEach((dateStr) => {
+      const parsed = safeParseISO(dateStr);
+      if (!parsed) return;
+
+      cumulativeExpense += dailyExpenses[dateStr] || 0;
+      cumulativeIncome += dailyIncomes[dateStr] || 0;
+      const isFuture = dateStr > today;
       
-      dataByDate[date] = {
-        date,
-        label: format(parseISO(date), "MM/dd"),
+      dataByDate[dateStr] = {
+        date: dateStr,
+        label: format(parsed, "MM/dd"),
         expenseCumulative: isFuture ? null : cumulativeExpense,
         futureExpense: isFuture ? cumulativeExpense : null,
         incomeCumulative: isFuture ? null : cumulativeIncome,
-        savings: savingsByDate[date] || null,
+        savings: savingsByDate[dateStr] || null,
       };
     });
 
     // Fill in savings for dates that don't have explicit entries (carry forward)
     let lastSavings: number | null = null;
-    sortedDates.forEach((date) => {
-      if (savingsByDate[date] !== undefined) {
-        lastSavings = savingsByDate[date];
+    sortedDates.forEach((dateStr) => {
+      if (savingsByDate[dateStr] !== undefined) {
+        lastSavings = savingsByDate[dateStr];
       }
-      if (lastSavings !== null && dataByDate[date].savings === null) {
-        dataByDate[date].savings = lastSavings;
+      if (lastSavings !== null && dataByDate[dateStr] && dataByDate[dateStr].savings === null) {
+        dataByDate[dateStr].savings = lastSavings;
       }
     });
 
@@ -199,33 +212,61 @@ const CombinedChart = ({ expenses, incomes, savings, targets = [], onUpdateTarge
 
     let avgDailyExpense = 0;
     if (expenseDates.length > 0) {
-      const firstExpenseDate = parseISO(expenseDates.sort()[0]);
-      const lastExpenseDate = parseISO(expenseDates.sort().reverse()[0]);
-      const daysDiff = Math.max(1, Math.ceil((lastExpenseDate.getTime() - firstExpenseDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
-      const totalExpenses = expenses.filter(e => e.date <= today).reduce((sum, exp) => sum + exp.amount, 0);
-      avgDailyExpense = totalExpenses / daysDiff;
+      const sortedExpenseDates = expenseDates.sort();
+      const firstExpenseDateParsed = safeParseISO(sortedExpenseDates[0]);
+      const lastExpenseDateParsed = safeParseISO(sortedExpenseDates[sortedExpenseDates.length - 1]);
+      if (!firstExpenseDateParsed || !lastExpenseDateParsed) {
+        avgDailyExpense = 0;
+      } else {
+        const daysDiff = Math.max(
+          1,
+          Math.ceil((lastExpenseDateParsed.getTime() - firstExpenseDateParsed.getTime()) / (1000 * 60 * 60 * 24)) + 1
+        );
+        const totalExpenses = expenses
+          .filter(e => e.date && e.date <= today)
+          .reduce((sum, exp) => sum + exp.amount, 0);
+        avgDailyExpense = totalExpenses / daysDiff;
+      }
     }
 
     let avgDailyIncome = 0;
     if (incomeDates.length > 0) {
-      const firstIncomeDate = parseISO(incomeDates.sort()[0]);
-      const lastIncomeDate = parseISO(incomeDates.sort().reverse()[0]);
-      const daysDiff = Math.max(1, Math.ceil((lastIncomeDate.getTime() - firstIncomeDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
-      const totalIncomes = incomes.filter(i => i.date <= today).reduce((sum, inc) => sum + inc.amount, 0);
-      avgDailyIncome = totalIncomes / daysDiff;
+      const sortedIncomeDates = incomeDates.sort();
+      const firstIncomeDateParsed = safeParseISO(sortedIncomeDates[0]);
+      const lastIncomeDateParsed = safeParseISO(sortedIncomeDates[sortedIncomeDates.length - 1]);
+      if (!firstIncomeDateParsed || !lastIncomeDateParsed) {
+        avgDailyIncome = 0;
+      } else {
+        const daysDiff = Math.max(
+          1,
+          Math.ceil((lastIncomeDateParsed.getTime() - firstIncomeDateParsed.getTime()) / (1000 * 60 * 60 * 24)) + 1
+        );
+        const totalIncomes = incomes
+          .filter(i => i.date && i.date <= today)
+          .reduce((sum, inc) => sum + inc.amount, 0);
+        avgDailyIncome = totalIncomes / daysDiff;
+      }
     }
 
     let avgDailySavingsGrowth = 0;
     if (savingsDates.length >= 2) {
-      const firstSavingsDate = parseISO(savingsDates[0]);
-      const lastSavingsDate = parseISO(savingsDates[savingsDates.length - 1]);
-      const daysDiff = Math.max(1, Math.ceil((lastSavingsDate.getTime() - firstSavingsDate.getTime()) / (1000 * 60 * 60 * 24)));
-      const savingsGrowth = savingsByDate[savingsDates[savingsDates.length - 1]] - savingsByDate[savingsDates[0]];
-      avgDailySavingsGrowth = savingsGrowth / daysDiff;
+      const firstSavingsDateParsed = safeParseISO(savingsDates[0]);
+      const lastSavingsDateParsed = safeParseISO(savingsDates[savingsDates.length - 1]);
+      if (firstSavingsDateParsed && lastSavingsDateParsed) {
+        const daysDiff = Math.max(
+          1,
+          Math.ceil((lastSavingsDateParsed.getTime() - firstSavingsDateParsed.getTime()) / (1000 * 60 * 60 * 24))
+        );
+        const savingsGrowth =
+          savingsByDate[savingsDates[savingsDates.length - 1]] - savingsByDate[savingsDates[0]];
+        avgDailySavingsGrowth = savingsGrowth / daysDiff;
+      }
     }
 
     // Generate projections
-    const lastDate = sortedDates.length > 0 ? parseISO(sortedDates[sortedDates.length - 1]) : new Date();
+    const lastParsedDate =
+      sortedDates.length > 0 ? safeParseISO(sortedDates[sortedDates.length - 1]) : null;
+    const lastDate = lastParsedDate || new Date();
     const lastCumulativeExpense = cumulativeExpense;
     const lastCumulativeIncome = cumulativeIncome;
     const lastSavingsValue = lastSavings || 0;
