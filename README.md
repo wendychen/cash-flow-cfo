@@ -1,12 +1,16 @@
-# Welcome to your Lovable project
+# Readme
+
+26-02-11
+This project is originally a Lovable project.
+And then I use Replit Core to develop it.
+And then I use Bolt to develop it.
+Now I am going to use Cursor to develop it offline.
 
 ## Project info
 
 **URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
 
 ## How can I edit this code?
-
-There are several ways of editing your application.
 
 **Use Lovable**
 
