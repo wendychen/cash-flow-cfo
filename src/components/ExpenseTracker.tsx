@@ -1338,6 +1338,7 @@ const ExpenseTracker = () => {
                   onDeleteExpense={deleteExpense}
                   onToggleNeedsCheck={toggleNeedsCheck}
                   onUpdateExpense={updateExpense}
+                  goals={goals}
                 />
               </TabsContent>
 

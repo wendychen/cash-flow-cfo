@@ -1,5 +1,6 @@
 import { useState, useRef, useMemo } from "react";
 import { TaskNode, TaskType } from "@/types/task";
+import { ExpenseCategory } from "@/types/expenseCategory";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -51,6 +52,8 @@ interface TaskTreeSectionProps {
   onDeleteTask: (taskId: string) => void;
   onReorderTasks: (reordered: TaskNode[]) => void;
   onMoveTask: (taskId: string, newParentId: string | null) => void;
+  goalTitle?: string;
+  goalCategory?: ExpenseCategory;
 }
 
 const sectionConfig: Record<
@@ -91,6 +94,8 @@ const TaskTreeSection = ({
   onDeleteTask,
   onReorderTasks,
   onMoveTask,
+  goalTitle,
+  goalCategory,
 }: TaskTreeSectionProps) => {
   const { format } = useCurrency();
   const [newTask, setNewTask] = useState({
@@ -383,6 +388,8 @@ const TaskTreeSection = ({
                       ? projected.depth
                       : undefined
                   }
+                  goalTitle={goalTitle}
+                  goalCategory={goalCategory}
                 />
                 {addingSubtaskFor === item.id && (
                   <div

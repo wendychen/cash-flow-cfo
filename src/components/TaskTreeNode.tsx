@@ -1,7 +1,9 @@
 import { TaskNode } from "@/types/task";
+import { ExpenseCategory, EXPENSE_CATEGORIES } from "@/types/expenseCategory";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   GripVertical,
   Wand2,
@@ -32,6 +34,8 @@ interface TaskTreeNodeProps {
   onToggleWand: (taskId: string) => void;
   format: (amount: number) => string;
   projectedDepth?: number;
+  goalTitle?: string;
+  goalCategory?: ExpenseCategory;
 }
 
 const TaskTreeNode = ({
@@ -46,6 +50,8 @@ const TaskTreeNode = ({
   onToggleWand,
   format,
   projectedDepth,
+  goalTitle,
+  goalCategory,
 }: TaskTreeNodeProps) => {
   const {
     attributes,
@@ -127,6 +133,16 @@ const TaskTreeNode = ({
             className="h-3 w-3 text-blue-500 shrink-0"
             title="Synced with expense"
           />
+        )}
+
+        {goalTitle && goalCategory && (
+          <Badge
+            variant="outline"
+            className={`${EXPENSE_CATEGORIES[goalCategory].color} border-current shrink-0 text-[10px] px-1 py-0 h-4`}
+            title={`Goal: ${goalTitle}`}
+          >
+            {goalTitle.length > 12 ? goalTitle.substring(0, 12) + '...' : goalTitle}
+          </Badge>
         )}
 
         <Input

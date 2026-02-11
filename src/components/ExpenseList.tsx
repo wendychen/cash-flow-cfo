@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Expense } from "@/types/expense";
+import { Goal } from "@/types/goal";
 import { useCurrency, Currency } from "@/hooks/use-currency";
 import {
   Select,
@@ -29,6 +30,7 @@ interface ExpenseListProps {
   onDeleteExpense: (id: string) => void;
   onToggleNeedsCheck: (id: string) => void;
   onUpdateExpense: (id: string, updates: Partial<Omit<Expense, "id">>) => void;
+  goals?: Goal[];
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -38,6 +40,7 @@ const ExpenseList = ({
   onDeleteExpense,
   onToggleNeedsCheck,
   onUpdateExpense,
+  goals = [],
 }: ExpenseListProps) => {
   const { format: formatCurrency, currency, convertFromNTD, convertToNTD } = useCurrency();
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -56,7 +59,7 @@ const ExpenseList = ({
       return <Package className="h-3 w-3" />;
     }
     const iconName = category.icon;
-    
+
     switch (iconName) {
       case "UtensilsCrossed": return <UtensilsCrossed className="h-3 w-3" />;
       case "Sparkles": return <Sparkles className="h-3 w-3" />;
@@ -64,6 +67,12 @@ const ExpenseList = ({
       case "Package": return <Package className="h-3 w-3" />;
       default: return <Package className="h-3 w-3" />;
     }
+  };
+
+  const getGoalTitle = (goalId: string | undefined) => {
+    if (!goalId) return null;
+    const goal = goals.find(g => g.id === goalId);
+    return goal?.title || null;
   };
 
   const startEdit = (expense: Expense) => {
@@ -289,10 +298,18 @@ const ExpenseList = ({
                               {expense.description}
                             </span>
                             {expense.linkedGoalId && (
-                              <Link
-                                className="h-3 w-3 text-blue-500 shrink-0"
-                                title={`Linked to goal ${expense.linkedTaskType ? `(${expense.linkedTaskType})` : ''}`}
-                              />
+                              <>
+                                <Link
+                                  className="h-3 w-3 text-blue-500 shrink-0"
+                                  title={`Linked to goal ${expense.linkedTaskType ? `(${expense.linkedTaskType})` : ''}`}
+                                />
+                                {getGoalTitle(expense.linkedGoalId) && (
+                                  <Badge variant="outline" className="text-blue-500 border-blue-500 shrink-0 text-[10px] px-1 py-0 h-4">
+                                    {getGoalTitle(expense.linkedGoalId)}
+                                    {expense.linkedTaskType && ` (${expense.linkedTaskType})`}
+                                  </Badge>
+                                )}
+                              </>
                             )}
                           </div>
                         </div>

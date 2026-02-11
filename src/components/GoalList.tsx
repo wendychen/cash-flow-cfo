@@ -524,6 +524,8 @@ const SortableGoalItem = ({
             onDeleteTask={onDeleteTask}
             onReorderTasks={onReorderTasks}
             onMoveTask={onMoveTask}
+            goalTitle={goal.title}
+            goalCategory={goal.category}
           />
 
           <TaskTreeSection
@@ -535,6 +537,8 @@ const SortableGoalItem = ({
             onDeleteTask={onDeleteTask}
             onReorderTasks={onReorderTasks}
             onMoveTask={onMoveTask}
+            goalTitle={goal.title}
+            goalCategory={goal.category}
           />
 
           <TaskTreeSection
@@ -546,6 +550,8 @@ const SortableGoalItem = ({
             onDeleteTask={onDeleteTask}
             onReorderTasks={onReorderTasks}
             onMoveTask={onMoveTask}
+            goalTitle={goal.title}
+            goalCategory={goal.category}
           />
 
           <div className="space-y-2">
