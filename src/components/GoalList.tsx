@@ -505,6 +505,12 @@ const SortableGoalItem = ({
             Budget: {format(goal.budget)}
           </Badge>
         )}
+        <Input
+          value={goal.timeCost || ""}
+          onChange={(e) => onUpdateGoal(goal.id, { timeCost: e.target.value })}
+          placeholder="Time..."
+          className="h-7 text-xs border-dashed bg-transparent w-24"
+        />
         {dreams.length > 0 && (
           <Badge variant="outline" className="text-xs gap-1 text-teal-600">
             <Sparkles className="h-3 w-3" />
@@ -524,6 +530,8 @@ const SortableGoalItem = ({
             onDeleteTask={onDeleteTask}
             onReorderTasks={onReorderTasks}
             onMoveTask={onMoveTask}
+            goalTitle={goal.title}
+            goalCategory={goal.category}
           />
 
           <TaskTreeSection
@@ -535,6 +543,8 @@ const SortableGoalItem = ({
             onDeleteTask={onDeleteTask}
             onReorderTasks={onReorderTasks}
             onMoveTask={onMoveTask}
+            goalTitle={goal.title}
+            goalCategory={goal.category}
           />
 
           <TaskTreeSection
@@ -546,6 +556,8 @@ const SortableGoalItem = ({
             onDeleteTask={onDeleteTask}
             onReorderTasks={onReorderTasks}
             onMoveTask={onMoveTask}
+            goalTitle={goal.title}
+            goalCategory={goal.category}
           />
 
           <div className="space-y-2">

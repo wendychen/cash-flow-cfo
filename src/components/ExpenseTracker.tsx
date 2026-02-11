@@ -329,7 +329,24 @@ const ExpenseTracker = () => {
   };
 
   const deleteExpense = (id: string) => {
+    const expense = expenses.find(e => e.id === id);
     setExpenses((prev) => prev.filter((exp) => exp.id !== id));
+
+    if (expense?.linkedTaskId) {
+      const task = tasks.find(t => t.id === expense.linkedTaskId);
+      if (task) {
+        setTasks(prev => {
+          const updated = prev.map(t => {
+            if (t.parentId === expense.linkedTaskId) {
+              return { ...t, parentId: task.parentId };
+            }
+            return t;
+          });
+          return updated.filter(t => t.id !== expense.linkedTaskId);
+        });
+      }
+    }
+
     toast({ title: "Expense deleted" });
   };
 
@@ -358,6 +375,12 @@ const ExpenseTracker = () => {
       if (updates.category !== undefined) {
         goalUpdates.category = updates.category;
       }
+      if (updates.amount !== undefined) {
+        goalUpdates.budget = updates.amount;
+      }
+      if (updates.timeCost !== undefined) {
+        goalUpdates.timeCost = updates.timeCost;
+      }
       if (Object.keys(goalUpdates).length > 0) {
         setGoals((prev) =>
           prev.map((g) => (g.id === expense.linkedGoalId ? { ...g, ...goalUpdates } : g))
@@ -379,6 +402,9 @@ const ExpenseTracker = () => {
       }
       if (updates.date !== undefined) {
         taskUpdates.deadline = updates.date;
+      }
+      if (updates.timeCost !== undefined) {
+        taskUpdates.timeCost = updates.timeCost;
       }
       if (Object.keys(taskUpdates).length > 0) {
         setTasks((prev) =>
@@ -466,6 +492,7 @@ const ExpenseTracker = () => {
       date: deadline || new Date().toISOString().split("T")[0],
       description: `Goal: ${title}`,
       amount: 0,
+      timeCost: "",
       needsCheck: true,
       category: "misc",
       linkedGoalId: goalId,
@@ -481,6 +508,7 @@ const ExpenseTracker = () => {
       linkedExpenseId: expenseId,
       category: "misc",
       budget: 0,
+      timeCost: "",
       ideations: [],
       constraint: "",
       urlPack: [],
@@ -513,6 +541,12 @@ const ExpenseTracker = () => {
       }
       if (updates.category) {
         expenseUpdates.category = updates.category;
+      }
+      if (updates.budget !== undefined) {
+        expenseUpdates.amount = updates.budget;
+      }
+      if (updates.timeCost !== undefined) {
+        expenseUpdates.timeCost = updates.timeCost;
       }
       if (Object.keys(expenseUpdates).length > 0) {
         setExpenses((prev) =>
@@ -573,6 +607,7 @@ const ExpenseTracker = () => {
       date: data.deadline || new Date().toISOString().split("T")[0],
       description: `${TASK_PREFIX[taskType]} ${data.title}`,
       amount: data.cost,
+      timeCost: data.timeCost,
       needsCheck: false,
       category: goal?.category || "misc",
       linkedGoalId: goalId,
@@ -616,6 +651,9 @@ const ExpenseTracker = () => {
       }
       if (updates.deadline !== undefined && updates.deadline) {
         expenseUpdates.date = updates.deadline;
+      }
+      if (updates.timeCost !== undefined) {
+        expenseUpdates.timeCost = updates.timeCost;
       }
       if (Object.keys(expenseUpdates).length > 0) {
         setExpenses(prev =>
@@ -1338,6 +1376,7 @@ const ExpenseTracker = () => {
                   onDeleteExpense={deleteExpense}
                   onToggleNeedsCheck={toggleNeedsCheck}
                   onUpdateExpense={updateExpense}
+                  goals={goals}
                 />
               </TabsContent>
 

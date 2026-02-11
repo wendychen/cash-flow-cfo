@@ -37,6 +37,7 @@ export interface Goal {
   linkedExpenseId?: string;
   category: ExpenseCategory;
   budget: number;
+  timeCost: string;
   ideations: Ideation[];
   constraint: string;
   urlPack: string[];

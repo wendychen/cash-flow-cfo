@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Expense } from "@/types/expense";
+import { Goal } from "@/types/goal";
 import { useCurrency, Currency } from "@/hooks/use-currency";
 import {
   Select,
@@ -29,6 +30,7 @@ interface ExpenseListProps {
   onDeleteExpense: (id: string) => void;
   onToggleNeedsCheck: (id: string) => void;
   onUpdateExpense: (id: string, updates: Partial<Omit<Expense, "id">>) => void;
+  goals?: Goal[];
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -38,11 +40,13 @@ const ExpenseList = ({
   onDeleteExpense,
   onToggleNeedsCheck,
   onUpdateExpense,
+  goals = [],
 }: ExpenseListProps) => {
   const { format: formatCurrency, currency, convertFromNTD, convertToNTD } = useCurrency();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDescription, setEditDescription] = useState("");
   const [editAmount, setEditAmount] = useState("");
+  const [editTimeCost, setEditTimeCost] = useState("");
   const [editCurrency, setEditCurrency] = useState<Currency>("NTD");
   const [editReviewCount, setEditReviewCount] = useState("");
   const [editDate, setEditDate] = useState("");
@@ -56,7 +60,7 @@ const ExpenseList = ({
       return <Package className="h-3 w-3" />;
     }
     const iconName = category.icon;
-    
+
     switch (iconName) {
       case "UtensilsCrossed": return <UtensilsCrossed className="h-3 w-3" />;
       case "Sparkles": return <Sparkles className="h-3 w-3" />;
@@ -66,11 +70,18 @@ const ExpenseList = ({
     }
   };
 
+  const getGoalTitle = (goalId: string | undefined) => {
+    if (!goalId) return null;
+    const goal = goals.find(g => g.id === goalId);
+    return goal?.title || null;
+  };
+
   const startEdit = (expense: Expense) => {
     setEditingId(expense.id);
     setEditDescription(expense.description);
     // Convert stored NTD to current display currency for editing
     setEditAmount(convertFromNTD(expense.amount, currency).toFixed(currency === "NTD" ? 0 : 2));
+    setEditTimeCost(expense.timeCost || "");
     setEditCurrency(currency);
     setEditReviewCount(expense.reviewCount?.toString() || "");
     setEditDate(expense.date);
@@ -81,6 +92,7 @@ const ExpenseList = ({
     setEditingId(null);
     setEditDescription("");
     setEditAmount("");
+    setEditTimeCost("");
     setEditReviewCount("");
     setEditDate("");
     setEditCategory("misc");
@@ -92,6 +104,7 @@ const ExpenseList = ({
     onUpdateExpense(id, {
       description: editDescription.trim(),
       amount: amountInNTD,
+      timeCost: editTimeCost.trim(),
       reviewCount: editReviewCount ? parseInt(editReviewCount) : undefined,
       date: editDate,
       category: editCategory,
@@ -222,6 +235,12 @@ const ExpenseList = ({
                             className="h-8 text-sm flex-1 min-w-24"
                             autoFocus
                           />
+                          <Input
+                            value={editTimeCost}
+                            onChange={(e) => setEditTimeCost(e.target.value)}
+                            placeholder="Time"
+                            className="h-8 text-sm w-20"
+                          />
                           <div className="flex gap-1">
                             <Input
                               type="number"
@@ -288,11 +307,24 @@ const ExpenseList = ({
                             <span className="text-foreground font-medium truncate">
                               {expense.description}
                             </span>
+                            {expense.timeCost && (
+                              <Badge variant="outline" className="text-teal-600 border-teal-600 shrink-0 text-[10px] px-1 py-0 h-4">
+                                {expense.timeCost}
+                              </Badge>
+                            )}
                             {expense.linkedGoalId && (
-                              <Link
-                                className="h-3 w-3 text-blue-500 shrink-0"
-                                title={`Linked to goal ${expense.linkedTaskType ? `(${expense.linkedTaskType})` : ''}`}
-                              />
+                              <>
+                                <Link
+                                  className="h-3 w-3 text-blue-500 shrink-0"
+                                  title={`Linked to goal ${expense.linkedTaskType ? `(${expense.linkedTaskType})` : ''}`}
+                                />
+                                {getGoalTitle(expense.linkedGoalId) && (
+                                  <Badge variant="outline" className="text-blue-500 border-blue-500 shrink-0 text-[10px] px-1 py-0 h-4">
+                                    {getGoalTitle(expense.linkedGoalId)}
+                                    {expense.linkedTaskType && ` (${expense.linkedTaskType})`}
+                                  </Badge>
+                                )}
+                              </>
                             )}
                           </div>
                         </div>
