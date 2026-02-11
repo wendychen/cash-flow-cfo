@@ -329,7 +329,24 @@ const ExpenseTracker = () => {
   };
 
   const deleteExpense = (id: string) => {
+    const expense = expenses.find(e => e.id === id);
     setExpenses((prev) => prev.filter((exp) => exp.id !== id));
+
+    if (expense?.linkedTaskId) {
+      const task = tasks.find(t => t.id === expense.linkedTaskId);
+      if (task) {
+        setTasks(prev => {
+          const updated = prev.map(t => {
+            if (t.parentId === expense.linkedTaskId) {
+              return { ...t, parentId: task.parentId };
+            }
+            return t;
+          });
+          return updated.filter(t => t.id !== expense.linkedTaskId);
+        });
+      }
+    }
+
     toast({ title: "Expense deleted" });
   };
 
