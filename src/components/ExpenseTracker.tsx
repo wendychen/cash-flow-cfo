@@ -35,7 +35,7 @@ import { Saving } from "@/types/saving";
 import { Goal } from "@/types/goal";
 import { TaskNode, TaskType } from "@/types/task";
 import { FinancialTarget } from "@/types/target";
-import { ExpenseCategory, FixedExpenseCategory } from "@/types/expenseCategory";
+import { ExpenseCategory, FixedExpenseCategory, migrateFixedExpenseCategory } from "@/types/expenseCategory";
 import { toast } from "@/hooks/use-toast";
 import { useCurrency, Currency } from "@/hooks/use-currency";
 
@@ -184,7 +184,7 @@ const ExpenseTracker = () => {
       const parsed = JSON.parse(saved);
       return parsed.map((exp: FixedExpense) => ({
         ...exp,
-        category: exp.category || "housing",
+        category: migrateFixedExpenseCategory(exp.category),
       }));
     }
     return [];
@@ -210,8 +210,49 @@ const ExpenseTracker = () => {
   }, [savings]);
 
   useEffect(() => {
-    localStorage.setItem("goals", JSON.stringify(goals));
-  }, [goals]);
+    const goalsWithTasks = goals.map((g) => {
+      const preTasks = tasks
+        .filter((t) => t.goalId === g.id && t.taskType === "pre")
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .map((t) => ({
+          id: t.id,
+          action: t.title,
+          cost: t.cost,
+          timeCost: t.timeCost,
+          deadline: t.deadline,
+          isMagicWand: t.isMagicWand,
+          completed: t.completed,
+          linkedExpenseId: t.linkedExpenseId,
+        }));
+      const postTasks = tasks
+        .filter((t) => t.goalId === g.id && t.taskType === "post")
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .map((t) => ({
+          id: t.id,
+          action: t.title,
+          cost: t.cost,
+          timeCost: t.timeCost,
+          deadline: t.deadline,
+          isMagicWand: t.isMagicWand,
+          completed: t.completed,
+          linkedExpenseId: t.linkedExpenseId,
+        }));
+      const postDreams = tasks
+        .filter((t) => t.goalId === g.id && t.taskType === "dream")
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .map((t) => ({
+          id: t.id,
+          title: t.title,
+          cost: t.cost,
+          timeCost: t.timeCost,
+          deadline: t.deadline,
+          isMagicWand: t.isMagicWand,
+          linkedExpenseId: t.linkedExpenseId,
+        }));
+      return { ...g, preTasks, postTasks, postDreams };
+    });
+    localStorage.setItem("goals", JSON.stringify(goalsWithTasks));
+  }, [goals, tasks]);
 
   useEffect(() => {
     localStorage.setItem("tasks", JSON.stringify(tasks));
@@ -774,9 +815,47 @@ const ExpenseTracker = () => {
     if (goalsWithContent.length > 0) {
       if (csvContent) csvContent += "\n";
       csvContent += "### GOALS ###\n";
-      csvContent += "Title,Deadline,Completed,IsMagicWand,Category,Constraint,CreatedAt,UrlPack,Ideations,Budget\n";
+      csvContent += "Id,Title,Deadline,Completed,IsMagicWand,Category,Constraint,CreatedAt,UrlPack,Ideations,Budget,PreTasks,PostTasks,PostDreams\n";
       goalsWithContent.forEach((goal) => {
-        csvContent += `${escCsv(goal.title)},${goal.deadline || ""},${goal.completed},${goal.isMagicWand || false},${goal.category || "misc"},${escCsv(goal.constraint || "")},${goal.createdAt},${jsonCsv(goal.urlPack || [])},${jsonCsv(goal.ideations || [])},${goal.budget || 0}\n`;
+        const preTasks = tasks
+          .filter((t) => t.goalId === goal.id && t.taskType === "pre")
+          .sort((a, b) => a.sortOrder - b.sortOrder)
+          .map((t) => ({
+            id: t.id,
+            action: t.title,
+            cost: t.cost,
+            timeCost: t.timeCost,
+            deadline: t.deadline,
+            isMagicWand: t.isMagicWand,
+            completed: t.completed,
+            linkedExpenseId: t.linkedExpenseId,
+          }));
+        const postTasks = tasks
+          .filter((t) => t.goalId === goal.id && t.taskType === "post")
+          .sort((a, b) => a.sortOrder - b.sortOrder)
+          .map((t) => ({
+            id: t.id,
+            action: t.title,
+            cost: t.cost,
+            timeCost: t.timeCost,
+            deadline: t.deadline,
+            isMagicWand: t.isMagicWand,
+            completed: t.completed,
+            linkedExpenseId: t.linkedExpenseId,
+          }));
+        const postDreams = tasks
+          .filter((t) => t.goalId === goal.id && t.taskType === "dream")
+          .sort((a, b) => a.sortOrder - b.sortOrder)
+          .map((t) => ({
+            id: t.id,
+            title: t.title,
+            cost: t.cost,
+            timeCost: t.timeCost,
+            deadline: t.deadline,
+            isMagicWand: t.isMagicWand,
+            linkedExpenseId: t.linkedExpenseId,
+          }));
+        csvContent += `${goal.id},${escCsv(goal.title)},${goal.deadline || ""},${goal.completed},${goal.isMagicWand || false},${goal.category || "misc"},${escCsv(goal.constraint || "")},${goal.createdAt},${jsonCsv(goal.urlPack || [])},${jsonCsv(goal.ideations || [])},${goal.budget || 0},${jsonCsv(preTasks)},${jsonCsv(postTasks)},${jsonCsv(postDreams)}\n`;
       });
     }
 
@@ -874,6 +953,7 @@ const ExpenseTracker = () => {
         const importedTargets: FinancialTarget[] = [];
         let currentSection: "expenses" | "incomes" | "savings" | "goals" | "tasks" | "fixedExpenses" | "targets" | null = null;
         let goalsFormat: "old" | "new" | null = null;
+        let goalsNewHasId = false;
 
         for (const line of lines) {
           if (line.includes("### FIXED EXPENSES ###")) {
@@ -905,8 +985,11 @@ const ExpenseTracker = () => {
             continue;
           }
 
-          if (currentSection === "goals" && goalsFormat === null && line.toLowerCase().startsWith("title,")) {
-            goalsFormat = line.includes("PreTasks") ? "old" : "new";
+          if (currentSection === "goals" && goalsFormat === null && (line.toLowerCase().startsWith("title,") || line.toLowerCase().startsWith("id,"))) {
+            const hasBudget = line.includes("Budget");
+            const hasPreTasks = line.includes("PreTasks");
+            goalsFormat = hasPreTasks && !hasBudget ? "old" : "new";
+            goalsNewHasId = line.toLowerCase().startsWith("id,");
             continue;
           }
 
@@ -922,10 +1005,13 @@ const ExpenseTracker = () => {
             const frequency = f[2] as "weekly" | "monthly" | "quarterly" | "yearly";
             const isActive = f[3]?.toLowerCase() !== "false";
             const categoryField = f[4];
-            const validFixedCategories: FixedExpenseCategory[] = ["housing", "utilities", "transportation", "health", "financial-obligations", "taxes"];
+            const validFixedCategories: FixedExpenseCategory[] = [
+              "housing", "utilities-water-electric", "utilities-gas", "utilities-telecom",
+              "transport", "health", "liabilities-debt", "liabilities-loans", "liabilities-installments", "taxes",
+            ];
             const category = (categoryField && validFixedCategories.includes(categoryField as FixedExpenseCategory))
               ? (categoryField as FixedExpenseCategory)
-              : "housing";
+              : migrateFixedExpenseCategory(categoryField);
             const createdAt = f[5] || new Date().toISOString();
 
             if (description && !isNaN(amount)) {
@@ -946,7 +1032,7 @@ const ExpenseTracker = () => {
               const completed = f[2]?.toLowerCase() === "true";
               const isMagicWand = f[3]?.toLowerCase() === "true";
               const categoryField = f[4];
-              const validCategories: ExpenseCategory[] = ["food", "lifestyle", "family", "misc"];
+              const validCategories: ExpenseCategory[] = ["food", "lifestyle", "family", "misc", "opex", "capex", "gna"];
               const category = (categoryField && validCategories.includes(categoryField as ExpenseCategory))
                 ? (categoryField as ExpenseCategory)
                 : "misc";
@@ -1029,24 +1115,28 @@ const ExpenseTracker = () => {
                 });
               }
             } else {
-              const title = f[0];
-              const deadline = f[1] || "";
-              const completed = f[2]?.toLowerCase() === "true";
-              const isMagicWand = f[3]?.toLowerCase() === "true";
-              const categoryField = f[4];
-              const validCategories: ExpenseCategory[] = ["food", "lifestyle", "family", "misc"];
+              const goalId = goalsNewHasId ? (f[0] || crypto.randomUUID()) : crypto.randomUUID();
+              const title = goalsNewHasId ? f[1] : f[0];
+              const deadline = goalsNewHasId ? (f[2] || "") : (f[1] || "");
+              const completed = (goalsNewHasId ? f[3] : f[2])?.toLowerCase() === "true";
+              const isMagicWand = (goalsNewHasId ? f[4] : f[3])?.toLowerCase() === "true";
+              const categoryField = goalsNewHasId ? f[5] : f[4];
+              const validCategories: ExpenseCategory[] = ["food", "lifestyle", "family", "misc", "opex", "capex", "gna"];
               const category = (categoryField && validCategories.includes(categoryField as ExpenseCategory))
                 ? (categoryField as ExpenseCategory)
                 : "misc";
-              const constraint = f[5] || "";
-              const createdAt = f[6] || new Date().toISOString();
-              const urlPack = parseJsonField<string[]>(f[7], []);
-              const ideations = parseJsonField(f[8], []);
-              const budget = parseFloat(f[9]) || 0;
+              const constraint = (goalsNewHasId ? f[6] : f[5]) || "";
+              const createdAt = (goalsNewHasId ? f[7] : f[6]) || new Date().toISOString();
+              const urlPack = parseJsonField<string[]>(goalsNewHasId ? f[8] : f[7], []);
+              const ideations = parseJsonField(goalsNewHasId ? f[9] : f[8], []);
+              const budget = parseFloat(goalsNewHasId ? f[10] : f[9]) || 0;
+              const preTasks = goalsNewHasId ? parseJsonField<any[]>(f[11], []) : [];
+              const postTasks = goalsNewHasId ? parseJsonField<any[]>(f[12], []) : [];
+              const postDreams = goalsNewHasId ? parseJsonField<any[]>(f[13], []) : [];
 
               if (title) {
                 importedGoals.push({
-                  id: crypto.randomUUID(),
+                  id: goalId,
                   title,
                   deadline,
                   completed,
@@ -1057,6 +1147,60 @@ const ExpenseTracker = () => {
                   urlPack,
                   ideations,
                   budget,
+                });
+
+                preTasks.forEach((task: any, i: number) => {
+                  importedTasks.push({
+                    id: task.id || crypto.randomUUID(),
+                    goalId,
+                    parentId: null,
+                    taskType: "pre",
+                    sortOrder: i,
+                    title: task.action || "",
+                    cost: task.cost || 0,
+                    timeCost: task.timeCost || "",
+                    deadline: task.deadline || "",
+                    isMagicWand: task.isMagicWand || false,
+                    completed: task.completed || false,
+                    linkedExpenseId: task.linkedExpenseId || undefined,
+                    createdAt: new Date().toISOString(),
+                  });
+                });
+
+                postTasks.forEach((task: any, i: number) => {
+                  importedTasks.push({
+                    id: task.id || crypto.randomUUID(),
+                    goalId,
+                    parentId: null,
+                    taskType: "post",
+                    sortOrder: i,
+                    title: task.action || "",
+                    cost: task.cost || 0,
+                    timeCost: task.timeCost || "",
+                    deadline: task.deadline || "",
+                    isMagicWand: task.isMagicWand || false,
+                    completed: task.completed || false,
+                    linkedExpenseId: task.linkedExpenseId || undefined,
+                    createdAt: new Date().toISOString(),
+                  });
+                });
+
+                postDreams.forEach((dream: any, i: number) => {
+                  importedTasks.push({
+                    id: dream.id || crypto.randomUUID(),
+                    goalId,
+                    parentId: null,
+                    taskType: "dream",
+                    sortOrder: i,
+                    title: dream.title || "",
+                    cost: dream.cost || 0,
+                    timeCost: dream.timeCost || "",
+                    deadline: dream.deadline || "",
+                    isMagicWand: dream.isMagicWand || false,
+                    completed: false,
+                    linkedExpenseId: dream.linkedExpenseId || undefined,
+                    createdAt: new Date().toISOString(),
+                  });
                 });
               }
             }
@@ -1185,16 +1329,17 @@ const ExpenseTracker = () => {
 
         const hasData = importedExpenses.length > 0 || importedIncomes.length > 0 || importedSavings.length > 0 || importedGoals.length > 0 || importedTasks.length > 0 || importedFixedExpenses.length > 0 || importedTargets.length > 0;
         if (hasData) {
+          const dedupedTasks = Array.from(new Map(importedTasks.map((t) => [t.id, t])).values());
           if (importedFixedExpenses.length > 0) setFixedExpenses(importedFixedExpenses);
           if (importedExpenses.length > 0) setExpenses(importedExpenses);
           if (importedIncomes.length > 0) setIncomes(importedIncomes);
           if (importedSavings.length > 0) setSavings(importedSavings);
           if (importedGoals.length > 0) setGoals(importedGoals);
-          if (importedTasks.length > 0) setTasks(importedTasks);
+          if (dedupedTasks.length > 0) setTasks(dedupedTasks);
           if (importedTargets.length > 0) setTargets(importedTargets);
           toast({
             title: "Imported successfully",
-            description: `${importedFixedExpenses.length} fixed, ${importedExpenses.length} expenses, ${importedIncomes.length} incomes, ${importedSavings.length} savings, ${importedGoals.length} goals, ${importedTasks.length} tasks, ${importedTargets.length} targets`,
+            description: `${importedFixedExpenses.length} fixed, ${importedExpenses.length} expenses, ${importedIncomes.length} incomes, ${importedSavings.length} savings, ${importedGoals.length} goals, ${dedupedTasks.length} tasks, ${importedTargets.length} targets`,
           });
         } else {
           toast({

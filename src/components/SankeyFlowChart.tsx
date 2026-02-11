@@ -9,7 +9,7 @@ import { Goal } from "@/types/goal";
 import { FixedExpense } from "@/types/fixedExpense";
 import { useCurrency } from "@/hooks/use-currency";
 import { TimePeriod } from "./TimeNavigator";
-import { EXPENSE_CATEGORIES, FIXED_EXPENSE_CATEGORIES, ExpenseCategory, FixedExpenseCategory } from "@/types/expenseCategory";
+import { EXPENSE_CATEGORIES, FIXED_EXPENSE_CATEGORIES, ExpenseCategory, FixedExpenseCategory, migrateFixedExpenseCategory } from "@/types/expenseCategory";
 
 interface SankeyNode {
   id: string;
@@ -152,37 +152,43 @@ const SankeyFlowChart = ({
     } else if (drillDownLevel === "fixed-expense-categories") {
       nodes.push({ id: "fixed-expenses", name: "Fixed Expenses", color: "#dc2626", value: fixedExpenseTotal });
 
-      const categoryTotals: Record<FixedExpenseCategory, number> = {
-        housing: 0,
-        utilities: 0,
-        transportation: 0,
-        health: 0,
-        "financial-obligations": 0,
-        taxes: 0,
+      const fixedCategoryKeys: FixedExpenseCategory[] = [
+        "housing", "utilities-water-electric", "utilities-gas", "utilities-telecom",
+        "transport", "health", "liabilities-debt", "liabilities-loans", "liabilities-installments", "taxes",
+      ];
+      const categoryTotals: Record<string, number> = Object.fromEntries(fixedCategoryKeys.map((k) => [k, 0]));
+      const colorMap: Record<string, string> = {
+        housing: "#dc2626",
+        "utilities-water-electric": "#eab308",
+        "utilities-gas": "#f59e0b",
+        "utilities-telecom": "#84cc16",
+        transport: "#2563eb",
+        health: "#16a34a",
+        "liabilities-debt": "#f97316",
+        "liabilities-loans": "#ea580c",
+        "liabilities-installments": "#c2410c",
+        taxes: "#6b7280",
       };
 
       fixedExpenses.filter(f => f.isActive).forEach((expense) => {
-        const category = expense.category || "housing";
-        categoryTotals[category] += expense.amount;
+        const category = migrateFixedExpenseCategory(expense.category);
+        if (categoryTotals[category] !== undefined) {
+          categoryTotals[category] += expense.amount;
+        } else {
+          categoryTotals.housing += expense.amount;
+        }
       });
 
       Object.entries(categoryTotals).forEach(([category, total]) => {
         if (total > 0) {
           const cat = category as FixedExpenseCategory;
           const meta = FIXED_EXPENSE_CATEGORIES[cat];
-          const colorMap: Record<FixedExpenseCategory, string> = {
-            housing: "#dc2626",
-            utilities: "#ea580c",
-            transportation: "#2563eb",
-            health: "#16a34a",
-            "financial-obligations": "#f97316",
-            taxes: "#6b7280",
-          };
+          const color = colorMap[category] ?? "#6b7280";
 
           nodes.push({
             id: `fixed-cat-${category}`,
-            name: meta.label,
-            color: colorMap[cat],
+            name: meta?.label ?? category,
+            color,
             value: total,
           });
 
@@ -190,7 +196,7 @@ const SankeyFlowChart = ({
             source: "fixed-expenses",
             target: `fixed-cat-${category}`,
             value: total,
-            color: colorMap[cat] + "80",
+            color: color + "80",
           });
         }
       });
@@ -198,15 +204,11 @@ const SankeyFlowChart = ({
       const oneTimeExpenseTotal = expenses.reduce((sum, exp) => sum + exp.amount, 0);
       nodes.push({ id: "onetime-expenses", name: "One-Time Expenses", color: "#f87171", value: oneTimeExpenseTotal });
 
-      const categoryTotals: Record<ExpenseCategory, number> = {
-        food: 0,
-        lifestyle: 0,
-        family: 0,
-        miscellaneous: 0,
-      };
+      const expenseCategoryKeys: ExpenseCategory[] = ["food", "lifestyle", "family", "misc", "opex", "capex", "gna"];
+      const categoryTotals: Record<string, number> = Object.fromEntries(expenseCategoryKeys.map((k) => [k, 0]));
 
       expenses.forEach((expense) => {
-        const category = expense.category || "miscellaneous";
+        const category = (expenseCategoryKeys.includes(expense.category as ExpenseCategory) ? expense.category : "misc") as ExpenseCategory;
         categoryTotals[category] += expense.amount;
       });
 
@@ -218,7 +220,10 @@ const SankeyFlowChart = ({
             food: "#10b981",
             lifestyle: "#ec4899",
             family: "#06b6d4",
-            miscellaneous: "#64748b",
+            misc: "#64748b",
+            opex: "#3b82f6",
+            capex: "#8b5cf6",
+            gna: "#f97316",
           };
 
           nodes.push({

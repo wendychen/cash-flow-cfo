@@ -1,21 +1,36 @@
 import { useState } from "react";
-import { Plus, Home, Zap, Car, Heart, CreditCard, FileText } from "lucide-react";
+import { Plus, Home, Zap, Flame, Phone, Car, Heart, CreditCard, Landmark, Calendar, FileText } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
+  SelectGroup,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import { FixedExpense, Frequency } from "@/types/fixedExpense";
 import { useCurrency, Currency } from "@/hooks/use-currency";
-import { FixedExpenseCategory, FIXED_EXPENSE_CATEGORIES } from "@/types/expenseCategory";
+import { FixedExpenseCategory, FIXED_EXPENSE_CATEGORIES, FIXED_EXPENSE_CATEGORY_GROUPS } from "@/types/expenseCategory";
 
 interface FixedExpenseFormProps {
   onAddFixedExpense: (expense: Omit<FixedExpense, "id" | "createdAt">) => void;
 }
+
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  Home,
+  Zap,
+  Flame,
+  Phone,
+  Car,
+  Heart,
+  CreditCard,
+  Landmark,
+  Calendar,
+  FileText,
+};
 
 const FixedExpenseForm = ({ onAddFixedExpense }: FixedExpenseFormProps) => {
   const { convertToNTD } = useCurrency();
@@ -47,34 +62,36 @@ const FixedExpenseForm = ({ onAddFixedExpense }: FixedExpenseFormProps) => {
     setFrequency("monthly");
   };
 
-  const getCategoryIcon = (cat: FixedExpenseCategory) => {
-    switch (cat) {
-      case "housing": return <Home className="h-4 w-4" />;
-      case "utilities": return <Zap className="h-4 w-4" />;
-      case "transportation": return <Car className="h-4 w-4" />;
-      case "health": return <Heart className="h-4 w-4" />;
-      case "financial-obligations": return <CreditCard className="h-4 w-4" />;
-      case "taxes": return <FileText className="h-4 w-4" />;
-    }
-  };
+  const currentMeta = FIXED_EXPENSE_CATEGORIES[category];
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-wrap gap-2 items-end">
       <Select value={category} onValueChange={(val) => setCategory(val as FixedExpenseCategory)}>
-        <SelectTrigger className="w-[180px]">
+        <SelectTrigger className="w-[200px]">
           <div className="flex items-center gap-2">
-            {getCategoryIcon(category)}
+            {currentMeta && (() => {
+              const Icon = iconMap[currentMeta.icon as keyof typeof iconMap] ?? Home;
+              return <Icon className="h-4 w-4" />;
+            })()}
             <SelectValue />
           </div>
         </SelectTrigger>
         <SelectContent>
-          {Object.entries(FIXED_EXPENSE_CATEGORIES).map(([key, meta]) => (
-            <SelectItem key={key} value={key}>
-              <div className="flex items-center gap-2">
-                {getCategoryIcon(key as FixedExpenseCategory)}
-                <span>{meta.label}</span>
-              </div>
-            </SelectItem>
+          {FIXED_EXPENSE_CATEGORY_GROUPS.map((group) => (
+            <SelectGroup key={group.parentKey ?? group.categories[0]?.key}>
+              {group.parentLabel && <SelectLabel className="pl-2">{group.parentLabel}</SelectLabel>}
+              {group.categories.map(({ key, meta }) => {
+                const Icon = iconMap[meta.icon] ?? Home;
+                return (
+                  <SelectItem key={key} value={key}>
+                    <div className="flex items-center gap-2">
+                      <Icon className="h-4 w-4" />
+                      <span>{meta.label}</span>
+                    </div>
+                  </SelectItem>
+                );
+              })}
+            </SelectGroup>
           ))}
         </SelectContent>
       </Select>
