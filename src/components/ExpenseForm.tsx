@@ -28,6 +28,7 @@ const ExpenseForm = ({ onAddExpense }: ExpenseFormProps) => {
   const [category, setCategory] = useState<ExpenseCategory>("misc");
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
+  const [timeCost, setTimeCost] = useState("");
   const [inputCurrency, setInputCurrency] = useState<Currency>("NTD");
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -40,6 +41,7 @@ const ExpenseForm = ({ onAddExpense }: ExpenseFormProps) => {
       date,
       description: description.trim(),
       amount: amountInNTD,
+      timeCost: timeCost.trim(),
       needsCheck: false,
       category,
     });
@@ -47,6 +49,7 @@ const ExpenseForm = ({ onAddExpense }: ExpenseFormProps) => {
     setCategory("misc");
     setDescription("");
     setAmount("");
+    setTimeCost("");
   };
 
   const getCategoryIcon = (cat: ExpenseCategory) => {
@@ -138,6 +141,16 @@ const ExpenseForm = ({ onAddExpense }: ExpenseFormProps) => {
           placeholder="Does it drive you away from Canada?"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+          className="bg-card"
+        />
+      </div>
+      <div className="flex-1 min-w-0">
+        <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Time</label>
+        <Input
+          type="text"
+          placeholder="2h 30m"
+          value={timeCost}
+          onChange={(e) => setTimeCost(e.target.value)}
           className="bg-card"
         />
       </div>

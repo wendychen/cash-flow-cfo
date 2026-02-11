@@ -46,6 +46,7 @@ const ExpenseList = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDescription, setEditDescription] = useState("");
   const [editAmount, setEditAmount] = useState("");
+  const [editTimeCost, setEditTimeCost] = useState("");
   const [editCurrency, setEditCurrency] = useState<Currency>("NTD");
   const [editReviewCount, setEditReviewCount] = useState("");
   const [editDate, setEditDate] = useState("");
@@ -80,6 +81,7 @@ const ExpenseList = ({
     setEditDescription(expense.description);
     // Convert stored NTD to current display currency for editing
     setEditAmount(convertFromNTD(expense.amount, currency).toFixed(currency === "NTD" ? 0 : 2));
+    setEditTimeCost(expense.timeCost || "");
     setEditCurrency(currency);
     setEditReviewCount(expense.reviewCount?.toString() || "");
     setEditDate(expense.date);
@@ -90,6 +92,7 @@ const ExpenseList = ({
     setEditingId(null);
     setEditDescription("");
     setEditAmount("");
+    setEditTimeCost("");
     setEditReviewCount("");
     setEditDate("");
     setEditCategory("misc");
@@ -101,6 +104,7 @@ const ExpenseList = ({
     onUpdateExpense(id, {
       description: editDescription.trim(),
       amount: amountInNTD,
+      timeCost: editTimeCost.trim(),
       reviewCount: editReviewCount ? parseInt(editReviewCount) : undefined,
       date: editDate,
       category: editCategory,
@@ -231,6 +235,12 @@ const ExpenseList = ({
                             className="h-8 text-sm flex-1 min-w-24"
                             autoFocus
                           />
+                          <Input
+                            value={editTimeCost}
+                            onChange={(e) => setEditTimeCost(e.target.value)}
+                            placeholder="Time"
+                            className="h-8 text-sm w-20"
+                          />
                           <div className="flex gap-1">
                             <Input
                               type="number"
@@ -297,6 +307,11 @@ const ExpenseList = ({
                             <span className="text-foreground font-medium truncate">
                               {expense.description}
                             </span>
+                            {expense.timeCost && (
+                              <Badge variant="outline" className="text-teal-600 border-teal-600 shrink-0 text-[10px] px-1 py-0 h-4">
+                                {expense.timeCost}
+                              </Badge>
+                            )}
                             {expense.linkedGoalId && (
                               <>
                                 <Link

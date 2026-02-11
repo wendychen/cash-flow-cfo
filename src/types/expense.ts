@@ -5,6 +5,7 @@ export interface Expense {
   date: string;
   description: string;
   amount: number;
+  timeCost: string;
   needsCheck: boolean;
   reviewCount?: number;
   category: ExpenseCategory;
