@@ -134,9 +134,6 @@ interface FinanceStore extends FinanceState {
   getFilteredFixedExpenses: (period?: { startDate: Date; endDate: Date } | null) => FixedExpense[];
   getFilteredGoals: (period?: { startDate: Date; endDate: Date } | null) => Goal[];
   getFilteredTasksForGoals: (goalIds: string[]) => TaskNode[];
-
-  // Rich selectors
-  getActiveGoalsWithTaskCount: () => Array<Goal & { taskCount: number }>;
 }
 
 const initialState: FinanceStateV2 = {
@@ -707,16 +704,6 @@ export const useFinanceStore = create<FinanceStore>()(
           totalTasks: state.tasks.length,
           latestSavingsBalance: state.getLatestSavingsBalance(),
         };
-      },
-
-      getActiveGoalsWithTaskCount: () => {
-        const state = get();
-        return state.goals
-          .filter(g => !g.completed)
-          .map(goal => ({
-            ...goal,
-            taskCount: state.tasks.filter(t => t.goalId === goal.id).length,
-          }));
       },
 
       // New filtered getters for all major collections

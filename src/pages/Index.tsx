@@ -1,7 +1,7 @@
-import ExpenseTracker from "@/components/ExpenseTracker";
+import Dashboard from "@/features/dashboard/Dashboard";
 
 const Index = () => {
-  return <ExpenseTracker />;
+  return <Dashboard />;
 };
 
 export default Index;

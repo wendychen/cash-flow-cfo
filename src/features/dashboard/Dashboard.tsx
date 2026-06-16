@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useFinanceStore, reimportOldData } from "@/stores";
 import { useFinance } from "@/stores";
 import { useCurrency } from "@/hooks/use-currency";
@@ -53,9 +53,14 @@ export default function Dashboard() {
     deleteTask,
     resetAllData,
     replaceAllData,
+    backfillMissingShadowExpenses,
   } = useFinanceStore();
 
-  const { format } = useCurrency();
+  const { format, currency } = useCurrency();
+
+  useEffect(() => {
+    backfillMissingShadowExpenses();
+  }, [backfillMissingShadowExpenses]);
 
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod | null>(null);
 
@@ -195,9 +200,24 @@ export default function Dashboard() {
     toggleExpenseNeedsCheck(id);
   };
 
-  const handleUpdateTarget = (type: any, amount: number, period: any, currency: any) => {
-    // Adapter for CombinedChart
-    setTarget(type, amount, period, currency);
+  const handleAddSaving = (saving: Parameters<typeof addSaving>[0]) => {
+    addSaving(saving, currency);
+  };
+
+  const handleUpdateSaving = (
+    id: string,
+    updates: Parameters<typeof updateSaving>[1]
+  ) => {
+    updateSaving(id, updates, currency);
+  };
+
+  const handleUpdateTarget = (
+    type: Parameters<typeof setTarget>[0],
+    amount: number,
+    period: Parameters<typeof setTarget>[2],
+    targetCurrency: Parameters<typeof setTarget>[3]
+  ) => {
+    setTarget(type, amount, period, targetCurrency);
   };
 
   return (
@@ -207,7 +227,7 @@ export default function Dashboard() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-4xl font-bold tracking-tight">Cash Flow CFO</h1>
-            <p className="text-muted-foreground">New clean architecture (Zustand + Normalized data)</p>
+            <p className="text-muted-foreground">Personal cash flow and goal planning</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={handleExport}>
@@ -361,11 +381,11 @@ export default function Dashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <SavingForm onAddSaving={addSaving} />
+                <SavingForm onAddSaving={handleAddSaving} />
                 <SavingList
                   savings={filteredSavings}
                   onDeleteSaving={deleteSaving}
-                  onUpdateSaving={updateSaving}
+                  onUpdateSaving={handleUpdateSaving}
                 />
               </CardContent>
             </Card>
