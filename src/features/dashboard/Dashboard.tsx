@@ -305,7 +305,7 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div
-                  className={`font-bold tabular-nums leading-tight break-words text-[clamp(1.125rem,2.8vw,1.875rem)] ${stat.className}`}
+                  className={`text-base font-semibold tabular-nums leading-snug break-all ${stat.className}`}
                 >
                   {stat.value}
                 </div>
@@ -317,7 +317,7 @@ export default function Dashboard() {
               <CardTitle className="text-sm font-medium text-muted-foreground">Active Goals</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="font-bold tabular-nums leading-tight text-[clamp(1.125rem,2.8vw,1.875rem)]">
+              <div className="text-base font-semibold tabular-nums leading-snug">
                 {activeGoals.length}
               </div>
               <div className="text-sm text-muted-foreground mt-1">{tasks.length} total tasks</div>
