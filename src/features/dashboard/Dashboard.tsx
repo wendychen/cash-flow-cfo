@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Target, Receipt, TrendingUp, PiggyBank, Target as GoalIcon, Download, Upload } from "lucide-react";
 import { exportFinanceData, parseImportJSON } from "@/lib/exportImport";
+import { parseCsvToFinanceState } from "@/lib/csvImport";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TimeNavigator, type TimePeriod } from "@/components/shared";
 import { GoalList, GoalBudgetAllocator } from "@/features/goals";
@@ -100,20 +101,31 @@ export default function Dashboard() {
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = e.target?.result as string;
-      const result = parseImportJSON(text);
+      const isCsv = file.name.toLowerCase().endsWith('.csv');
+
+      const result = isCsv
+        ? parseCsvToFinanceState(text)
+        : parseImportJSON(text);
 
       if (!result.success || !result.data) {
         alert(`❌ Import failed: ${result.error || 'Unknown error'}`);
         return;
       }
 
-      const recordCount = result.meta?.counts
-        ? Object.values(result.meta.counts).reduce((a: any, b: any) => (a as number) + (b as number), 0)
+      const counts = isCsv
+        ? (result as ReturnType<typeof parseCsvToFinanceState>).counts
+        : (result as ReturnType<typeof parseImportJSON>).meta?.counts;
+
+      const recordCount = counts
+        ? Object.values(counts).reduce((a, b) => a + b, 0)
         : 'unknown';
 
-      if (confirm(`Import will REPLACE ALL current data.\n\nFile contains ~${recordCount} records.\n\nThis cannot be undone. Continue?`)) {
+      const sourceLabel = isCsv ? 'CSV' : 'JSON';
+
+      if (confirm(`Import will REPLACE ALL current data.\n\n${sourceLabel} file contains ~${recordCount} records.\n\nThis cannot be undone. Continue?`)) {
         replaceAllData(result.data);
-        alert('✅ Data imported successfully! Page will reflect changes immediately.');
+        backfillMissingShadowExpenses();
+        alert(`✅ ${sourceLabel} imported successfully!`);
       }
     };
     reader.readAsText(file);
@@ -236,7 +248,7 @@ export default function Dashboard() {
             </Button>
             <Button variant="outline" onClick={handleImportClick}>
               <Upload className="mr-2 h-4 w-4" />
-              Import JSON
+              Import JSON/CSV
             </Button>
             <Button variant="outline" onClick={() => window.location.reload()}>
               Reload
@@ -256,7 +268,7 @@ export default function Dashboard() {
               type="file"
               ref={fileInputRef}
               className="hidden"
-              accept="application/json,.json"
+              accept="application/json,.json,text/csv,.csv"
               onChange={handleImportFile}
             />
           </div>
