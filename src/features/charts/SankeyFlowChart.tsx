@@ -277,7 +277,7 @@ const SankeyFlowChart = ({
 
   return (
     <Card className="w-full">
-      <CardHeader>
+      <CardHeader className="px-6 pt-6 pb-4">
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
@@ -299,8 +299,8 @@ const SankeyFlowChart = ({
           </div>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
+      <CardContent className="px-6 pb-6 pt-2">
+        <div className="space-y-6">
           <SankeyVisualization
             data={sankeyData}
             onNodeClick={handleNodeClick}
@@ -308,41 +308,41 @@ const SankeyFlowChart = ({
             drillDownLevel={drillDownLevel}
           />
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-            <div className="p-4 bg-violet-50 dark:bg-violet-950 rounded-lg border border-violet-200 dark:border-violet-800">
-              <div className="flex items-center gap-2 text-violet-600 dark:text-violet-400 mb-1">
-                <TrendingUp className="w-4 h-4" />
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,9rem),1fr))] gap-3">
+            <div className="min-w-0 overflow-hidden px-4 py-3 bg-violet-50 dark:bg-violet-950 rounded-lg border border-violet-200 dark:border-violet-800">
+              <div className="flex items-center gap-1.5 text-violet-600 dark:text-violet-400 mb-1.5">
+                <TrendingUp className="w-3.5 h-3.5 shrink-0" />
                 <span className="text-xs font-medium">Total Income</span>
               </div>
-              <div className="text-2xl font-bold text-violet-700 dark:text-violet-300">
+              <div className="text-sm font-semibold tabular-nums leading-snug break-all text-violet-700 dark:text-violet-300">
                 {formatCurrency(incomes.reduce((s, i) => s + i.amount, 0))}
               </div>
             </div>
 
-            <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
-              <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 mb-1">
+            <div className="min-w-0 overflow-hidden px-4 py-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 mb-1.5">
                 <span className="text-xs font-medium">Savings</span>
               </div>
-              <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+              <div className="text-sm font-semibold tabular-nums leading-snug break-all text-blue-700 dark:text-blue-300">
                 {formatCurrency(savings.filter(s => s.savingType === "balance").reduce((s, sav) => s + sav.amount, 0))}
               </div>
             </div>
 
-            <div className="p-4 bg-amber-50 dark:bg-amber-950 rounded-lg border border-amber-200 dark:border-amber-800">
-              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 mb-1">
+            <div className="min-w-0 overflow-hidden px-4 py-3 bg-amber-50 dark:bg-amber-950 rounded-lg border border-amber-200 dark:border-amber-800">
+              <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 mb-1.5">
                 <span className="text-xs font-medium">Active Goals</span>
               </div>
-              <div className="text-2xl font-bold text-amber-700 dark:text-amber-300">
+              <div className="text-sm font-semibold tabular-nums leading-snug text-amber-700 dark:text-amber-300">
                 {goals.filter(g => !g.completed && g.title).length}
               </div>
             </div>
 
-            <div className="p-4 bg-red-50 dark:bg-red-950 rounded-lg border border-red-200 dark:border-red-800">
-              <div className="flex items-center gap-2 text-red-600 dark:text-red-400 mb-1">
-                <TrendingDown className="w-4 h-4" />
+            <div className="min-w-0 overflow-hidden px-4 py-3 bg-red-50 dark:bg-red-950 rounded-lg border border-red-200 dark:border-red-800">
+              <div className="flex items-center gap-1.5 text-red-600 dark:text-red-400 mb-1.5">
+                <TrendingDown className="w-3.5 h-3.5 shrink-0" />
                 <span className="text-xs font-medium">Total Expenses</span>
               </div>
-              <div className="text-2xl font-bold text-red-700 dark:text-red-300">
+              <div className="text-sm font-semibold tabular-nums leading-snug break-all text-red-700 dark:text-red-300">
                 {formatCurrency(expenses.reduce((s, e) => s + e.amount, 0))}
               </div>
             </div>
@@ -443,8 +443,13 @@ const SankeyVisualization = ({
   };
 
   return (
-    <div className="w-full overflow-x-auto">
-      <svg width={svgWidth} height={svgHeight} className="mx-auto">
+    <div className="w-full flex justify-center px-2 py-4">
+      <svg
+        viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+        className="w-full max-w-full h-auto"
+        preserveAspectRatio="xMidYMid meet"
+        aria-label="Financial flow sankey diagram"
+      >
         <defs>
           {links.map((link, idx) => (
             <linearGradient key={idx} id={`gradient-${idx}`} x1="0%" y1="0%" x2="100%" y2="0%">

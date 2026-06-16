@@ -300,12 +300,12 @@ export default function Dashboard() {
             { label: 'Savings', value: format(totalSavings), className: 'text-blue-600' },
           ].map((stat) => (
             <Card key={stat.label} className="min-w-0 overflow-hidden">
-              <CardHeader className="pb-2">
+              <CardHeader className="px-5 pt-5 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">{stat.label}</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-5 pb-5 pt-0">
                 <div
-                  className={`text-base font-semibold tabular-nums leading-snug break-all ${stat.className}`}
+                  className={`text-sm font-semibold tabular-nums leading-snug break-all ${stat.className}`}
                 >
                   {stat.value}
                 </div>
@@ -313,14 +313,14 @@ export default function Dashboard() {
             </Card>
           ))}
           <Card className="min-w-0 overflow-hidden">
-            <CardHeader className="pb-2">
+            <CardHeader className="px-5 pt-5 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Active Goals</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-base font-semibold tabular-nums leading-snug">
+            <CardContent className="px-5 pb-5 pt-0">
+              <div className="text-sm font-semibold tabular-nums leading-snug">
                 {activeGoals.length}
               </div>
-              <div className="text-sm text-muted-foreground mt-1">{tasks.length} total tasks</div>
+              <div className="text-xs text-muted-foreground mt-1">{tasks.length} total tasks</div>
             </CardContent>
           </Card>
         </div>
@@ -461,21 +461,14 @@ export default function Dashboard() {
           </div>
 
           <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Cash Flow Sankey</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <SankeyFlowChart
-                  expenses={filteredExpenses}
-                  incomes={filteredIncomes}
-                  savings={filteredSavings}
-                  goals={filteredGoals}
-                  fixedExpenses={filteredFixedExpenses}
-                  selectedPeriod={selectedPeriod}
-                />
-              </CardContent>
-            </Card>
+            <SankeyFlowChart
+              expenses={filteredExpenses}
+              incomes={filteredIncomes}
+              savings={filteredSavings}
+              goals={filteredGoals}
+              fixedExpenses={filteredFixedExpenses}
+              selectedPeriod={selectedPeriod}
+            />
 
             <Card>
               <CardHeader>
