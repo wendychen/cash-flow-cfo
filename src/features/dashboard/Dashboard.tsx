@@ -292,31 +292,35 @@ export default function Dashboard() {
 
           {/* Right - Main Content */}
           <div className="flex-1 min-w-0 space-y-6">
-            {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader><CardTitle>Total Income</CardTitle></CardHeader>
+            {/* Summary Cards — auto-fit avoids clipping long currency values beside the sidebar */}
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,10.5rem),1fr))] gap-4">
+          {[
+            { label: 'Total Income', value: format(totalIncome), className: 'text-emerald-600' },
+            { label: 'Total Expenses', value: format(totalExpenses), className: 'text-red-600' },
+            { label: 'Savings', value: format(totalSavings), className: 'text-blue-600' },
+          ].map((stat) => (
+            <Card key={stat.label} className="min-w-0 overflow-hidden">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">{stat.label}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div
+                  className={`font-bold tabular-nums leading-tight break-words text-[clamp(1.125rem,2.8vw,1.875rem)] ${stat.className}`}
+                >
+                  {stat.value}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          <Card className="min-w-0 overflow-hidden">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Active Goals</CardTitle>
+            </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-emerald-600">{format(totalIncome)}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader><CardTitle>Total Expenses</CardTitle></CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-red-600">{format(totalExpenses)}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader><CardTitle>Savings</CardTitle></CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-blue-600">{format(totalSavings)}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader><CardTitle>Active Goals</CardTitle></CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{activeGoals.length}</div>
-              <div className="text-sm text-muted-foreground">{tasks.length} total tasks</div>
+              <div className="font-bold tabular-nums leading-tight text-[clamp(1.125rem,2.8vw,1.875rem)]">
+                {activeGoals.length}
+              </div>
+              <div className="text-sm text-muted-foreground mt-1">{tasks.length} total tasks</div>
             </CardContent>
           </Card>
         </div>
