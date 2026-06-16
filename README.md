@@ -136,8 +136,8 @@ Development notes live in [`docs/devlog/`](docs/devlog/):
 
 ## Related docs
 
-- [`replit.md`](replit.md) — earlier architecture overview (pre-Zustand; some details superseded)
 - [`docs/refactoring/CLEAN_CODE_REFACTOR_DESIGN.md`](docs/refactoring/CLEAN_CODE_REFACTOR_DESIGN.md) — refactor design doc
+- [`docs/archive/`](docs/archive/) — superseded docs (e.g. pre-Zustand `replit.md`)
 
 ## License
 
