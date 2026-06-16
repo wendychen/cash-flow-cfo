@@ -1,5 +1,21 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { Currency } from '@/hooks/use-currency';
+import {
+  backfillShadowExpensesForGoals,
+  collectExpenseIdsForGoalDelete,
+  createGoalShadowExpense,
+  createTaskShadowExpense,
+  mapExpenseUpdatesToGoal,
+  mapExpenseUpdatesToTask,
+  mapGoalUpdatesToExpense,
+  mapTaskUpdatesToExpense,
+} from '@/lib/domain/goalExpenseSync';
+import {
+  shouldSyncTargetFromSaving,
+  syncSavingsGoalFromTarget,
+  targetAmountFromSaving,
+} from '@/lib/domain/savingsTargetSync';
 import { Expense } from '@/types/expense';
 import { Income } from '@/types/income';
 import { Saving } from '@/types/saving';
@@ -54,8 +70,8 @@ interface FinanceStore extends FinanceState {
   deleteIncome: (id: string) => void;
 
   // Saving actions
-  addSaving: (saving: Omit<Saving, 'id'>) => void;
-  updateSaving: (id: string, updates: Partial<Omit<Saving, 'id'>>) => void;
+  addSaving: (saving: Omit<Saving, 'id'>, displayCurrency?: Currency) => void;
+  updateSaving: (id: string, updates: Partial<Omit<Saving, 'id'>>, displayCurrency?: Currency) => void;
   deleteSaving: (id: string) => void;
 
   // Fixed Expense actions
@@ -77,11 +93,18 @@ interface FinanceStore extends FinanceState {
   moveTask: (taskId: string, newParentId: string | null) => void;
 
   // Target actions
-  setTarget: (type: FinancialTarget['type'], amount: number, period: FinancialTarget['period'], currency: any) => void;
+  setTarget: (
+    type: FinancialTarget['type'],
+    amount: number,
+    period: FinancialTarget['period'],
+    currency: Currency,
+    skipSavingSync?: boolean
+  ) => void;
 
   // Utility
   resetAllData: () => void;
   replaceAllData: (newState: FinanceStateV2) => void;
+  backfillMissingShadowExpenses: () => void;
   _runMigrationIfNeeded: () => void; // internal
 
   // Computed getters (recommended way to access derived state)
@@ -203,14 +226,61 @@ export const useFinanceStore = create<FinanceStore>()(
         set((state) => ({ expenses: [newExpense, ...state.expenses] }));
       },
       updateExpense: (id, updates) => {
-        set((state) => ({
-          expenses: state.expenses.map((e) => (e.id === id ? { ...e, ...updates } : e)),
-        }));
+        set((state) => {
+          const expense = state.expenses.find((e) => e.id === id);
+          if (!expense) return state;
+
+          const nextExpenses = state.expenses.map((e) =>
+            e.id === id ? { ...e, ...updates } : e
+          );
+          let nextGoals = state.goals;
+          let nextTasks = state.tasks;
+
+          if (expense.linkedGoalId && !expense.linkedTaskId) {
+            const goalUpdates = mapExpenseUpdatesToGoal(updates);
+            if (Object.keys(goalUpdates).length > 0) {
+              nextGoals = state.goals.map((g) =>
+                g.id === expense.linkedGoalId ? { ...g, ...goalUpdates } : g
+              );
+            }
+          }
+
+          if (expense.linkedGoalId && expense.linkedTaskId) {
+            const taskUpdates = mapExpenseUpdatesToTask(expense, updates);
+            if (Object.keys(taskUpdates).length > 0) {
+              nextTasks = state.tasks.map((t) =>
+                t.id === expense.linkedTaskId ? { ...t, ...taskUpdates } : t
+              );
+            }
+          }
+
+          return { expenses: nextExpenses, goals: nextGoals, tasks: nextTasks };
+        });
       },
       deleteExpense: (id) => {
-        set((state) => ({
-          expenses: state.expenses.filter((e) => e.id !== id),
-        }));
+        set((state) => {
+          const expense = state.expenses.find((e) => e.id === id);
+          const nextExpenses = state.expenses.filter((e) => e.id !== id);
+
+          if (!expense?.linkedTaskId) {
+            return { expenses: nextExpenses };
+          }
+
+          const task = state.tasks.find((t) => t.id === expense.linkedTaskId);
+          if (!task) {
+            return { expenses: nextExpenses };
+          }
+
+          const nextTasks = state.tasks
+            .map((t) =>
+              t.parentId === expense.linkedTaskId
+                ? { ...t, parentId: task.parentId }
+                : t
+            )
+            .filter((t) => t.id !== expense.linkedTaskId);
+
+          return { expenses: nextExpenses, tasks: nextTasks };
+        });
       },
 
       // ==================== INCOMES ====================
@@ -228,14 +298,77 @@ export const useFinanceStore = create<FinanceStore>()(
       },
 
       // ==================== SAVINGS ====================
-      addSaving: (saving) => {
+      addSaving: (saving, displayCurrency = 'NTD') => {
         const newSaving: Saving = { ...saving, id: crypto.randomUUID() };
-        set((state) => ({ savings: [newSaving, ...state.savings] }));
+        set((state) => {
+          const nextSavings = [newSaving, ...state.savings];
+          if (saving.savingType !== 'goal') {
+            return { savings: nextSavings };
+          }
+
+          const amount = targetAmountFromSaving(saving, displayCurrency);
+          const now = new Date().toISOString();
+          const existingIndex = state.targets.findIndex(
+            (t) => t.type === 'savings' && t.period === 'monthly' && t.currency === displayCurrency
+          );
+          const nextTargets =
+            existingIndex >= 0
+              ? state.targets.map((t, i) =>
+                  i === existingIndex ? { ...t, amount, updatedAt: now } : t
+                )
+              : [
+                  ...state.targets,
+                  {
+                    id: crypto.randomUUID(),
+                    type: 'savings' as const,
+                    amount,
+                    currency: displayCurrency,
+                    period: 'monthly' as const,
+                    createdAt: now,
+                    updatedAt: now,
+                  },
+                ];
+
+          return { savings: nextSavings, targets: nextTargets };
+        });
       },
-      updateSaving: (id, updates) => {
-        set((state) => ({
-          savings: state.savings.map((s) => (s.id === id ? { ...s, ...updates } : s)),
-        }));
+      updateSaving: (id, updates, displayCurrency = 'NTD') => {
+        set((state) => {
+          const existing = state.savings.find((s) => s.id === id);
+          const nextSavings = state.savings.map((s) =>
+            s.id === id ? { ...s, ...updates } : s
+          );
+
+          if (!shouldSyncTargetFromSaving(existing, updates)) {
+            return { savings: nextSavings };
+          }
+
+          const merged = { ...existing, ...updates } as Saving;
+          const amount = targetAmountFromSaving(merged, displayCurrency);
+          const now = new Date().toISOString();
+          const existingIndex = state.targets.findIndex(
+            (t) => t.type === 'savings' && t.period === 'monthly' && t.currency === displayCurrency
+          );
+          const nextTargets =
+            existingIndex >= 0
+              ? state.targets.map((t, i) =>
+                  i === existingIndex ? { ...t, amount, updatedAt: now } : t
+                )
+              : [
+                  ...state.targets,
+                  {
+                    id: crypto.randomUUID(),
+                    type: 'savings' as const,
+                    amount,
+                    currency: displayCurrency,
+                    period: 'monthly' as const,
+                    createdAt: now,
+                    updatedAt: now,
+                  },
+                ];
+
+          return { savings: nextSavings, targets: nextTargets };
+        });
       },
       deleteSaving: (id) => {
         set((state) => ({ savings: state.savings.filter((s) => s.id !== id) }));
@@ -267,26 +400,70 @@ export const useFinanceStore = create<FinanceStore>()(
 
       // ==================== GOALS (Normalized) ====================
       addGoal: (goal) => {
+        const goalId = crypto.randomUUID();
+        const { expense, expenseId } = createGoalShadowExpense(goalId, {
+          title: goal.title,
+          deadline: goal.deadline,
+          category: goal.category || 'misc',
+          budget: goal.budget ?? 0,
+          timeCost: goal.timeCost ?? '',
+        });
+
         const newGoal: Goal = {
           ...goal,
-          id: crypto.randomUUID(),
+          id: goalId,
           createdAt: new Date().toISOString(),
           ideations: goal.ideations || [],
           urlPack: goal.urlPack || [],
+          linkedExpenseId: expenseId,
+          category: goal.category || 'misc',
         };
-        set((state) => ({ goals: [...state.goals, newGoal] }));
+
+        set((state) => ({
+          goals: [...state.goals, newGoal],
+          expenses: [...state.expenses, expense],
+        }));
       },
       updateGoal: (id, updates) => {
-        set((state) => ({
-          goals: state.goals.map((g) => (g.id === id ? { ...g, ...updates } : g)),
-        }));
+        set((state) => {
+          const goal = state.goals.find((g) => g.id === id);
+          if (!goal) return state;
+
+          const nextGoals = state.goals.map((g) =>
+            g.id === id ? { ...g, ...updates } : g
+          );
+          let nextExpenses = state.expenses;
+
+          if (goal.linkedExpenseId) {
+            const expenseUpdates = mapGoalUpdatesToExpense(updates);
+            if (Object.keys(expenseUpdates).length > 0) {
+              nextExpenses = state.expenses.map((e) =>
+                e.id === goal.linkedExpenseId ? { ...e, ...expenseUpdates } : e
+              );
+            }
+          }
+
+          if (updates.category) {
+            nextExpenses = nextExpenses.map((e) =>
+              e.linkedGoalId === id ? { ...e, category: updates.category! } : e
+            );
+          }
+
+          return { goals: nextGoals, expenses: nextExpenses };
+        });
       },
       deleteGoal: (id) => {
-        set((state) => ({
-          goals: state.goals.filter((g) => g.id !== id),
-          // Also remove associated tasks
-          tasks: state.tasks.filter((t) => t.goalId !== id),
-        }));
+        set((state) => {
+          const goal = state.goals.find((g) => g.id === id);
+          const goalTasks = state.tasks.filter((t) => t.goalId === id);
+          const expenseIdsToDelete = collectExpenseIdsForGoalDelete(goal, goalTasks);
+
+          return {
+            goals: state.goals.filter((g) => g.id !== id),
+            tasks: state.tasks.filter((t) => t.goalId !== id),
+            expenses: state.expenses.filter((e) => !expenseIdsToDelete.includes(e.id)),
+          };
+        });
       },
       reorderGoals: (orderedIds) => {
         set((state) => {
@@ -301,28 +478,79 @@ export const useFinanceStore = create<FinanceStore>()(
       // ==================== TASKS (Normalized - Single Source of Truth) ====================
       addTask: (task) => {
         const state = get();
-        const existingTasksOfType = state.tasks.filter(
-          t => t.goalId === task.goalId && t.taskType === task.taskType
+        const goal = state.goals.find((g) => g.id === task.goalId);
+        const siblings = state.tasks.filter(
+          (t) =>
+            t.goalId === task.goalId &&
+            t.taskType === task.taskType &&
+            t.parentId === task.parentId
         );
-        const nextSortOrder = task.sortOrder ?? existingTasksOfType.length;
+        const nextSortOrder = task.sortOrder ?? siblings.length;
+        const taskId = crypto.randomUUID();
+
+        const { expense, expenseId } = createTaskShadowExpense(
+          task.goalId,
+          taskId,
+          task.taskType,
+          {
+            title: task.title,
+            cost: task.cost,
+            timeCost: task.timeCost,
+            deadline: task.deadline,
+          },
+          goal?.category || 'misc'
+        );
 
         const newTask: TaskNode = {
           ...task,
           sortOrder: nextSortOrder,
-          id: crypto.randomUUID(),
+          id: taskId,
           createdAt: new Date().toISOString(),
+          linkedExpenseId: expenseId,
         };
-        set((state) => ({ tasks: [...state.tasks, newTask] }));
+
+        set((state) => ({
+          tasks: [...state.tasks, newTask],
+          expenses: [...state.expenses, expense],
+        }));
       },
       updateTask: (id, updates) => {
-        set((state) => ({
-          tasks: state.tasks.map((t) => (t.id === id ? { ...t, ...updates } : t)),
-        }));
+        set((state) => {
+          const task = state.tasks.find((t) => t.id === id);
+          if (!task) return state;
+
+          const nextTasks = state.tasks.map((t) =>
+            t.id === id ? { ...t, ...updates } : t
+          );
+          let nextExpenses = state.expenses;
+
+          if (task.linkedExpenseId) {
+            const expenseUpdates = mapTaskUpdatesToExpense(task, updates);
+            if (Object.keys(expenseUpdates).length > 0) {
+              nextExpenses = state.expenses.map((e) =>
+                e.id === task.linkedExpenseId ? { ...e, ...expenseUpdates } : e
+              );
+            }
+          }
+
+          return { tasks: nextTasks, expenses: nextExpenses };
+        });
       },
       deleteTask: (id) => {
-        set((state) => ({
-          tasks: state.tasks.filter((t) => t.id !== id),
-        }));
+        set((state) => {
+          const task = state.tasks.find((t) => t.id === id);
+          if (!task) return state;
+
+          const nextTasks = state.tasks
+            .map((t) => (t.parentId === id ? { ...t, parentId: task.parentId } : t))
+            .filter((t) => t.id !== id);
+
+          const nextExpenses = task.linkedExpenseId
+            ? state.expenses.filter((e) => e.id !== task.linkedExpenseId)
+            : state.expenses;
+
+          return { tasks: nextTasks, expenses: nextExpenses };
+        });
       },
       reorderTasks: (goalId, taskType, orderedIds) => {
         set((state) => {
@@ -349,12 +577,13 @@ export const useFinanceStore = create<FinanceStore>()(
       },
 
       // ==================== TARGETS ====================
-      setTarget: (type, amount, period, currency) => {
+      setTarget: (type, amount, period, currency, skipSavingSync = false) => {
         set((state) => {
           const existingIndex = state.targets.findIndex(
             (t) => t.type === type && t.period === period && t.currency === currency
           );
           const now = new Date().toISOString();
+          let nextTargets: FinancialTarget[];
 
           if (existingIndex >= 0) {
             const updated = [...state.targets];
@@ -363,23 +592,28 @@ export const useFinanceStore = create<FinanceStore>()(
               amount,
               updatedAt: now,
             };
-            return { targets: updated };
+            nextTargets = updated;
           } else {
-            return {
-              targets: [
-                ...state.targets,
-                {
-                  id: crypto.randomUUID(),
-                  type,
-                  amount,
-                  currency,
-                  period,
-                  createdAt: now,
-                  updatedAt: now,
-                },
-              ],
-            };
+            nextTargets = [
+              ...state.targets,
+              {
+                id: crypto.randomUUID(),
+                type,
+                amount,
+                currency,
+                period,
+                createdAt: now,
+                updatedAt: now,
+              },
+            ];
           }
+
+          let nextSavings = state.savings;
+          if (type === 'savings' && !skipSavingSync) {
+            nextSavings = syncSavingsGoalFromTarget(state.savings, amount, currency);
+          }
+
+          return { targets: nextTargets, savings: nextSavings };
         });
       },
 
@@ -396,10 +630,13 @@ export const useFinanceStore = create<FinanceStore>()(
         });
       },
 
+      backfillMissingShadowExpenses: () => {
+        set((state) => backfillShadowExpensesForGoals(state.goals, state.expenses));
+      },
+
       // Internal migration hook - called on store hydration
       _runMigrationIfNeeded: () => {
-        // Implementation will be added in the migration phase
-        // For now this is a no-op placeholder
+        get().backfillMissingShadowExpenses();
       },
 
       // ==================== COMPUTED GETTERS ====================
@@ -533,6 +770,9 @@ export const useFinanceStore = create<FinanceStore>()(
       storage: createJSONStorage(() => localStorage),
       migrate: (persistedState: any, version: number) => {
         return migratePersistedState(persistedState, version);
+      },
+      onRehydrateStorage: () => (state) => {
+        state?.backfillMissingShadowExpenses();
       },
     }
   )

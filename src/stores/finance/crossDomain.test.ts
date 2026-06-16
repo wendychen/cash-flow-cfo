@@ -1,8 +1,7 @@
 /**
  * Cross-domain orchestration spec tests (Direction 2).
  *
- * Skipped specs document invariants from ExpenseTracker. Remove `.skip` once
- * Direction 2 ports the logic into the store.
+ * Cross-domain invariants ported from ExpenseTracker into the Zustand store.
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useFinanceStore } from './financeStore';
@@ -13,7 +12,7 @@ describe('cross-domain orchestration (Direction 2 spec)', () => {
     resetFinanceStore(useFinanceStore);
   });
 
-  it.skip('addGoal creates a shadow expense linked to the goal', () => {
+  it('addGoal creates a shadow expense linked to the goal', () => {
     useFinanceStore.getState().addGoal({
       title: 'New Product',
       deadline: '2026-12-01',
@@ -39,7 +38,7 @@ describe('cross-domain orchestration (Direction 2 spec)', () => {
     expect(shadowExpense?.needsCheck).toBe(true);
   });
 
-  it.skip('addTask creates a shadow expense linked to goal and task', () => {
+  it('addTask creates a shadow expense linked to goal and task', () => {
     useFinanceStore.getState().addGoal({
       title: 'Parent Goal',
       deadline: '2026-06-01',
@@ -78,7 +77,7 @@ describe('cross-domain orchestration (Direction 2 spec)', () => {
     expect(expense?.linkedTaskType).toBe('pre');
   });
 
-  it.skip('updateExpense syncs linked goal fields', () => {
+  it('updateExpense syncs linked goal fields', () => {
     resetFinanceStore(useFinanceStore, {
       goals: [
         {
@@ -125,7 +124,7 @@ describe('cross-domain orchestration (Direction 2 spec)', () => {
     expect(goal?.category).toBe('business');
   });
 
-  it.skip('deleteGoal cascades to linked expenses and tasks', () => {
+  it('deleteGoal cascades to linked expenses and tasks', () => {
     resetFinanceStore(useFinanceStore, {
       goals: [
         {
@@ -195,7 +194,7 @@ describe('cross-domain orchestration (Direction 2 spec)', () => {
     expect(state.expenses).toHaveLength(0);
   });
 
-  it.skip('deleteExpense reparents child tasks and removes linked task', () => {
+  it('deleteExpense reparents child tasks and removes linked task', () => {
     resetFinanceStore(useFinanceStore, {
       expenses: [
         {
@@ -251,7 +250,7 @@ describe('cross-domain orchestration (Direction 2 spec)', () => {
     expect(state.tasks.find((t) => t.id === 'task-child')?.parentId).toBeNull();
   });
 
-  it.skip('updateGoal category propagates to all goal-linked expenses', () => {
+  it('updateGoal category propagates to all goal-linked expenses', () => {
     resetFinanceStore(useFinanceStore, {
       goals: [
         {
