@@ -1,0 +1,32 @@
+# =============================================================================
+# Cash Flow CFO - Podman / Docker Compose
+# Usage:
+#   podman-compose up -d --build
+#   podman-compose down
+#   # or with Docker:
+#   docker compose up -d --build
+# =============================================================================
+
+services:
+  cash-flow-cfo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cash-flow-cfo:latest
+    container_name: cash-flow-cfo
+    ports:
+      - "8080:80"          # Access app at http://localhost:8080
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    # Optional: if you ever add a backend API, add it here as another service
+    # networks:
+    #   - cfo-network
+
+# networks:
+#   cfo-network:
+#     driver: bridge

@@ -1,0 +1,25 @@
+# =============================================================================
+# Cash Flow CFO - Development Container (with hot reload)
+# =============================================================================
+# Usage:
+#   podman build -f Dockerfile.dev -t cash-flow-cfo:dev .
+#   podman run -it --rm -p 5000:5000 -v $(pwd):/app -v /app/node_modules cash-flow-cfo:dev
+# =============================================================================
+
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install dependencies first (for caching)
+COPY package*.json ./
+COPY bun.lock* ./
+RUN npm install --legacy-peer-deps
+
+# Copy source (will be overridden by volume mount in dev)
+COPY . .
+
+# Expose Vite dev server port
+EXPOSE 5000
+
+# Run Vite dev server (binds to 0.0.0.0 per vite.config.ts)
+CMD ["npm", "run", "dev"]

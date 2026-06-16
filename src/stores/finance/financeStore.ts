@@ -1,0 +1,539 @@
+import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { Expense } from '@/types/expense';
+import { Income } from '@/types/income';
+import { Saving } from '@/types/saving';
+import { FixedExpense } from '@/types/fixedExpense';
+import { Goal } from '@/types/goal';
+import { TaskNode } from '@/types/task';
+import { FinancialTarget } from '@/types/target';
+import { migratePersistedState } from './migration';
+
+/**
+ * Versioned storage shape for the entire application.
+ * v2 = Normalized model (goals + tasks are separate arrays)
+ */
+export interface FinanceStateV2 {
+  version: 2;
+  expenses: Expense[];
+  incomes: Income[];
+  savings: Saving[];
+  fixedExpenses: FixedExpense[];
+  targets: FinancialTarget[];
+  goals: Goal[];
+  tasks: TaskNode[];
+}
+
+/**
+ * Legacy shape (v1) from before the refactor.
+ * We keep this type only for migration purposes.
+ */
+export interface FinanceStateV1 {
+  version?: 1;
+  expenses: Expense[];
+  incomes: Income[];
+  savings: Saving[];
+  fixedExpenses: FixedExpense[];
+  targets: FinancialTarget[];
+  goals: any[];   // old shape with possible embedded tasks
+  tasks?: TaskNode[];
+  // other legacy fields may exist
+}
+
+export type FinanceState = FinanceStateV2;
+
+interface FinanceStore extends FinanceState {
+  // Expense actions
+  addExpense: (expense: Omit<Expense, 'id'>) => void;
+  updateExpense: (id: string, updates: Partial<Omit<Expense, 'id'>>) => void;
+  deleteExpense: (id: string) => void;
+
+  // Income actions
+  addIncome: (income: Omit<Income, 'id'>) => void;
+  updateIncome: (id: string, updates: Partial<Omit<Income, 'id'>>) => void;
+  deleteIncome: (id: string) => void;
+
+  // Saving actions
+  addSaving: (saving: Omit<Saving, 'id'>) => void;
+  updateSaving: (id: string, updates: Partial<Omit<Saving, 'id'>>) => void;
+  deleteSaving: (id: string) => void;
+
+  // Fixed Expense actions
+  addFixedExpense: (expense: Omit<FixedExpense, 'id'>) => void;
+  updateFixedExpense: (id: string, updates: Partial<Omit<FixedExpense, 'id'>>) => void;
+  deleteFixedExpense: (id: string) => void;
+
+  // Goal actions (normalized)
+  addGoal: (goal: Omit<Goal, 'id'>) => void;
+  updateGoal: (id: string, updates: Partial<Omit<Goal, 'id'>>) => void;
+  deleteGoal: (id: string) => void;
+  reorderGoals: (orderedIds: string[]) => void;
+
+  // Task actions (normalized - single source of truth)
+  addTask: (task: Omit<TaskNode, 'id' | 'createdAt'>) => void;
+  updateTask: (id: string, updates: Partial<Omit<TaskNode, 'id'>>) => void;
+  deleteTask: (id: string) => void;
+  reorderTasks: (goalId: string, taskType: TaskNode['taskType'], orderedIds: string[]) => void;
+  moveTask: (taskId: string, newParentId: string | null) => void;
+
+  // Target actions
+  setTarget: (type: FinancialTarget['type'], amount: number, period: FinancialTarget['period'], currency: any) => void;
+
+  // Utility
+  resetAllData: () => void;
+  replaceAllData: (newState: FinanceStateV2) => void;
+  _runMigrationIfNeeded: () => void; // internal
+
+  // Computed getters (recommended way to access derived state)
+  getActiveGoals: () => Goal[];
+  getLatestSavingsBalance: () => number;
+  getFilteredExpenses: (period: { startDate: Date; endDate: Date } | null) => Expense[];
+  getTotalIncome: () => number;
+  getTotalExpenses: (period?: { startDate: Date; endDate: Date } | null) => number;
+  getTotalSavings: () => number;
+  getActiveGoalsWithTaskCount: () => Array<Goal & { taskCount: number }>;
+  getExpensesByCategory: (period?: { startDate: Date; endDate: Date } | null) => Record<string, number>;
+  getDashboardSummary: (period?: { startDate: Date; endDate: Date } | null) => {
+    totalIncome: number;
+    totalExpenses: number;
+    totalSavings: number;
+    activeGoalsCount: number;
+    totalTasks: number;
+    latestSavingsBalance: number;
+  };
+
+  // Domain actions (higher level than raw CRUD)
+  toggleExpenseNeedsCheck: (id: string) => void;
+
+  // New filtered getters
+  getFilteredIncomes: (period?: { startDate: Date; endDate: Date } | null) => Income[];
+  getFilteredSavings: (period?: { startDate: Date; endDate: Date } | null) => Saving[];
+  getFilteredFixedExpenses: (period?: { startDate: Date; endDate: Date } | null) => FixedExpense[];
+  getFilteredGoals: (period?: { startDate: Date; endDate: Date } | null) => Goal[];
+  getFilteredTasksForGoals: (goalIds: string[]) => TaskNode[];
+
+  // Rich selectors
+  getActiveGoalsWithTaskCount: () => Array<Goal & { taskCount: number }>;
+}
+
+const initialState: FinanceStateV2 = {
+  version: 2,
+  expenses: [],
+  incomes: [],
+  savings: [],
+  fixedExpenses: [],
+  targets: [],
+  goals: [],
+  tasks: [],
+};
+
+// Safe default for migration
+const emptyV1: FinanceStateV1 = {
+  version: 1,
+  expenses: [],
+  incomes: [],
+  savings: [],
+  fixedExpenses: [],
+  targets: [],
+  goals: [],
+  tasks: [],
+};
+
+// Core import logic (can be called manually too)
+export function reimportOldData() {
+  const newStorageKey = 'cash-flow-cfo-storage';
+
+  console.log('[Store] Starting manual re-import of old data...');
+
+  try {
+    const oldData = {
+      expenses: JSON.parse(localStorage.getItem('expenses') || '[]'),
+      incomes: JSON.parse(localStorage.getItem('incomes') || '[]'),
+      savings: JSON.parse(localStorage.getItem('savings') || '[]'),
+      fixedExpenses: JSON.parse(localStorage.getItem('fixedExpenses') || '[]'),
+      targets: JSON.parse(localStorage.getItem('financialTargets') || '[]'),
+      goals: JSON.parse(localStorage.getItem('goals') || '[]'),
+      tasks: JSON.parse(localStorage.getItem('tasks') || '[]'),
+      version: 1,
+    };
+
+    const migrated = migratePersistedState(oldData, 1);
+
+    // Overwrite the new storage with migrated data
+    localStorage.setItem(newStorageKey, JSON.stringify({
+      state: migrated,
+      version: 2,
+    }));
+
+    console.log('[Store] Re-import completed successfully.');
+    return { success: true, message: 'Old data imported successfully!' };
+  } catch (e) {
+    console.error('[Store] Re-import failed:', e);
+    return { success: false, message: 'Failed to import old data. Check console.' };
+  }
+}
+
+// Helper that runs automatically on first load
+function importOldDataIfNeeded() {
+  const newStorageKey = 'cash-flow-cfo-storage';
+  const hasNewData = localStorage.getItem(newStorageKey);
+
+  if (hasNewData) return;
+
+  const oldKeys = ['expenses', 'incomes', 'savings', 'fixedExpenses', 'targets', 'goals', 'tasks'];
+  const hasOldData = oldKeys.some(key => localStorage.getItem(key));
+
+  if (!hasOldData) return;
+
+  console.log('[Store] Old data detected on first load. Auto-importing...');
+  reimportOldData();
+}
+
+// Run on module load
+importOldDataIfNeeded();
+
+export const useFinanceStore = create<FinanceStore>()(
+  persist(
+    (set, get) => ({
+      ...initialState,
+
+      // ==================== EXPENSES ====================
+      addExpense: (expense) => {
+        const newExpense: Expense = { ...expense, id: crypto.randomUUID() };
+        set((state) => ({ expenses: [newExpense, ...state.expenses] }));
+      },
+      updateExpense: (id, updates) => {
+        set((state) => ({
+          expenses: state.expenses.map((e) => (e.id === id ? { ...e, ...updates } : e)),
+        }));
+      },
+      deleteExpense: (id) => {
+        set((state) => ({
+          expenses: state.expenses.filter((e) => e.id !== id),
+        }));
+      },
+
+      // ==================== INCOMES ====================
+      addIncome: (income) => {
+        const newIncome: Income = { ...income, id: crypto.randomUUID() };
+        set((state) => ({ incomes: [newIncome, ...state.incomes] }));
+      },
+      updateIncome: (id, updates) => {
+        set((state) => ({
+          incomes: state.incomes.map((i) => (i.id === id ? { ...i, ...updates } : i)),
+        }));
+      },
+      deleteIncome: (id) => {
+        set((state) => ({ incomes: state.incomes.filter((i) => i.id !== id) }));
+      },
+
+      // ==================== SAVINGS ====================
+      addSaving: (saving) => {
+        const newSaving: Saving = { ...saving, id: crypto.randomUUID() };
+        set((state) => ({ savings: [newSaving, ...state.savings] }));
+      },
+      updateSaving: (id, updates) => {
+        set((state) => ({
+          savings: state.savings.map((s) => (s.id === id ? { ...s, ...updates } : s)),
+        }));
+      },
+      deleteSaving: (id) => {
+        set((state) => ({ savings: state.savings.filter((s) => s.id !== id) }));
+      },
+
+      // ==================== FIXED EXPENSES ====================
+      addFixedExpense: (expense) => {
+        const newFixed: FixedExpense = { ...expense, id: crypto.randomUUID() };
+        set((state) => ({ fixedExpenses: [...state.fixedExpenses, newFixed] }));
+      },
+      updateFixedExpense: (id, updates) => {
+        set((state) => ({
+          fixedExpenses: state.fixedExpenses.map((f) => (f.id === id ? { ...f, ...updates } : f)),
+        }));
+      },
+      deleteFixedExpense: (id) => {
+        set((state) => ({
+          fixedExpenses: state.fixedExpenses.filter((f) => f.id !== id),
+        }));
+      },
+
+      toggleExpenseNeedsCheck: (id) => {
+        set((state) => ({
+          expenses: state.expenses.map((e) =>
+            e.id === id ? { ...e, needsCheck: !e.needsCheck } : e
+          ),
+        }));
+      },
+
+      // ==================== GOALS (Normalized) ====================
+      addGoal: (goal) => {
+        const newGoal: Goal = {
+          ...goal,
+          id: crypto.randomUUID(),
+          createdAt: new Date().toISOString(),
+          ideations: goal.ideations || [],
+          urlPack: goal.urlPack || [],
+        };
+        set((state) => ({ goals: [...state.goals, newGoal] }));
+      },
+      updateGoal: (id, updates) => {
+        set((state) => ({
+          goals: state.goals.map((g) => (g.id === id ? { ...g, ...updates } : g)),
+        }));
+      },
+      deleteGoal: (id) => {
+        set((state) => ({
+          goals: state.goals.filter((g) => g.id !== id),
+          // Also remove associated tasks
+          tasks: state.tasks.filter((t) => t.goalId !== id),
+        }));
+      },
+      reorderGoals: (orderedIds) => {
+        set((state) => {
+          const goalMap = new Map(state.goals.map(g => [g.id, g]));
+          const reordered = orderedIds
+            .map(id => goalMap.get(id))
+            .filter(Boolean) as Goal[];
+          return { goals: reordered };
+        });
+      },
+
+      // ==================== TASKS (Normalized - Single Source of Truth) ====================
+      addTask: (task) => {
+        const state = get();
+        const existingTasksOfType = state.tasks.filter(
+          t => t.goalId === task.goalId && t.taskType === task.taskType
+        );
+        const nextSortOrder = task.sortOrder ?? existingTasksOfType.length;
+
+        const newTask: TaskNode = {
+          ...task,
+          sortOrder: nextSortOrder,
+          id: crypto.randomUUID(),
+          createdAt: new Date().toISOString(),
+        };
+        set((state) => ({ tasks: [...state.tasks, newTask] }));
+      },
+      updateTask: (id, updates) => {
+        set((state) => ({
+          tasks: state.tasks.map((t) => (t.id === id ? { ...t, ...updates } : t)),
+        }));
+      },
+      deleteTask: (id) => {
+        set((state) => ({
+          tasks: state.tasks.filter((t) => t.id !== id),
+        }));
+      },
+      reorderTasks: (goalId, taskType, orderedIds) => {
+        set((state) => {
+          const otherTasks = state.tasks.filter(
+            (t) => !(t.goalId === goalId && t.taskType === taskType)
+          );
+          const reordered = orderedIds
+            .map((id, index) => {
+              const task = state.tasks.find((t) => t.id === id);
+              return task ? { ...task, sortOrder: index } : null;
+            })
+            .filter(Boolean) as TaskNode[];
+
+          return { tasks: [...otherTasks, ...reordered] };
+        });
+      },
+
+      moveTask: (taskId, newParentId) => {
+        set((state) => ({
+          tasks: state.tasks.map((t) =>
+            t.id === taskId ? { ...t, parentId: newParentId } : t
+          ),
+        }));
+      },
+
+      // ==================== TARGETS ====================
+      setTarget: (type, amount, period, currency) => {
+        set((state) => {
+          const existingIndex = state.targets.findIndex(
+            (t) => t.type === type && t.period === period && t.currency === currency
+          );
+          const now = new Date().toISOString();
+
+          if (existingIndex >= 0) {
+            const updated = [...state.targets];
+            updated[existingIndex] = {
+              ...updated[existingIndex],
+              amount,
+              updatedAt: now,
+            };
+            return { targets: updated };
+          } else {
+            return {
+              targets: [
+                ...state.targets,
+                {
+                  id: crypto.randomUUID(),
+                  type,
+                  amount,
+                  currency,
+                  period,
+                  createdAt: now,
+                  updatedAt: now,
+                },
+              ],
+            };
+          }
+        });
+      },
+
+      // ==================== UTILITIES ====================
+      resetAllData: () => {
+        set(initialState);
+      },
+
+      replaceAllData: (newState) => {
+        set({
+          ...initialState,
+          ...newState,
+          version: 2,
+        });
+      },
+
+      // Internal migration hook - called on store hydration
+      _runMigrationIfNeeded: () => {
+        // Implementation will be added in the migration phase
+        // For now this is a no-op placeholder
+      },
+
+      // ==================== COMPUTED GETTERS ====================
+      getActiveGoals: () => {
+        return get().goals.filter(g => !g.completed);
+      },
+
+      getLatestSavingsBalance: () => {
+        const savings = get().savings;
+        const balanceSavings = savings.filter(s => s.savingType === "balance");
+        if (balanceSavings.length === 0) return 0;
+        return balanceSavings.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].amount;
+      },
+
+      // ==================== MORE USEFUL DERIVED STATE ====================
+      getFilteredExpenses: (period: { startDate: Date; endDate: Date } | null) => {
+        const expenses = get().expenses;
+        if (!period) return expenses;
+        return expenses.filter(exp => {
+          const d = new Date(exp.date);
+          return d >= period.startDate && d <= period.endDate;
+        });
+      },
+
+      getTotalIncome: () => {
+        return get().incomes.reduce((sum, inc) => sum + inc.amount, 0);
+      },
+
+      getTotalExpenses: (period?: { startDate: Date; endDate: Date } | null) => {
+        const expenses = period ? get().getFilteredExpenses(period) : get().expenses;
+        return expenses.reduce((sum, exp) => sum + exp.amount, 0);
+      },
+
+      getTotalSavings: () => {
+        return get().savings.reduce((sum, sav) => sum + sav.amount, 0);
+      },
+
+      // Richer derived data
+      getActiveGoalsWithTaskCount: () => {
+        const state = get();
+        return state.goals
+          .filter(g => !g.completed)
+          .map(goal => ({
+            ...goal,
+            taskCount: state.tasks.filter(t => t.goalId === goal.id).length,
+          }));
+      },
+
+      getExpensesByCategory: (period?: { startDate: Date; endDate: Date } | null) => {
+        const expenses = period ? get().getFilteredExpenses(period) : get().expenses;
+        const byCategory: Record<string, number> = {};
+        expenses.forEach(exp => {
+          byCategory[exp.category] = (byCategory[exp.category] || 0) + exp.amount;
+        });
+        return byCategory;
+      },
+
+      // High-level summary for dashboards/reports
+      getDashboardSummary: (period?: { startDate: Date; endDate: Date } | null) => {
+        const state = get();
+        const filteredExp = period ? state.getFilteredExpenses(period) : state.expenses;
+
+        return {
+          totalIncome: state.incomes.reduce((sum, i) => sum + i.amount, 0),
+          totalExpenses: filteredExp.reduce((sum, e) => sum + e.amount, 0),
+          totalSavings: state.savings.reduce((sum, s) => sum + s.amount, 0),
+          activeGoalsCount: state.goals.filter(g => !g.completed).length,
+          totalTasks: state.tasks.length,
+          latestSavingsBalance: state.getLatestSavingsBalance(),
+        };
+      },
+
+      getActiveGoalsWithTaskCount: () => {
+        const state = get();
+        return state.goals
+          .filter(g => !g.completed)
+          .map(goal => ({
+            ...goal,
+            taskCount: state.tasks.filter(t => t.goalId === goal.id).length,
+          }));
+      },
+
+      // New filtered getters for all major collections
+      getFilteredIncomes: (period?: { startDate: Date; endDate: Date } | null) => {
+        const incomes = get().incomes;
+        if (!period) return incomes;
+        return incomes.filter(inc => {
+          const d = new Date(inc.date);
+          return d >= period.startDate && d <= period.endDate;
+        });
+      },
+
+      getFilteredSavings: (period?: { startDate: Date; endDate: Date } | null) => {
+        const savings = get().savings;
+        if (!period) return savings;
+        return savings.filter(s => {
+          const d = new Date(s.date);
+          return d >= period.startDate && d <= period.endDate;
+        });
+      },
+
+      getFilteredFixedExpenses: (period?: { startDate: Date; endDate: Date } | null) => {
+        const fixed = get().fixedExpenses;
+        if (!period) return fixed;
+        return fixed.filter(f => {
+          const date = f.date || f.createdAt;
+          if (!date) return true;
+          const d = new Date(date);
+          return d >= period.startDate && d <= period.endDate;
+        });
+      },
+
+      getFilteredGoals: (period?: { startDate: Date; endDate: Date } | null) => {
+        const goals = get().goals;
+        if (!period) return goals.filter(g => !g.completed);
+        return goals.filter(g => {
+          if (g.completed) return false;
+          const d = new Date(g.deadline || g.createdAt);
+          return d >= period.startDate && d <= period.endDate;
+        });
+      },
+
+      getFilteredTasksForGoals: (goalIds: string[]) => {
+        const tasks = get().tasks;
+        return tasks.filter(t => goalIds.includes(t.goalId));
+      },
+    }),
+    {
+      name: 'cash-flow-cfo-storage',
+      version: 2, // This is critical for zustand persist migration
+      storage: createJSONStorage(() => localStorage),
+      migrate: (persistedState: any, version: number) => {
+        return migratePersistedState(persistedState, version);
+      },
+    }
+  )
+);
