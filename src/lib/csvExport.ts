@@ -1,12 +1,15 @@
 import type { TranslationKey } from '@/i18n';
 import { getFinGoalPresetByKey } from '@/lib/finGoalPresets';
 import type { FinanceStateV2 } from '@/stores/finance/financeStore';
+import type { GoalReachPlanSnapshot } from '@/lib/goalReachPlanner';
+import { buildGoalReachPlanCsvSection } from '@/lib/goalReachPlanExport';
 
 export type CsvTranslateFn = (key: TranslationKey) => string;
 
 export interface CsvExportOptions {
   t?: CsvTranslateFn;
   locale?: string;
+  goalReachPlan?: GoalReachPlanSnapshot | null;
 }
 
 function escCsv(val: string): string {
@@ -138,6 +141,11 @@ export function buildFinanceCsv(state: FinanceStateV2, options: CsvExportOptions
     targets.forEach((target) => {
       csvContent += `${target.type},${target.amount.toFixed(2)},${target.period},${target.currency},${target.createdAt},${target.updatedAt}\n`;
     });
+  }
+
+  if (options.goalReachPlan && options.goalReachPlan.activeGoalCount > 0) {
+    if (csvContent) csvContent += '\n';
+    csvContent += buildGoalReachPlanCsvSection(options.goalReachPlan);
   }
 
   if (longTermFinGoal) {

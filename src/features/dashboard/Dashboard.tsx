@@ -40,6 +40,7 @@ import {
 import { IncomeForm, IncomeList, IncomeBreakdownBar } from "@/features/income";
 import type { TaskType } from "@/types/task";
 import LongTermFinGoalCard from "./LongTermFinGoalCard";
+import { computeGoalReachPlan } from "@/lib/goalReachPlanner";
 
 /**
  * New clean Dashboard — the future home of the app.
@@ -154,7 +155,11 @@ export default function Dashboard() {
       goals,
       tasks,
     };
-    const result = await saveFinanceCsvExport(stateSnapshot, { t, locale });
+    const result = await saveFinanceCsvExport(stateSnapshot, {
+      t,
+      locale,
+      goalReachPlan: buildGoalReachPlanSnapshot(),
+    });
     if (!result.success) {
       if (result.error) {
         alert(`❌ ${result.error}`);
@@ -383,6 +388,17 @@ export default function Dashboard() {
     updateSaving(id, updates, currency);
   };
 
+  const buildGoalReachPlanSnapshot = () =>
+    computeGoalReachPlan({
+      goals: goalsForManagement,
+      tasks: tasksForManagement,
+      latestSavingsBalance,
+      monthlySurplus,
+      monthlyIncome,
+      monthlyExpenses,
+      longTermFinGoal,
+    });
+
   const handlePrintGoals = () => {
     printGoalsReport({
       goals,
@@ -393,6 +409,7 @@ export default function Dashboard() {
       locale,
       longTermFinGoal,
       currentSavings: latestSavingsBalance,
+      goalReachPlan: buildGoalReachPlanSnapshot(),
     });
   };
 

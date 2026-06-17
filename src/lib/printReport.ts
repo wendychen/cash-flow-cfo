@@ -14,6 +14,11 @@ import { buildTree, flattenTree } from '@/features/goals/hooks/use-task-tree';
 import { computeSankeyIncomeSplit } from '@/lib/incomeBreakdown';
 import { getAccruedCollectionStatus, isAccruedCollection } from '@/lib/incomeConversion';
 import type { LongTermFinGoal } from '@/types/longTermFinGoal';
+import type { GoalReachPlanSnapshot } from '@/lib/goalReachPlanner';
+import {
+  buildGoalReachPlanPrintSection,
+  type GoalReachPlanTranslateFn,
+} from '@/lib/goalReachPlanExport';
 import {
   computeFinGoalProgress,
   getFinGoalPresetByAmount,
@@ -170,6 +175,7 @@ export interface GoalsPrintInput {
   longTermFinGoal?: LongTermFinGoal | null;
   currentSavings?: number;
   printedAt?: Date;
+  goalReachPlan?: GoalReachPlanSnapshot | null;
 }
 
 export function buildGoalsPrintHtml({
@@ -182,6 +188,7 @@ export function buildGoalsPrintHtml({
   longTermFinGoal,
   currentSavings = 0,
   printedAt = new Date(),
+  goalReachPlan = null,
 }: GoalsPrintInput): string {
   const active = goals.filter((g) => !g.completed);
   const completed = goals.filter((g) => g.completed);
@@ -214,6 +221,7 @@ export function buildGoalsPrintHtml({
       <p class="subtitle">${t('printReport.goals.summary', { active: active.length, completed: completed.length, tasks: tasks.length })}</p>
     </header>
     ${finGoalSection}
+    ${goalReachPlan ? buildGoalReachPlanPrintSection(goalReachPlan, formatAmount, t as GoalReachPlanTranslateFn) : ''}
     <section class="section">
       <h2>${t('printReport.goals.activeGoals', { count: active.length })}</h2>
       ${activeHtml}
