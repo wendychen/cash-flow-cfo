@@ -3,9 +3,15 @@ import {
   filterSuggestionToKnownGoals,
   parseGoalReachAiSuggestion,
 } from '../src/lib/goalCoachSchema';
-import type { GoalCoachRequestBody } from '../src/types/goalCoach';
+import {
+  DEFAULT_BYOK_MODELS,
+  DEFAULT_SERVER_MODEL,
+} from '../src/lib/goalCoachProviders';
+import type {
+  GoalCoachProvider,
+  GoalCoachRequestBody,
+} from '../src/types/goalCoach';
 
-const GOAL_COACH_MODEL = process.env.GOAL_COACH_MODEL ?? 'gemini-2.0-flash';
 const MAX_GOALS = 20;
 
 const requestSchema = z.object({
@@ -52,6 +58,13 @@ const requestSchema = z.object({
       endYear: z.number().int(),
     })
     .optional(),
+  providerSettings: z
+    .object({
+      provider: z.enum(['server', 'gemini', 'openai', 'groq']),
+      apiKey: z.string().min(1).max(500).optional(),
+      model: z.string().min(1).max(100).optional(),
+    })
+    .optional(),
 });
 
 const SYSTEM_PROMPT = `You are a financial goal coach inside Cash Flow CFO.
@@ -82,17 +95,49 @@ type VercelResponse = {
   json: (body: unknown) => void;
 };
 
-function getApiKey(): string | undefined {
+type ResolvedCoachConfig = {
+  provider: Exclude<GoalCoachProvider, 'server'>;
+  apiKey: string;
+  model: string;
+};
+
+function getServerApiKey(): string | undefined {
   return process.env.GOAL_COACH_API_KEY ?? process.env.GEMINI_API_KEY;
 }
 
-async function callGemini(userPrompt: string): Promise<string> {
-  const apiKey = getApiKey();
-  if (!apiKey) {
-    throw new Error('GOAL_COACH_API_KEY is not configured');
+function getServerModel(override?: string): string {
+  return override ?? process.env.GOAL_COACH_MODEL ?? DEFAULT_SERVER_MODEL;
+}
+
+function resolveCoachConfig(body: GoalCoachRequestBody): ResolvedCoachConfig | null {
+  const providerSettings = body.providerSettings;
+  const selected = providerSettings?.provider ?? 'server';
+
+  if (selected === 'server') {
+    const apiKey = getServerApiKey();
+    if (!apiKey) return null;
+    return {
+      provider: 'gemini',
+      apiKey,
+      model: getServerModel(providerSettings?.model),
+    };
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GOAL_COACH_MODEL}:generateContent?key=${apiKey}`;
+  const apiKey = providerSettings?.apiKey?.trim();
+  if (!apiKey) return null;
+
+  const model =
+    providerSettings?.model?.trim() ?? DEFAULT_BYOK_MODELS[selected];
+
+  return { provider: selected, apiKey, model };
+}
+
+async function callGemini(
+  userPrompt: string,
+  apiKey: string,
+  model: string
+): Promise<string> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -125,6 +170,73 @@ async function callGemini(userPrompt: string): Promise<string> {
   return text;
 }
 
+async function callOpenAiCompatible(
+  userPrompt: string,
+  apiKey: string,
+  model: string,
+  baseUrl: string,
+  providerLabel: string
+): Promise<string> {
+  const response = await fetch(`${baseUrl}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: userPrompt },
+      ],
+      temperature: 0.35,
+      max_tokens: 2048,
+      response_format: { type: 'json_object' },
+    }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`${providerLabel} API ${response.status}: ${text.slice(0, 300)}`);
+  }
+
+  const data = (await response.json()) as {
+    choices?: Array<{ message?: { content?: string } }>;
+  };
+
+  const text = data.choices?.[0]?.message?.content;
+  if (!text) throw new Error(`Empty response from ${providerLabel}`);
+  return text;
+}
+
+async function callProvider(
+  config: ResolvedCoachConfig,
+  userPrompt: string
+): Promise<string> {
+  switch (config.provider) {
+    case 'gemini':
+      return callGemini(userPrompt, config.apiKey, config.model);
+    case 'openai':
+      return callOpenAiCompatible(
+        userPrompt,
+        config.apiKey,
+        config.model,
+        'https://api.openai.com/v1',
+        'OpenAI'
+      );
+    case 'groq':
+      return callOpenAiCompatible(
+        userPrompt,
+        config.apiKey,
+        config.model,
+        'https://api.groq.com/openai/v1',
+        'Groq'
+      );
+    default:
+      throw new Error(`Unsupported provider: ${config.provider}`);
+  }
+}
+
 function buildUserPrompt(body: GoalCoachRequestBody): string {
   return JSON.stringify(
     {
@@ -154,13 +266,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  if (!getApiKey()) {
-    return res.status(503).json({
-      error: 'AI Coach is not configured',
-      code: 'coach_unavailable',
-    });
-  }
-
   const parsedBody = requestSchema.safeParse(req.body);
   if (!parsedBody.success) {
     return res.status(400).json({
@@ -170,9 +275,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const body = parsedBody.data as GoalCoachRequestBody;
+  const coachConfig = resolveCoachConfig(body);
+
+  if (!coachConfig) {
+    const needsByok = body.providerSettings?.provider && body.providerSettings.provider !== 'server';
+    return res.status(503).json({
+      error: needsByok
+        ? 'AI Coach requires your API key for the selected provider'
+        : 'AI Coach is not configured',
+      code: needsByok ? 'missing_byok_key' : 'coach_unavailable',
+    });
+  }
 
   try {
-    const rawText = await callGemini(buildUserPrompt(body));
+    const rawText = await callProvider(coachConfig, buildUserPrompt(body));
     let json: unknown;
     try {
       json = JSON.parse(rawText);
@@ -196,7 +312,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(200).json({
       suggestion: filtered,
-      model: GOAL_COACH_MODEL,
+      model: coachConfig.model,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';

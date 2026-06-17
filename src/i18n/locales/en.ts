@@ -771,6 +771,22 @@ export const en = {
         reorder: 'Apply priority reorder',
         weeklyFocus: 'Weekly focus (informational)',
       },
+      settings: {
+        title: 'Coach settings',
+        providerLabel: 'Provider',
+        modelLabel: 'Model (optional)',
+        apiKeyLabel: 'API key',
+        apiKeyPlaceholder: 'Paste your key — stored locally only',
+        serverHint: 'Uses the server API key configured by your deploy (Gemini by default).',
+        byokHint: 'Your key is saved in this browser and sent only to the coach proxy.',
+        missingKey: 'Enter an API key for the selected provider.',
+        providers: {
+          server: 'Server (default)',
+          gemini: 'Google Gemini (BYOK)',
+          openai: 'OpenAI (BYOK)',
+          groq: 'Groq (BYOK)',
+        },
+      },
     },
     conflictsPanel: {
       title: 'Conflicts',

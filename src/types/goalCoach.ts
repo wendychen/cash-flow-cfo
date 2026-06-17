@@ -25,6 +25,20 @@ export interface GoalCoachConflictSummary {
   goalIds: string[];
 }
 
+export type GoalCoachProvider = 'server' | 'gemini' | 'openai' | 'groq';
+
+export interface GoalCoachProviderSettings {
+  provider: GoalCoachProvider;
+  apiKey?: string;
+  model?: string;
+}
+
+export interface GoalCoachSettings {
+  provider: GoalCoachProvider;
+  apiKey?: string;
+  model?: string;
+}
+
 export interface GoalCoachRequestBody {
   prompt: string;
   locale?: string;
@@ -38,6 +52,7 @@ export interface GoalCoachRequestBody {
     targetAmount: number;
     endYear: number;
   };
+  providerSettings?: GoalCoachProviderSettings;
 }
 
 export interface GoalReachAiSuggestion {

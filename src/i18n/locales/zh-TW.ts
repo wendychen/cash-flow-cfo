@@ -769,6 +769,22 @@ export const zhTW: Messages = {
         reorder: '套用優先順序調整',
         weeklyFocus: '本週焦點（僅供參考）',
       },
+      settings: {
+        title: '教練設定',
+        providerLabel: '供應商',
+        modelLabel: '模型（選填）',
+        apiKeyLabel: 'API 金鑰',
+        apiKeyPlaceholder: '貼上金鑰 — 僅儲存在本機',
+        serverHint: '使用部署端設定的伺服器 API 金鑰（預設 Gemini）。',
+        byokHint: '金鑰儲存在此瀏覽器，僅傳送至教練代理。',
+        missingKey: '請為所選供應商輸入 API 金鑰。',
+        providers: {
+          server: '伺服器（預設）',
+          gemini: 'Google Gemini（自備金鑰）',
+          openai: 'OpenAI（自備金鑰）',
+          groq: 'Groq（自備金鑰）',
+        },
+      },
     },
     conflictsPanel: {
       title: '衝突',

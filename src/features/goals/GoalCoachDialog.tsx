@@ -13,8 +13,15 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useI18n } from '@/i18n';
+import { useGoalCoachSettings } from '@/hooks/use-goal-coach-settings';
+import GoalCoachSettingsPanel from '@/features/goals/GoalCoachSettingsPanel';
 import { buildGoalCoachRequestBody } from '@/lib/goalCoachPayload';
 import { requestGoalCoach } from '@/lib/goalCoachClient';
+import {
+  isCoachReadyForRequest,
+  resolvedModelLabel,
+  toProviderSettingsPayload,
+} from '@/lib/goalCoachSettings';
 import {
   applyGoalCoachSuggestion,
   milestoneKey,
@@ -53,6 +60,7 @@ export default function GoalCoachDialog({
   onUpdateGoal,
 }: GoalCoachDialogProps) {
   const { t, locale } = useI18n();
+  const { settings: coachSettings, setSettings: setCoachSettings } = useGoalCoachSettings();
   const activeCount = plan.activeGoalCount;
 
   const defaultPrompt = useMemo(
@@ -85,6 +93,11 @@ export default function GoalCoachDialog({
   };
 
   const handleGenerate = async () => {
+    if (!isCoachReadyForRequest(coachSettings)) {
+      setError(t('goalReach.aiCoach.settings.missingKey'));
+      return;
+    }
+
     if (hasGenerated && !window.confirm(t('goalReach.aiCoach.confirmSecondCall'))) {
       return;
     }
@@ -92,17 +105,20 @@ export default function GoalCoachDialog({
     setLoading(true);
     setError(null);
     try {
-      const body = buildGoalCoachRequestBody({
-        prompt,
-        locale,
-        includeConstraints,
-        includeCashFlow,
-        goals,
-        tasks,
-        plan,
-        cashSummary,
-        longTermFinGoal,
-      });
+      const body = {
+        ...buildGoalCoachRequestBody({
+          prompt,
+          locale,
+          includeConstraints,
+          includeCashFlow,
+          goals,
+          tasks,
+          plan,
+          cashSummary,
+          longTermFinGoal,
+        }),
+        providerSettings: toProviderSettingsPayload(coachSettings),
+      };
       const result = await requestGoalCoach(body);
       if (!result.suggestion?.summary) {
         setError(t('goalReach.aiCoach.emptyResponse'));
@@ -113,7 +129,12 @@ export default function GoalCoachDialog({
       setHasGenerated(true);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes('503') || msg.toLowerCase().includes('not configured')) {
+      if (
+        msg.toLowerCase().includes('api key') ||
+        msg.toLowerCase().includes('missing_byok')
+      ) {
+        setError(t('goalReach.aiCoach.settings.missingKey'));
+      } else if (msg.includes('503') || msg.toLowerCase().includes('not configured')) {
         setError(t('goalReach.aiCoach.unavailable'));
       } else {
         setError(t('goalReach.aiCoach.error', { error: msg }));
@@ -156,11 +177,15 @@ export default function GoalCoachDialog({
             {t('goalReach.aiCoach.title')}
           </DialogTitle>
           <DialogDescription>
-            {model ? `${t('goalReach.aiCoach.model')}: ${model}` : t('goalReach.aiCoach.provider')}
+            {model
+              ? `${t('goalReach.aiCoach.model')}: ${model}`
+              : `${t('goalReach.aiCoach.provider')}: ${t(`goalReach.aiCoach.settings.providers.${coachSettings.provider}`)} · ${resolvedModelLabel(coachSettings)}`}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
+          <GoalCoachSettingsPanel settings={coachSettings} onChange={setCoachSettings} />
+
           <div className="space-y-2">
             <Label htmlFor="coach-prompt">{t('goalReach.aiCoach.promptLabel')}</Label>
             <Textarea

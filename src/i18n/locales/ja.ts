@@ -770,6 +770,22 @@ export const ja: Messages = {
         reorder: '優先順の並べ替えを適用',
         weeklyFocus: '今週のフォーカス（参考）',
       },
+      settings: {
+        title: 'コーチ設定',
+        providerLabel: 'プロバイダー',
+        modelLabel: 'モデル（任意）',
+        apiKeyLabel: 'API キー',
+        apiKeyPlaceholder: 'キーを貼り付け — ローカルのみ保存',
+        serverHint: 'デプロイで設定したサーバー API キーを使用（既定は Gemini）。',
+        byokHint: 'キーはこのブラウザに保存され、コーチプロキシにのみ送信されます。',
+        missingKey: '選択したプロバイダーの API キーを入力してください。',
+        providers: {
+          server: 'サーバー（既定）',
+          gemini: 'Google Gemini（BYOK）',
+          openai: 'OpenAI（BYOK）',
+          groq: 'Groq（BYOK）',
+        },
+      },
     },
     conflictsPanel: {
       title: 'コンフリクト',

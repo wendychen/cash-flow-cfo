@@ -49,7 +49,6 @@ The write-up must include: summary, commits, architecture, test count, user how-
 | ✅ | PR-7 i18n goalReach + locale parity tests | — |
 | ✅ | PR-8 `/api/goal-coach` Gemini proxy | — |
 | ✅ | PR-9 AI Coach dialog + apply flow | — |
-| ⏳ | **PR-10** BYOK settings + provider picker | **← next** |
-| | PR-6 Print/CSV plan section | |
-| | PR-7 i18n polish | |
-| | PR-8–10 AI coach | |
+| ✅ | PR-10 BYOK settings + provider picker | — |
+
+**Goal Reach Planner DAG complete.** Next: new roadmap items or design §12 open questions.
