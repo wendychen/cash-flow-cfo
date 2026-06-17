@@ -1,7 +1,14 @@
-import { useState, useMemo } from "react";
+import { Fragment, useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, TrendingDown, TrendingUp } from "lucide-react";
+import { ChevronLeft, ChevronRight, TrendingDown, TrendingUp } from "lucide-react";
+import {
+  getSankeyBreadcrumb,
+  getSankeyParentLevel,
+  resolveSankeyDrill,
+  type SankeyDrillLevel,
+} from "@/lib/sankeyNavigation";
+import { cn } from "@/lib/utils";
 import { Expense } from "@/types/expense";
 import { Income } from "@/types/income";
 import { Saving } from "@/types/saving";
@@ -39,8 +46,6 @@ interface SankeyFlowChartProps {
   selectedPeriod?: TimePeriod | null;
 }
 
-type DrillDownLevel = "overview" | "income-detail" | "savings-detail" | "goal-detail" | "expense-detail" | "fixed-expense-categories" | "onetime-expense-categories";
-
 const SankeyFlowChart = ({
   expenses,
   incomes,
@@ -50,8 +55,7 @@ const SankeyFlowChart = ({
   selectedPeriod,
 }: SankeyFlowChartProps) => {
   const { format: formatCurrency } = useCurrency();
-  const [drillDownLevel, setDrillDownLevel] = useState<DrillDownLevel>("overview");
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [drillDownLevel, setDrillDownLevel] = useState<SankeyDrillLevel>("overview");
 
   const sankeyData = useMemo<SankeyData>(() => {
     const totalIncome = incomes.reduce((sum, inc) => sum + inc.amount, 0);
@@ -123,26 +127,73 @@ const SankeyFlowChart = ({
       if (accruedIncome > 0) {
         links.push({ source: "accrued-income", target: "total-income", value: accruedIncome, color: "#a78bfa80" });
       }
+    } else if (drillDownLevel === "savings-detail") {
+      const balanceTotal = savings
+        .filter((s) => s.savingType === "balance")
+        .reduce((sum, s) => sum + s.amount, 0);
+      const goalSavingsTotal = savings
+        .filter((s) => s.savingType === "goal")
+        .reduce((sum, s) => sum + s.amount, 0);
+      const savingsTotal = balanceTotal + goalSavingsTotal;
+
+      nodes.push(
+        { id: "balance-savings", name: "Balance Snapshots", color: "#3b82f6", value: balanceTotal },
+        { id: "goal-savings", name: "Goal Savings", color: "#6366f1", value: goalSavingsTotal },
+        { id: "total-savings", name: "Total Savings", color: "#2563eb", value: savingsTotal }
+      );
+
+      if (balanceTotal > 0) {
+        links.push({
+          source: "balance-savings",
+          target: "total-savings",
+          value: balanceTotal,
+          color: "#3b82f680",
+        });
+      }
+      if (goalSavingsTotal > 0) {
+        links.push({
+          source: "goal-savings",
+          target: "total-savings",
+          value: goalSavingsTotal,
+          color: "#6366f180",
+        });
+      }
     } else if (drillDownLevel === "goal-detail") {
+      const goalsNodeValue = activeGoals.reduce(
+        (sum, g) => sum + (g.budget > 0 ? g.budget : 0),
+        0
+      );
       nodes.push({ id: "savings", name: "Savings", color: "#3b82f6", value: totalSavings });
 
-      activeGoals.slice(0, 5).forEach((goal, idx) => {
-        const linkedExpense = expenses.find(e => e.id === goal.linkedExpenseId);
-        const goalValue = linkedExpense?.amount || 1000;
+      activeGoals.slice(0, 8).forEach((goal, idx) => {
+        const linkedExpense = expenses.find((e) => e.id === goal.linkedExpenseId);
+        const goalValue =
+          goal.budget > 0 ? goal.budget : linkedExpense?.amount ?? 0;
+        if (goalValue <= 0) return;
+
         nodes.push({
           id: `goal-${goal.id}`,
-          name: goal.title.substring(0, 20),
-          color: `hsl(${45 + idx * 30}, 85%, 55%)`,
+          name: goal.title.substring(0, 24),
+          color: `hsl(${45 + idx * 25}, 85%, 55%)`,
           value: goalValue,
         });
 
         links.push({
           source: "savings",
           target: `goal-${goal.id}`,
-          value: goalValue,
-          color: `hsl(${45 + idx * 30}, 85%, 55%, 0.5)`,
+          value: Math.min(goalValue, totalSavings || goalValue),
+          color: `hsl(${45 + idx * 25}, 85%, 55%, 0.5)`,
         });
       });
+
+      if (nodes.length === 1 && goalsNodeValue === 0) {
+        nodes.push({
+          id: "no-goals",
+          name: "No budgeted goals",
+          color: "#d97706",
+          value: 1,
+        });
+      }
     } else if (drillDownLevel === "expense-detail") {
       const oneTimeExpenseTotal = expenses.reduce((sum, exp) => sum + exp.amount, 0);
 
@@ -257,33 +308,23 @@ const SankeyFlowChart = ({
   }, [drillDownLevel, incomes, expenses, savings, goals, fixedExpenses]);
 
   const handleNodeClick = (nodeId: string) => {
-    setSelectedNodeId(nodeId);
-
-    if (drillDownLevel === "overview") {
-      if (nodeId === "income") {
-        setDrillDownLevel("income-detail");
-      } else if (nodeId === "goals") {
-        setDrillDownLevel("goal-detail");
-      } else if (nodeId === "expenses") {
-        setDrillDownLevel("expense-detail");
-      }
-    } else if (drillDownLevel === "expense-detail") {
-      if (nodeId === "fixed") {
-        setDrillDownLevel("fixed-expense-categories");
-      } else if (nodeId === "onetime") {
-        setDrillDownLevel("onetime-expense-categories");
-      }
+    const next = resolveSankeyDrill(drillDownLevel, nodeId);
+    if (next) {
+      setDrillDownLevel(next);
     }
   };
 
   const handleBack = () => {
-    if (drillDownLevel === "fixed-expense-categories" || drillDownLevel === "onetime-expense-categories") {
-      setDrillDownLevel("expense-detail");
-    } else {
-      setDrillDownLevel("overview");
-    }
-    setSelectedNodeId(null);
+    setDrillDownLevel(getSankeyParentLevel(drillDownLevel));
   };
+
+  const handleBreadcrumbNavigate = (level: SankeyDrillLevel) => {
+    if (level !== drillDownLevel) {
+      setDrillDownLevel(level);
+    }
+  };
+
+  const breadcrumb = getSankeyBreadcrumb(drillDownLevel);
 
   return (
     <Card className="w-full">
@@ -299,15 +340,45 @@ const SankeyFlowChart = ({
               Financial Flow Sankey Diagram
             </CardTitle>
             <CardDescription>
-              {drillDownLevel === "overview" && "Click on nodes to drill down into details"}
-              {drillDownLevel === "income-detail" && "Income sources breakdown"}
-              {drillDownLevel === "goal-detail" && "Savings allocated to goals"}
-              {drillDownLevel === "expense-detail" && "Expense categories breakdown - Click to view category details"}
-              {drillDownLevel === "fixed-expense-categories" && "Fixed expense categories breakdown"}
-              {drillDownLevel === "onetime-expense-categories" && "One-time expense categories breakdown"}
+              {drillDownLevel === "overview" && "Click Income, Savings, Goals, or Expenses to drill down"}
+              {drillDownLevel === "income-detail" && "Cash vs accrued income sources"}
+              {drillDownLevel === "savings-detail" && "Balance snapshots vs goal savings entries"}
+              {drillDownLevel === "goal-detail" && "Savings allocated to active goal budgets"}
+              {drillDownLevel === "expense-detail" && "Fixed vs one-time expenses — click to view categories"}
+              {drillDownLevel === "fixed-expense-categories" && "Fixed expenses by category (vertical breakdown)"}
+              {drillDownLevel === "onetime-expense-categories" && "One-time expenses by category (vertical breakdown)"}
             </CardDescription>
           </div>
         </div>
+
+        {breadcrumb.length > 1 && (
+          <div
+            className="mt-4 flex items-center gap-1 overflow-x-auto pb-1"
+            role="navigation"
+            aria-label="Sankey drill-down timeline"
+          >
+            {breadcrumb.map((step, index) => (
+              <Fragment key={step.level}>
+                {index > 0 && (
+                  <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                )}
+                <button
+                  type="button"
+                  onClick={() => handleBreadcrumbNavigate(step.level)}
+                  disabled={step.level === drillDownLevel}
+                  className={cn(
+                    "shrink-0 rounded-full px-3 py-1 text-xs transition-colors",
+                    step.level === drillDownLevel
+                      ? "bg-primary/10 font-medium text-primary"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  {step.label}
+                </button>
+              </Fragment>
+            ))}
+          </div>
+        )}
       </CardHeader>
       <CardContent className="px-6 pb-6 pt-2">
         <div className="space-y-6">
@@ -367,7 +438,7 @@ interface SankeyVisualizationProps {
   data: SankeyData;
   onNodeClick: (nodeId: string) => void;
   formatCurrency: (amount: number) => string;
-  drillDownLevel: DrillDownLevel;
+  drillDownLevel: SankeyDrillLevel;
 }
 
 const SankeyVisualization = ({ 
@@ -404,6 +475,9 @@ const SankeyVisualization = ({
   const columnCount = Math.max(...Object.keys(columns).map(Number), 0) + 1;
   const columnWidth = svgWidth / (columnCount + 1);
 
+  const isCategoryView =
+    drillDownLevel === "fixed-expense-categories" ||
+    drillDownLevel === "onetime-expense-categories";
   const isDetailView = drillDownLevel !== "overview";
 
   const positionedNodes = nodes.map((node, idx) => {
@@ -412,15 +486,17 @@ const SankeyVisualization = ({
     let totalInCol: number;
 
     if (isDetailView) {
-      const isSource = links.some(link => link.source === node.id);
+      const isSource = links.some((link) => link.source === node.id);
+      const targetNodes = nodes.filter((n) =>
+        links.some((link) => link.target === n.id)
+      );
 
       if (isSource) {
         col = 0;
         rowIdx = 0;
         totalInCol = 1;
       } else {
-        col = 2;
-        const targetNodes = nodes.filter(n => links.some(link => link.target === n.id));
+        col = isCategoryView ? 3 : 2;
         rowIdx = targetNodes.indexOf(node);
         totalInCol = targetNodes.length;
       }

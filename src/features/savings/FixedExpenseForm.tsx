@@ -14,6 +14,7 @@ import {
 import { FixedExpense, Frequency } from "@/types/fixedExpense";
 import { useCurrency, Currency } from "@/hooks/use-currency";
 import { FixedExpenseCategory, FIXED_EXPENSE_CATEGORIES, FIXED_EXPENSE_CATEGORY_GROUPS } from "@/types/expenseCategory";
+import { FrequencySelectField } from "@/components/shared";
 
 interface FixedExpenseFormProps {
   onAddFixedExpense: (expense: Omit<FixedExpense, "id" | "createdAt">) => void;
@@ -122,19 +123,7 @@ const FixedExpenseForm = ({ onAddFixedExpense }: FixedExpenseFormProps) => {
           </SelectContent>
         </Select>
       </div>
-      <Select value={frequency} onValueChange={(val) => setFrequency(val as Frequency)}>
-        <SelectTrigger className="w-28">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="weekly">Weekly</SelectItem>
-          <SelectItem value="bi-weekly">Bi-weekly</SelectItem>
-          <SelectItem value="bi-monthly">Bi-monthly</SelectItem>
-          <SelectItem value="monthly">Monthly</SelectItem>
-          <SelectItem value="quarterly">Quarterly</SelectItem>
-          <SelectItem value="yearly">Yearly</SelectItem>
-        </SelectContent>
-      </Select>
+      <FrequencySelectField value={frequency} onValueChange={setFrequency} />
       <Button type="submit" size="icon" className="shrink-0">
         <Plus className="h-4 w-4" />
       </Button>

@@ -16,22 +16,20 @@ import {
 import { FixedExpense, Frequency, getMonthlyEquivalent } from "@/types/fixedExpense";
 import { useCurrency, Currency } from "@/hooks/use-currency";
 import { FixedExpenseCategory, FIXED_EXPENSE_CATEGORIES, FIXED_EXPENSE_CATEGORY_GROUPS, migrateFixedExpenseCategory } from "@/types/expenseCategory";
+import { FrequencySelectField } from "@/components/shared";
+import { FREQUENCY_META } from "@/lib/frequencyLabels";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface FixedExpenseListProps {
   fixedExpenses: FixedExpense[];
   onUpdateFixedExpense: (id: string, updates: Partial<Omit<FixedExpense, "id">>) => void;
   onDeleteFixedExpense: (id: string) => void;
 }
-
-const frequencyLabels: Record<Frequency, string> = {
-  weekly: "Weekly",
-  "bi-weekly": "Bi-weekly",
-  "bi-monthly": "Bi-monthly",
-  monthly: "Monthly",
-  quarterly: "Quarterly",
-  yearly: "Yearly",
-  custom: "Custom",
-};
 
 const frequencyColors: Record<Frequency, string> = {
   weekly: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
@@ -204,19 +202,11 @@ const FixedExpenseList = ({
                   </SelectContent>
                 </Select>
               </div>
-              <Select value={editFrequency} onValueChange={(val) => setEditFrequency(val as Frequency)}>
-                <SelectTrigger className="w-28">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                  <SelectItem value="bi-weekly">Bi-weekly</SelectItem>
-                  <SelectItem value="bi-monthly">Bi-monthly</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                  <SelectItem value="quarterly">Quarterly</SelectItem>
-                  <SelectItem value="yearly">Yearly</SelectItem>
-                </SelectContent>
-              </Select>
+              <FrequencySelectField
+                value={editFrequency}
+                onValueChange={setEditFrequency}
+                showHint={false}
+              />
               <div className="flex gap-1">
                 <Button size="icon" variant="ghost" onClick={() => saveEdit(expense.id)}>
                   <Check className="h-4 w-4 text-emerald-600" />
@@ -256,9 +246,21 @@ const FixedExpenseList = ({
                   )}
                 </p>
               </div>
-              <Badge variant="secondary" className={frequencyColors[expense.frequency]}>
-                {frequencyLabels[expense.frequency]}
-              </Badge>
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge
+                      variant="secondary"
+                      className={`cursor-help ${frequencyColors[expense.frequency]}`}
+                    >
+                      {FREQUENCY_META[expense.frequency].label}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-xs text-xs">
+                    {FREQUENCY_META[expense.frequency].description}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <div className="flex gap-1">
                 <Button size="icon" variant="ghost" onClick={() => startEdit(expense)}>
                   <Pencil className="h-4 w-4" />

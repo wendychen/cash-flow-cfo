@@ -4,7 +4,7 @@ import { useFinance, useFinanceHydrated } from "@/stores";
 import { useCurrency } from "@/hooks/use-currency";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Target, Receipt, TrendingUp, PiggyBank, Target as GoalIcon, Download, Upload, Printer } from "lucide-react";
+import { Target, Receipt, TrendingUp, PiggyBank, Target as GoalIcon, Download, Upload, Printer, CircleHelp } from "lucide-react";
 import { saveFinanceExport, parseImportJSON } from "@/lib/exportImport";
 import { getLatestAutoBackup, listAutoBackups } from "@/lib/autoBackup";
 import { printBackupReport, printGoalsReport } from "@/lib/printReport";
@@ -19,7 +19,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Currency } from "@/hooks/use-currency";
-import { TimeNavigator, type TimePeriod } from "@/components/shared";
+import { TimeNavigator, UserGuide, type TimePeriod } from "@/components/shared";
+import { hasSeenUserGuide } from "@/lib/onboarding";
 import { GoalList, GoalBudgetAllocator } from "@/features/goals";
 import { ExpenseForm, ExpenseList } from "@/features/expenses";
 import { SavingForm, SavingList, FixedExpenseForm, FixedExpenseList } from "@/features/savings";
@@ -76,7 +77,14 @@ export default function Dashboard() {
 
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod | null>(null);
   const [activeTab, setActiveTab] = useState("income");
+  const [userGuideOpen, setUserGuideOpen] = useState(false);
   const isStoreHydrated = useFinanceHydrated();
+
+  useEffect(() => {
+    if (isStoreHydrated && !hasSeenUserGuide()) {
+      setUserGuideOpen(true);
+    }
+  }, [isStoreHydrated]);
   useAutoBackup(isStoreHydrated);
 
   const latestAutoBackup = getLatestAutoBackup();
@@ -278,6 +286,8 @@ export default function Dashboard() {
   };
 
   return (
+    <>
+    <UserGuide open={userGuideOpen} onOpenChange={setUserGuideOpen} />
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-6xl mx-auto space-y-8">
         {/* Header */}
@@ -287,6 +297,15 @@ export default function Dashboard() {
             <p className="text-muted-foreground">Personal cash flow and goal planning</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setUserGuideOpen(true)}
+              aria-label="Open user guide"
+            >
+              <CircleHelp className="mr-2 h-4 w-4" />
+              Guide
+            </Button>
             <Select value={currency} onValueChange={(val) => setCurrency(val as Currency)}>
               <SelectTrigger className="w-[110px]" aria-label="Display currency">
                 <SelectValue />
@@ -633,6 +652,7 @@ export default function Dashboard() {
     </div>
   </div>
 </div>
+    </>
   );
 }
 
