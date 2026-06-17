@@ -9,6 +9,7 @@ const CONFLICT_TITLE_KEYS: Record<PlannerConflictType, TranslationKey> = {
   deadline_cluster: 'goalReach.conflicts.deadlineCluster',
   funding_gap: 'goalReach.conflicts.fundingGap',
   overdue: 'goalReach.conflicts.overdue',
+  simulation_shortfall: 'goalReach.conflicts.simulationShortfall',
 };
 
 export function getConflictTitleKey(type: PlannerConflictType): TranslationKey {
@@ -63,6 +64,15 @@ export function formatConflictDetail(
     case 'overdue':
       return t('goalReach.conflicts.overdueDetail', {
         title: String(params.title ?? ''),
+      });
+    case 'simulation_shortfall':
+      return t('goalReach.conflicts.simulationShortfallDetail', {
+        title: String(params.title ?? ''),
+        deadline: String(params.deadline ?? ''),
+        need: formatMoney(Number(params.need ?? 0)),
+        available: formatMoney(Number(params.available ?? 0)),
+        shortfall: formatMoney(Number(params.shortfall ?? 0)),
+        month: Number(params.month ?? 0),
       });
     default:
       return '';

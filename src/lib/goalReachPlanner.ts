@@ -13,6 +13,10 @@ import type { LongTermFinGoal } from '@/types/longTermFinGoal';
 import { computeGoalCountdown, getGoalTimerTarget } from '@/lib/goalTimer';
 import { getMilestoneProgress, normalizeGoalMilestones } from '@/lib/goalMilestones';
 import { parseLocalDate } from '@/lib/date';
+import {
+  simulateGoalFundingSchedule,
+  type GoalFundingCheckpointResult,
+} from '@/lib/cashFlowSimulation';
 
 export const DEFAULT_GOAL_REACH_HORIZON_MONTHS = 36;
 export const DEADLINE_CLUSTER_WINDOW_DAYS = 30;
@@ -27,6 +31,8 @@ export interface GoalReachPlannerInput {
   monthlySurplus: number;
   longTermFinGoal?: LongTermFinGoal | null;
   horizonMonths?: number;
+  monthlyIncome?: number;
+  monthlyExpenses?: number;
 }
 
 export type PlannerConflictType =
@@ -34,7 +40,8 @@ export type PlannerConflictType =
   | 'task_cost_exceeds_budget'
   | 'deadline_cluster'
   | 'funding_gap'
-  | 'overdue';
+  | 'overdue'
+  | 'simulation_shortfall';
 
 export interface PlannerConflict {
   type: PlannerConflictType;
@@ -99,6 +106,7 @@ export interface GoalReachPlanSnapshot {
   conflicts: PlannerConflict[];
   monthlyFunding: MonthlyFundingSlice[];
   weeklyFocus: WeeklyFocusItem[];
+  simulationCheckpoints: GoalFundingCheckpointResult[];
 }
 
 function getActiveGoals(goals: Goal[]): Goal[] {
@@ -502,6 +510,56 @@ export function computeGoalReachPlan(
     }
   }
 
+  let simulationCheckpoints: GoalFundingCheckpointResult[] = [];
+  const { monthlyIncome, monthlyExpenses } = input;
+  if (
+    monthlyIncome != null &&
+    monthlyExpenses != null &&
+    (monthlyIncome > 0 || monthlyExpenses > 0)
+  ) {
+    const schedule = simulateGoalFundingSchedule(
+      {
+        monthlyIncome,
+        monthlyExpenses,
+        currentSavings: latestSavingsBalance,
+        simulationMonths: horizonMonths,
+        checkpoints: goalRows
+          .filter((row) => row.effectiveDeadline)
+          .map((row) => ({
+            goalId: row.goalId,
+            title: row.title,
+            deadline: row.effectiveDeadline!,
+            fundingNeed: row.fundingNeed,
+          })),
+      },
+      now
+    );
+    simulationCheckpoints = schedule.checkpoints;
+
+    for (const cp of schedule.checkpoints.filter((c) => c.atRisk)) {
+      const row = goalRows.find((r) => r.goalId === cp.goalId);
+      if (row && !row.atRiskReasons.includes('simulation_shortfall')) {
+        row.atRiskReasons.push('simulation_shortfall');
+        row.atRisk = true;
+      }
+      if (!conflicts.some((c) => c.type === 'simulation_shortfall' && c.goalIds.includes(cp.goalId))) {
+        conflicts.push({
+          type: 'simulation_shortfall',
+          goalIds: [cp.goalId],
+          messageKey: 'goalReach.conflicts.simulationShortfall',
+          messageParams: {
+            title: cp.title,
+            deadline: cp.deadline,
+            need: cp.fundingNeed,
+            available: cp.availableSavings,
+            shortfall: cp.shortfall,
+            month: cp.simulationMonth,
+          },
+        });
+      }
+    }
+  }
+
   return {
     computedAt: now.toISOString(),
     activeGoalCount: activeGoals.length,
@@ -520,5 +578,6 @@ export function computeGoalReachPlan(
     conflicts,
     monthlyFunding: buildMonthlyFunding(goalRows, monthlySurplus, now, horizonMonths),
     weeklyFocus: buildWeeklyFocus(activeGoals, tasks, now),
+    simulationCheckpoints,
   };
 }

@@ -21,6 +21,8 @@ interface GoalReachPlannerCardProps {
   tasks: TaskNode[];
   latestSavingsBalance: number;
   monthlySurplus: number;
+  monthlyIncome?: number;
+  monthlyExpenses?: number;
   longTermFinGoal?: LongTermFinGoal | null;
   onOpenBudgetAllocator?: () => void;
   onOpenGoal?: (goalId: string) => void;
@@ -32,6 +34,8 @@ export default function GoalReachPlannerCard({
   tasks,
   latestSavingsBalance,
   monthlySurplus,
+  monthlyIncome,
+  monthlyExpenses,
   longTermFinGoal = null,
   onOpenBudgetAllocator,
   onOpenGoal,
@@ -52,13 +56,25 @@ export default function GoalReachPlannerCard({
           monthlySurplus,
           longTermFinGoal,
           horizonMonths: DEFAULT_GOAL_REACH_HORIZON_MONTHS,
+          monthlyIncome,
+          monthlyExpenses,
         },
         now
       ),
-    [goals, tasks, latestSavingsBalance, monthlySurplus, longTermFinGoal, now]
+    [
+      goals,
+      tasks,
+      latestSavingsBalance,
+      monthlySurplus,
+      monthlyIncome,
+      monthlyExpenses,
+      longTermFinGoal,
+      now,
+    ]
   );
 
   const atRiskCount = plan.goalRows.filter((r) => r.atRisk).length;
+  const simulationShortfallCount = plan.simulationCheckpoints.filter((c) => c.atRisk).length;
   const showConflicts = plan.conflicts.length > 0 || plan.feasibility < 100 || atRiskCount > 0;
 
   useEffect(() => {
@@ -117,6 +133,12 @@ export default function GoalReachPlannerCard({
           {t('goalReach.fundingGapTotal', {
             amount: format(plan.totalFundingNeed - latestSavingsBalance),
           })}
+        </p>
+      )}
+
+      {simulationShortfallCount > 0 && (
+        <p className="text-sm text-amber-600 dark:text-amber-400">
+          {t('goalReach.simulation.shortfallSummary', { count: simulationShortfallCount })}
         </p>
       )}
 

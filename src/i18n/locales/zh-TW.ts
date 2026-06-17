@@ -683,6 +683,9 @@ export const zhTW: Messages = {
     emptyHint: '請先在清單檢視建立目標',
     savingsGap: '儲蓄缺口：{amount}（預算超過餘額）',
     fundingGapTotal: '資金缺口：{amount}（相對目前儲蓄）',
+    simulation: {
+      shortfallSummary: '{count} 個目標在期限時預測儲蓄不足（現金流模擬）',
+    },
     masterTimeline: '總時程',
     horizonMonths: '{count} 個月視野',
     noDeadline: '無期限',
@@ -729,6 +732,9 @@ export const zhTW: Messages = {
       fundingGapDetail: '{title} 尚缺 {gap} — 最早可行 {earliest}',
       overdue: '已逾期目標',
       overdueDetail: '{title} 已過期限',
+      simulationShortfall: '預測儲蓄不足',
+      simulationShortfallDetail:
+        '{title} 期限 {deadline}（第 {month} 月）：需 {need}，可用 {available} — 缺 {shortfall}',
       unknownEarliest: '未知',
       openBudgetAllocator: '開啟預算分配',
       openGoal: '開啟目標',

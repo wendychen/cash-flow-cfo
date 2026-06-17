@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildSimulationChartData,
+  deadlineToSimulationMonth,
+  getProjectedSavingsAtMonth,
   LONG_TERM_SIMULATOR_MONTHS,
   runCashFlowSimulation,
+  simulateGoalFundingSchedule,
 } from './cashFlowSimulation';
 
 describe('runCashFlowSimulation', () => {
@@ -94,5 +97,82 @@ describe('runCashFlowSimulation', () => {
     expect(chart).toHaveLength(2);
     expect(chart[0].scenario).toBe(120000);
     expect(chart[1].baseline).toBe(140000);
+  });
+});
+
+describe('simulateGoalFundingSchedule', () => {
+  const NOW = new Date('2026-06-17T12:00:00');
+
+  it('maps deadlines to simulation months', () => {
+    expect(deadlineToSimulationMonth('2026-06-30', NOW)).toBe(1);
+    expect(deadlineToSimulationMonth('2026-08-15', NOW)).toBe(3);
+  });
+
+  it('flags shortfall when projected savings cannot cover sequential goal needs', () => {
+    const result = simulateGoalFundingSchedule(
+      {
+        monthlyIncome: 5000,
+        monthlyExpenses: 4500,
+        currentSavings: 1000,
+        simulationMonths: 12,
+        checkpoints: [
+          {
+            goalId: 'g1',
+            title: 'Soon',
+            deadline: '2026-08-01',
+            fundingNeed: 3000,
+          },
+          {
+            goalId: 'g2',
+            title: 'Later',
+            deadline: '2026-10-01',
+            fundingNeed: 2000,
+          },
+        ],
+      },
+      NOW
+    );
+
+    const g1 = result.checkpoints.find((c) => c.goalId === 'g1');
+    const g2 = result.checkpoints.find((c) => c.goalId === 'g2');
+
+    expect(g1?.simulationMonth).toBe(3);
+    expect(g1?.atRisk).toBe(true);
+    expect(g1?.shortfall).toBeGreaterThan(0);
+    expect(g2?.atRisk).toBe(true);
+  });
+
+  it('passes when savings trajectory covers all goals', () => {
+    const sim = runCashFlowSimulation({
+      monthlyIncome: 10000,
+      monthlyExpenses: 2000,
+      currentSavings: 20000,
+      incomeChange: 0,
+      expenseChange: 0,
+      months: 6,
+    });
+
+    expect(getProjectedSavingsAtMonth(sim, 3)).toBe(44000);
+
+    const result = simulateGoalFundingSchedule(
+      {
+        monthlyIncome: 10000,
+        monthlyExpenses: 2000,
+        currentSavings: 20000,
+        simulationMonths: 6,
+        checkpoints: [
+          {
+            goalId: 'g1',
+            title: 'Trip',
+            deadline: '2026-08-01',
+            fundingNeed: 10000,
+          },
+        ],
+      },
+      NOW
+    );
+
+    expect(result.checkpoints[0].atRisk).toBe(false);
+    expect(result.checkpoints[0].shortfall).toBe(0);
   });
 });

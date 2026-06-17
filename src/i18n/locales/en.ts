@@ -684,6 +684,10 @@ export const en = {
     emptyHint: 'Create goals in List view first',
     savingsGap: 'Savings gap: {amount} (budgets exceed balance)',
     fundingGapTotal: 'Funding shortfall: {amount} vs current savings',
+    simulation: {
+      shortfallSummary:
+        '{count} goals short on projected savings at deadline (cash-flow sim)',
+    },
     masterTimeline: 'Master timeline',
     horizonMonths: '{count}-month horizon',
     noDeadline: 'No deadline',
@@ -734,6 +738,9 @@ export const en = {
         '{title} needs {gap} more — earliest feasible {earliest}',
       overdue: 'Overdue goal',
       overdueDetail: '{title} is past its deadline',
+      simulationShortfall: 'Projected savings shortfall',
+      simulationShortfallDetail:
+        '{title} by {deadline} (mo {month}): need {need}, available {available} — short {shortfall}',
       unknownEarliest: 'unknown',
       openBudgetAllocator: 'Open Budget Allocator',
       openGoal: 'Open goal',

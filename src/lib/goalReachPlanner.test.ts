@@ -61,6 +61,35 @@ describe('goalReachPlanner', () => {
     expect(plan.feasibility).toBe(100);
     expect(plan.weeklyFocus).toHaveLength(0);
     expect(plan.monthlyFunding).toHaveLength(0);
+    expect(plan.simulationCheckpoints).toHaveLength(0);
+  });
+
+  it('adds simulation shortfall conflicts when income and expenses provided', () => {
+    const goals = [
+      makeGoal({
+        id: 'g1',
+        title: 'Big trip',
+        budget: 15000,
+        deadline: '2026-09-01',
+      }),
+    ];
+
+    const plan = computeGoalReachPlan(
+      {
+        goals,
+        tasks: [],
+        latestSavingsBalance: 2000,
+        monthlySurplus: 500,
+        monthlyIncome: 6000,
+        monthlyExpenses: 5500,
+        horizonMonths: 12,
+      },
+      NOW
+    );
+
+    const simConflict = plan.conflicts.find((c) => c.type === 'simulation_shortfall');
+    expect(simConflict).toBeDefined();
+    expect(plan.simulationCheckpoints.some((c) => c.atRisk)).toBe(true);
   });
 
   it('computes a single fully funded goal', () => {

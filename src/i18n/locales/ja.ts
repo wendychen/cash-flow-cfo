@@ -684,6 +684,9 @@ export const ja: Messages = {
     emptyHint: 'まずリスト表示で目標を作成してください',
     savingsGap: '貯蓄ギャップ：{amount}（予算が残高を超過）',
     fundingGapTotal: '資金不足：{amount}（現在の貯蓄比）',
+    simulation: {
+      shortfallSummary: '{count} 件の目標が期限時の予測貯蓄不足（キャッシュフロー模擬）',
+    },
     masterTimeline: 'マスタータイムライン',
     horizonMonths: '{count} か月の視野',
     noDeadline: '期限なし',
@@ -730,6 +733,9 @@ export const ja: Messages = {
       fundingGapDetail: '{title} はあと {gap} 必要 — 最早達成可能 {earliest}',
       overdue: '期限超過の目標',
       overdueDetail: '{title} は期限を過ぎています',
+      simulationShortfall: '予測貯蓄の不足',
+      simulationShortfallDetail:
+        '{title} 期限 {deadline}（{month}ヶ月目）：必要 {need}、利用可能 {available} — 不足 {shortfall}',
       unknownEarliest: '不明',
       openBudgetAllocator: '予算配分を開く',
       openGoal: '目標を開く',

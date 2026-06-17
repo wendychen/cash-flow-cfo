@@ -750,6 +750,8 @@ export default function Dashboard() {
                     tasks={tasksForManagement}
                     latestSavingsBalance={latestSavingsBalance}
                     monthlySurplus={monthlySurplus}
+                    monthlyIncome={monthlyIncome}
+                    monthlyExpenses={monthlyExpenses}
                     longTermFinGoal={longTermFinGoal}
                     onOpenBudgetAllocator={handleOpenBudgetAllocatorFromPlanner}
                     onOpenGoal={handleOpenGoalFromPlanner}
