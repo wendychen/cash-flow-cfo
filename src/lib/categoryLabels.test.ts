@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   EXPENSE_CATEGORY_I18N_KEYS,
   FIXED_EXPENSE_CATEGORY_I18N_KEYS,
+  FIXED_EXPENSE_GROUP_I18N_KEYS,
   getExpenseCategoryLabel,
   getFixedExpenseCategoryLabel,
+  getFixedExpenseGroupLabel,
 } from './categoryLabels';
 import en from '@/i18n/locales/en';
 
@@ -33,6 +35,17 @@ describe('categoryLabels', () => {
       );
       expect(label).toBe(t(key));
       expect(label).not.toBe(category);
+    }
+  });
+
+  it('maps fixed expense group headers to translated labels', () => {
+    for (const [group, key] of Object.entries(FIXED_EXPENSE_GROUP_I18N_KEYS)) {
+      const label = getFixedExpenseGroupLabel(
+        group as keyof typeof FIXED_EXPENSE_GROUP_I18N_KEYS,
+        t
+      );
+      expect(label).toBe(t(key));
+      expect(label).not.toBe(group);
     }
   });
 });

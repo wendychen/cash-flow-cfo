@@ -116,7 +116,7 @@ export default function GoalMilestoneSection({
                       : 'bg-indigo-300 dark:bg-indigo-700'
                   )}
                   style={{ left: `${positionPercent}%` }}
-                  title={`${milestone.title} — ${formatMilestoneDate(milestone.targetDate)}${isNext ? ' (next)' : ''}`}
+                  title={`${milestone.title} — ${formatMilestoneDate(milestone.targetDate)}${isNext ? ` ${t('goals.milestoneNext')}` : ''}`}
                 />
               );
             })}
@@ -177,7 +177,7 @@ export default function GoalMilestoneSection({
       {milestones.length < MAX_MILESTONES_PER_GOAL && (
         <div className="flex flex-wrap gap-2">
           <Input
-            placeholder="Milestone title..."
+            placeholder={t('goals.milestoneTitlePlaceholder')}
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && addMilestone()}

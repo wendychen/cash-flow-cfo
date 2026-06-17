@@ -16,7 +16,7 @@ import { useCurrency, Currency } from "@/hooks/use-currency";
 import { FixedExpenseCategory, FIXED_EXPENSE_CATEGORIES, FIXED_EXPENSE_CATEGORY_GROUPS } from "@/types/expenseCategory";
 import { FrequencySelectField } from "@/components/shared";
 import { useI18n } from "@/i18n";
-import { getFixedExpenseCategoryLabel } from "@/lib/categoryLabels";
+import { getFixedExpenseCategoryLabel, getFixedExpenseGroupLabel } from "@/lib/categoryLabels";
 
 interface FixedExpenseFormProps {
   onAddFixedExpense: (expense: Omit<FixedExpense, "id" | "createdAt">) => void;
@@ -83,7 +83,11 @@ const FixedExpenseForm = ({ onAddFixedExpense }: FixedExpenseFormProps) => {
         <SelectContent>
           {FIXED_EXPENSE_CATEGORY_GROUPS.map((group) => (
             <SelectGroup key={group.parentKey ?? group.categories[0]?.key}>
-              {group.parentLabel && <SelectLabel className="pl-2">{group.parentLabel}</SelectLabel>}
+              {group.parentKey && (
+                <SelectLabel className="pl-2">
+                  {getFixedExpenseGroupLabel(group.parentKey, t)}
+                </SelectLabel>
+              )}
               {group.categories.map(({ key, meta }) => {
                 const Icon = iconMap[meta.icon] ?? Home;
                 return (

@@ -19,7 +19,7 @@ import { FixedExpenseCategory, FIXED_EXPENSE_CATEGORIES, FIXED_EXPENSE_CATEGORY_
 import { FrequencySelectField } from "@/components/shared";
 import { FREQUENCY_META } from "@/lib/frequencyLabels";
 import { useI18n } from "@/i18n";
-import { getFixedExpenseCategoryLabel } from "@/lib/categoryLabels";
+import { getFixedExpenseCategoryLabel, getFixedExpenseGroupLabel } from "@/lib/categoryLabels";
 import {
   Tooltip,
   TooltipContent,
@@ -113,7 +113,7 @@ const FixedExpenseList = ({
   if (fixedExpenses.length === 0) {
     return (
       <div className="text-center py-4 text-muted-foreground text-sm">
-        No fixed expenses yet. Add your recurring bills above.
+        {t('fixedExpenses.list.empty')}
       </div>
     );
   }
@@ -123,7 +123,11 @@ const FixedExpenseList = ({
       <div className="flex items-center justify-between border-b border-border pb-2 gap-3 flex-wrap">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <RefreshCw className="h-4 w-4" />
-          <span>{filteredExpenses.length} fixed expense{filteredExpenses.length !== 1 ? 's' : ''}</span>
+          <span>
+            {filteredExpenses.length === 1
+              ? t('fixedExpenses.list.countOne')
+              : t('fixedExpenses.list.count', { count: filteredExpenses.length })}
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-muted-foreground" />
@@ -135,7 +139,11 @@ const FixedExpenseList = ({
               <SelectItem value="all">{t('categories.all')}</SelectItem>
               {FIXED_EXPENSE_CATEGORY_GROUPS.map((group) => (
                 <SelectGroup key={group.parentKey ?? group.categories[0]?.key}>
-                  {group.parentLabel && <SelectLabel className="pl-2">{group.parentLabel}</SelectLabel>}
+                  {group.parentKey && (
+                    <SelectLabel className="pl-2">
+                      {getFixedExpenseGroupLabel(group.parentKey, t)}
+                    </SelectLabel>
+                  )}
                   {group.categories.map(({ key }) => (
                     <SelectItem key={key} value={key}>
                       {getFixedExpenseCategoryLabel(key as FixedExpenseCategory, t)}
@@ -147,7 +155,7 @@ const FixedExpenseList = ({
           </Select>
         </div>
         <div className="text-right">
-          <p className="text-xs text-muted-foreground">Monthly Equivalent</p>
+          <p className="text-xs text-muted-foreground">{t('fixedExpenses.list.monthlyEquivalent')}</p>
           <p className="font-semibold text-foreground">{format(totalMonthlyEquivalent)}</p>
         </div>
       </div>
@@ -170,7 +178,11 @@ const FixedExpenseList = ({
                 <SelectContent>
                   {FIXED_EXPENSE_CATEGORY_GROUPS.map((group) => (
                     <SelectGroup key={group.parentKey ?? group.categories[0]?.key}>
-                      {group.parentLabel && <SelectLabel className="pl-2">{group.parentLabel}</SelectLabel>}
+                      {group.parentKey && (
+                    <SelectLabel className="pl-2">
+                      {getFixedExpenseGroupLabel(group.parentKey, t)}
+                    </SelectLabel>
+                  )}
                       {group.categories.map(({ key }) => (
                         <SelectItem key={key} value={key}>
                           {getFixedExpenseCategoryLabel(key as FixedExpenseCategory, t)}

@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { useCurrency } from "@/hooks/use-currency";
 import { useI18n } from "@/i18n";
+import { getExpenseCategoryLabel } from "@/lib/categoryLabels";
 import { EXPENSE_CATEGORIES, ExpenseCategory } from "@/types/expenseCategory";
 import {
   Plus,
@@ -115,6 +116,7 @@ const SortableIdeationItem = ({
   onDelete,
   goalId,
 }: SortableIdeationItemProps) => {
+  const { t } = useI18n();
   const {
     attributes,
     listeners,
@@ -153,7 +155,7 @@ const SortableIdeationItem = ({
           onUpdateGoal(goalId, { ideations: updated });
         }}
         className="flex-1 h-6 text-sm border-0 bg-transparent px-1 focus-visible:ring-1"
-        placeholder="Idea..."
+        placeholder={t('goals.list.ideaPlaceholder')}
       />
       <Button
         variant="ghost"
@@ -184,6 +186,7 @@ const SortableUrlItem = ({
   onDelete,
   goalId,
 }: SortableUrlItemProps) => {
+  const { t } = useI18n();
   const {
     attributes,
     listeners,
@@ -220,14 +223,14 @@ const SortableUrlItem = ({
           onUpdateGoal(goalId, { urlPack: updated });
         }}
         className="flex-1 h-6 text-xs"
-        placeholder="URL..."
+        placeholder={t('goals.list.urlPlaceholder')}
       />
       <Button
         variant="ghost"
         size="icon"
         className="h-6 w-6"
         onClick={() => window.open(url, "_blank")}
-        title="Open URL"
+        title={t('goals.list.openUrl')}
       >
         <ExternalLink className="h-3 w-3 text-blue-500" />
       </Button>
@@ -417,7 +420,7 @@ const SortableGoalItem = ({
           className={`flex-1 border-0 bg-transparent p-0 h-auto focus-visible:ring-0 ${
             goal.completed ? "line-through text-muted-foreground" : ""
           } ${goal.isMagicWand ? "font-semibold" : ""}`}
-          placeholder="Enter goal..."
+          placeholder={t('goals.list.enterGoal')}
         />
         <Button
           variant="ghost"
@@ -428,7 +431,7 @@ const SortableGoalItem = ({
               : "text-muted-foreground hover:text-amber-500"
           }`}
           onClick={() => onToggleMagicWand(goal.id)}
-          title={goal.isMagicWand ? "Remove priority" : "Set as top priority"}
+          title={goal.isMagicWand ? t('goals.list.removePriority') : t('goals.list.setPriority')}
         >
           <Wand2
             className={`h-4 w-4 ${goal.isMagicWand ? "fill-amber-500" : ""}`}
@@ -450,7 +453,7 @@ const SortableGoalItem = ({
           size="icon"
           className="h-8 w-8 text-muted-foreground hover:text-red-500"
           onClick={() => onDeleteGoal(goal.id)}
-          title="Delete goal"
+          title={t('goals.list.delete')}
         >
           <Trash2 className="h-4 w-4" />
         </Button>
@@ -464,7 +467,7 @@ const SortableGoalItem = ({
           onChange={(e) => onFieldChange(goal.id, "deadline", e.target.value)}
           onBlur={() => onFieldBlur(goal.id, "deadline")}
           className="h-7 text-xs border-dashed bg-transparent w-32"
-          placeholder="Set deadline"
+          placeholder={t('goals.list.setDeadline')}
         />
         <GoalTimerBadge goal={goal} />
         <Select
@@ -483,7 +486,7 @@ const SortableGoalItem = ({
                     <IconComponent
                       className={`h-3 w-3 ${categoryData.color}`}
                     />
-                    <span>{categoryData.label}</span>
+                    <span>{getExpenseCategoryLabel(goal.category, t)}</span>
                   </div>
                 );
               })()}
@@ -496,7 +499,7 @@ const SortableGoalItem = ({
                 <SelectItem key={key} value={key}>
                   <div className="flex items-center gap-2">
                     <IconComponent className={`h-3.5 w-3.5 ${data.color}`} />
-                    <span>{data.label}</span>
+                    <span>{getExpenseCategoryLabel(key as ExpenseCategory, t)}</span>
                   </div>
                 </SelectItem>
               );
@@ -526,19 +529,19 @@ const SortableGoalItem = ({
         )}
         {(goal.budget || 0) > 0 && (
           <Badge variant="outline" className="text-xs gap-1 text-blue-600 whitespace-nowrap tabular-nums">
-            Budget: {format(goal.budget)}
+            {t('goals.list.budget', { amount: format(goal.budget ?? 0) })}
           </Badge>
         )}
         <Input
           value={goal.timeCost || ""}
           onChange={(e) => onUpdateGoal(goal.id, { timeCost: e.target.value })}
-          placeholder="Time..."
+          placeholder={t('forms.time')}
           className="h-7 text-xs border-dashed bg-transparent w-24"
         />
         {dreams.length > 0 && (
           <Badge variant="outline" className="text-xs gap-1 text-teal-600">
             <Sparkles className="h-3 w-3" />
-            {dreams.length} dreams
+            {t('goals.list.dreamsCount', { count: dreams.length })}
           </Badge>
         )}
       </div>
@@ -594,7 +597,7 @@ const SortableGoalItem = ({
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm font-medium">
               <Lightbulb className="h-4 w-4 text-yellow-500" />
-              <span>Ideation ({ideations.length}/20)</span>
+              <span>{t('goals.list.ideation', { current: ideations.length, max: 20 })}</span>
             </div>
             <DndContext
               sensors={sensors}
@@ -635,7 +638,7 @@ const SortableGoalItem = ({
             {ideations.length < 20 && (
               <div className="flex gap-2">
                 <Input
-                  placeholder="Add an idea..."
+                  placeholder={t('goals.list.addIdea')}
                   value={newIdeation}
                   onChange={(e) => setNewIdeation(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && addIdeation()}
@@ -656,10 +659,10 @@ const SortableGoalItem = ({
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm font-medium">
               <Lock className="h-4 w-4 text-red-500" />
-              <span>Key Constraint</span>
+              <span>{t('goals.list.keyConstraint')}</span>
             </div>
             <Textarea
-              placeholder="What's the main blocker or constraint for this goal?"
+              placeholder={t('goals.list.constraintPlaceholder')}
               value={constraint}
               onChange={(e) =>
                 onUpdateGoal(goal.id, { constraint: e.target.value })
@@ -672,7 +675,7 @@ const SortableGoalItem = ({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm font-medium">
                 <Link className="h-4 w-4 text-blue-500" />
-                <span>URL Pack ({urlPack.length})</span>
+                <span>{t('goals.list.urlPack', { count: urlPack.length })}</span>
               </div>
               {urlPack.length > 0 && (
                 <Button
@@ -682,7 +685,7 @@ const SortableGoalItem = ({
                   className="h-7 text-xs gap-1"
                 >
                   <ExternalLink className="h-3 w-3" />
-                  Open All
+                  {t('goals.list.openAll')}
                 </Button>
               )}
             </div>
@@ -725,7 +728,7 @@ const SortableGoalItem = ({
             </DndContext>
             <div className="flex gap-2">
               <Input
-                placeholder="Add URL..."
+                placeholder={t('goals.list.addUrl')}
                 value={newUrl}
                 onChange={(e) => setNewUrl(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && addUrl()}
@@ -764,6 +767,7 @@ const GoalList = ({
   onImportGoal,
   onSpawnNextCycle,
 }: GoalListProps) => {
+  const { t } = useI18n();
   const [newGoalTitle, setNewGoalTitle] = useState("");
   const [newGoalDeadline, setNewGoalDeadline] = useState("");
   const [editingGoals, setEditingGoals] = useState<
@@ -891,11 +895,11 @@ const GoalList = ({
         <div className="flex items-center justify-between cursor-pointer hover:bg-muted/50 rounded-lg p-2 -mx-2 transition-colors">
           <div className="flex items-center gap-2">
             <Target className="h-5 w-5 text-emerald-600" />
-            <h3 className="font-semibold text-foreground">Goals</h3>
+            <h3 className="font-semibold text-foreground">{t('goals.list.title')}</h3>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">
-              {activeGoals.length} active
+              {t('goals.list.activeCount', { count: activeGoals.length })}
             </span>
             <ChevronDown
               className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${
@@ -911,7 +915,7 @@ const GoalList = ({
           <div className="flex justify-end">
             <Button variant="outline" size="sm" onClick={onImportGoal}>
               <Upload className="mr-2 h-4 w-4" />
-              Import goal
+              {t('goals.import')}
             </Button>
           </div>
         )}
@@ -964,7 +968,7 @@ const GoalList = ({
         <div className="flex flex-col gap-2">
           <div className="flex gap-2">
             <Input
-              placeholder="Add a new goal..."
+              placeholder={t('goals.list.addNew')}
               value={newGoalTitle}
               onChange={(e) => setNewGoalTitle(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAddGoal()}
@@ -983,13 +987,13 @@ const GoalList = ({
             <Calendar className="h-4 w-4 text-muted-foreground" />
             <Input
               type="date"
-              placeholder="Deadline"
+              placeholder={t('goals.list.deadline')}
               value={newGoalDeadline}
               onChange={(e) => setNewGoalDeadline(e.target.value)}
               className="w-40 h-8 text-sm"
             />
             <span className="text-xs text-muted-foreground">
-              Optional deadline
+              {t('goals.list.optionalDeadline')}
             </span>
           </div>
         </div>
@@ -997,7 +1001,7 @@ const GoalList = ({
         {completedGoals.length > 0 && (
           <div className="pt-4 border-t border-border">
             <p className="text-sm text-muted-foreground mb-2">
-              Completed ({completedGoals.length})
+              {t('goals.list.completed', { count: completedGoals.length })}
             </p>
             <div className="space-y-2">
               {completedGoals.map((goal) => {
@@ -1032,7 +1036,7 @@ const GoalList = ({
                         }
                         onBlur={() => handleFieldBlur(goal.id, "title")}
                         className="flex-1 border-0 bg-transparent p-0 h-auto focus-visible:ring-0 line-through text-muted-foreground"
-                        placeholder="Enter goal..."
+                        placeholder={t('goals.list.enterGoal')}
                       />
                     </div>
                     <div className="flex items-center gap-2 ml-10">
@@ -1049,7 +1053,7 @@ const GoalList = ({
                         }
                         onBlur={() => handleFieldBlur(goal.id, "deadline")}
                         className="h-7 text-xs border-dashed bg-transparent w-32"
-                        placeholder="Set deadline"
+                        placeholder={t('goals.list.setDeadline')}
                       />
                     </div>
                   </div>

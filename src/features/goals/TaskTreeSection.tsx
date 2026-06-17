@@ -37,6 +37,8 @@ import {
   FlattenedItem,
 } from "./hooks/use-task-tree";
 import { useCurrency } from "@/hooks/use-currency";
+import { useI18n } from "@/i18n";
+import type { TranslationKey } from "@/i18n";
 
 interface TaskTreeSectionProps {
   goalId: string;
@@ -59,29 +61,29 @@ interface TaskTreeSectionProps {
 const sectionConfig: Record<
   TaskType,
   {
-    label: string;
+    labelKey: TranslationKey;
     icon: typeof ArrowLeft;
     iconColor: string;
-    wandLabel: string;
+    wandLabelKey: TranslationKey;
   }
 > = {
   pre: {
-    label: "Pre-tasks",
+    labelKey: "goals.tasks.pre",
     icon: ArrowLeft,
     iconColor: "text-blue-500",
-    wandLabel: "Key Action",
+    wandLabelKey: "goals.tasks.keyAction",
   },
   post: {
-    label: "Post-tasks",
+    labelKey: "goals.tasks.post",
     icon: ArrowRight,
     iconColor: "text-green-500",
-    wandLabel: "Key Action",
+    wandLabelKey: "goals.tasks.keyAction",
   },
   dream: {
-    label: "Post-Dreams",
+    labelKey: "goals.tasks.dream",
     icon: Sparkles,
     iconColor: "text-teal-500",
-    wandLabel: "Dream Priority",
+    wandLabelKey: "goals.tasks.dreamPriority",
   },
 };
 
@@ -97,6 +99,7 @@ const TaskTreeSection = ({
   goalTitle,
   goalCategory,
 }: TaskTreeSectionProps) => {
+  const { t } = useI18n();
   const { format } = useCurrency();
   const [newTask, setNewTask] = useState({
     title: "",
@@ -321,13 +324,13 @@ const TaskTreeSection = ({
       <div className="flex items-center gap-2 text-sm font-medium">
         <Icon className={`h-4 w-4 ${config.iconColor}`} />
         <span>
-          {config.label} ({taskCount})
+          {t(config.labelKey)} ({taskCount})
         </span>
       </div>
 
       {taskType === "dream" && (
         <p className="text-xs text-muted-foreground">
-          Goals to pursue after achieving this one
+          {t('goals.tasks.dreamHint')}
         </p>
       )}
 
@@ -350,7 +353,7 @@ const TaskTreeSection = ({
               }`}
             />
             <span className="text-sm font-medium">
-              {config.wandLabel}: {magicWandTask.task.title}
+              {t(config.wandLabelKey)}: {magicWandTask.task.title}
             </span>
           </div>
         </div>
@@ -405,7 +408,7 @@ const TaskTreeSection = ({
                         if (e.key === "Enter") submitSubtask();
                         if (e.key === "Escape") setAddingSubtaskFor(null);
                       }}
-                      placeholder="Subtask..."
+                      placeholder={t('goals.tasks.subtask')}
                       className="flex-1 h-7 text-sm"
                       autoFocus
                     />
@@ -427,7 +430,7 @@ const TaskTreeSection = ({
         <DragOverlay>
           {activeTask ? (
             <div className="opacity-80 bg-card border border-primary/30 rounded p-2 shadow-lg text-sm">
-              {activeTask.task.title || "Untitled"}
+              {activeTask.task.title || t('goals.tasks.untitled')}
             </div>
           ) : null}
         </DragOverlay>
@@ -435,7 +438,7 @@ const TaskTreeSection = ({
 
       <div className="flex gap-2 flex-wrap">
         <Input
-          placeholder={taskType === "dream" ? "Dream goal..." : "Action item..."}
+          placeholder={taskType === "dream" ? t('goals.tasks.dreamGoal') : t('goals.tasks.actionItem')}
           value={newTask.title}
           onChange={(e) =>
             setNewTask((prev) => ({ ...prev, title: e.target.value }))
@@ -444,7 +447,7 @@ const TaskTreeSection = ({
           className="flex-1 min-w-[150px] h-8 text-sm"
         />
         <Input
-          placeholder="$ Cost"
+          placeholder={t('goals.tasks.costWithSymbol')}
           type="number"
           value={newTask.cost}
           onChange={(e) =>
@@ -453,7 +456,7 @@ const TaskTreeSection = ({
           className="w-20 h-8 text-sm"
         />
         <Input
-          placeholder="Time"
+          placeholder={t('forms.time')}
           value={newTask.timeCost}
           onChange={(e) =>
             setNewTask((prev) => ({ ...prev, timeCost: e.target.value }))

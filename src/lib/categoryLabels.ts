@@ -1,5 +1,9 @@
 import type { TranslationKey } from '@/i18n';
-import type { ExpenseCategory, FixedExpenseCategory } from '@/types/expenseCategory';
+import type {
+  ExpenseCategory,
+  FixedExpenseCategory,
+  FixedExpenseParentKey,
+} from '@/types/expenseCategory';
 import { EXPENSE_CATEGORIES, FIXED_EXPENSE_CATEGORIES } from '@/types/expenseCategory';
 
 type TranslateFn = (key: TranslationKey) => string;
@@ -42,4 +46,17 @@ export function getFixedExpenseCategoryLabel(
 ): string {
   const key = FIXED_EXPENSE_CATEGORY_I18N_KEYS[category];
   return key ? t(key) : FIXED_EXPENSE_CATEGORIES[category]?.label ?? category;
+}
+
+export const FIXED_EXPENSE_GROUP_I18N_KEYS: Record<FixedExpenseParentKey, TranslationKey> = {
+  utilities: 'categories.fixed.groups.utilities',
+  liabilities: 'categories.fixed.groups.liabilities',
+};
+
+export function getFixedExpenseGroupLabel(
+  parentKey: FixedExpenseParentKey,
+  t: TranslateFn
+): string {
+  const key = FIXED_EXPENSE_GROUP_I18N_KEYS[parentKey];
+  return key ? t(key) : parentKey;
 }

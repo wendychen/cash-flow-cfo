@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useI18n } from "@/i18n";
 
 const INDENT_WIDTH = 24;
 
@@ -53,6 +54,7 @@ const TaskTreeNode = ({
   goalTitle,
   goalCategory,
 }: TaskTreeNodeProps) => {
+  const { t } = useI18n();
   const {
     attributes,
     listeners,
@@ -131,7 +133,7 @@ const TaskTreeNode = ({
         {task.linkedExpenseId && (
           <Link
             className="h-3 w-3 text-blue-500 shrink-0"
-            title="Synced with expense"
+            title={t('goals.tasks.syncedExpense')}
           />
         )}
 
@@ -139,7 +141,7 @@ const TaskTreeNode = ({
           <Badge
             variant="outline"
             className={`${EXPENSE_CATEGORIES[goalCategory].color} border-current shrink-0 text-[10px] px-1 py-0 h-4`}
-            title={`Goal: ${goalTitle}`}
+            title={t('goals.tasks.goalBadge', { title: goalTitle })}
           >
             {goalTitle.length > 12 ? goalTitle.substring(0, 12) + '...' : goalTitle}
           </Badge>
@@ -153,7 +155,7 @@ const TaskTreeNode = ({
               ? "line-through text-muted-foreground"
               : ""
           }`}
-          placeholder={isDream ? "Dream goal..." : "Action..."}
+          placeholder={isDream ? t('goals.tasks.dreamGoal') : t('goals.tasks.action')}
         />
 
         <Button
@@ -176,7 +178,7 @@ const TaskTreeNode = ({
           size="icon"
           className="h-6 w-6 text-muted-foreground hover:text-blue-500 shrink-0 opacity-0 group-hover:opacity-100 hover:opacity-100 focus:opacity-100"
           onClick={() => onAddSubtask(task.id)}
-          title="Add subtask"
+          title={t('goals.tasks.addSubtask')}
         >
           <Plus className="h-3 w-3" />
         </Button>
@@ -204,7 +206,7 @@ const TaskTreeNode = ({
               onUpdate(task.id, { cost: parseFloat(e.target.value) || 0 })
             }
             className="w-20 h-6 text-xs"
-            placeholder="Cost"
+            placeholder={t('goals.tasks.cost')}
           />
         </div>
         <div className="flex items-center gap-1">
@@ -213,7 +215,7 @@ const TaskTreeNode = ({
             value={task.timeCost || ""}
             onChange={(e) => onUpdate(task.id, { timeCost: e.target.value })}
             className="w-20 h-6 text-xs"
-            placeholder="Time"
+            placeholder={t('forms.time')}
           />
         </div>
         <div className="flex items-center gap-1">
