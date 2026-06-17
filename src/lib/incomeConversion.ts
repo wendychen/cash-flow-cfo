@@ -1,4 +1,9 @@
+import type { TranslationKey } from '@/i18n';
 import type { Income } from '@/types/income';
+
+type ValidationResult =
+  | { valid: true }
+  | { valid: false; errorKey: TranslationKey };
 
 export interface AccruedCollectionStatus {
   accruedAmount: number;
@@ -41,17 +46,17 @@ export function validateCollectionAmount(
   accrued: Income,
   amount: number,
   incomes: Income[]
-): { valid: boolean; error?: string } {
+): ValidationResult {
   if (accrued.incomeType !== 'accrued') {
-    return { valid: false, error: 'Only accrued income can receive collections.' };
+    return { valid: false, errorKey: 'income.collection.errors.notAccrued' };
   }
   if (!Number.isFinite(amount) || amount <= 0) {
-    return { valid: false, error: 'Collection amount must be greater than zero.' };
+    return { valid: false, errorKey: 'income.collection.errors.invalidAmount' };
   }
 
   const { outstanding } = getAccruedCollectionStatus(accrued, incomes);
   if (amount > outstanding + 0.001) {
-    return { valid: false, error: 'Collection exceeds outstanding accrued balance.' };
+    return { valid: false, errorKey: 'income.collection.errors.exceedsOutstanding' };
   }
 
   return { valid: true };
@@ -75,12 +80,12 @@ export function validateAccruedAmountUpdate(
   accrued: Income,
   newAmount: number,
   incomes: Income[]
-): { valid: boolean; error?: string } {
+): ValidationResult {
   const collected = getCollectedAmountForAccrued(accrued.id, incomes);
   if (newAmount < collected - 0.001) {
     return {
       valid: false,
-      error: 'Accrued amount cannot be less than already collected.',
+      errorKey: 'income.collection.errors.belowCollected',
     };
   }
   return { valid: true };

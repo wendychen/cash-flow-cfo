@@ -5,6 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import IncomeCollectForm from "./IncomeCollectForm";
 import {
   getAccruedCollectionStatus,
+  getCollectionsForAccrued,
   isAccruedCollection,
 } from "@/lib/incomeConversion";
 import { useI18n } from "@/i18n";
@@ -160,6 +161,12 @@ const IncomeList = ({
                   income.incomeType === "accrued"
                     ? getAccruedCollectionStatus(income, incomePool)
                     : null;
+                const collectionHistory =
+                  income.incomeType === "accrued"
+                    ? getCollectionsForAccrued(income.id, incomePool).sort((a, b) =>
+                        a.date.localeCompare(b.date)
+                      )
+                    : [];
                 const linkedAccrued =
                   income.linkedAccruedIncomeId &&
                   incomePool.find((i) => i.id === income.linkedAccruedIncomeId);
@@ -178,7 +185,7 @@ const IncomeList = ({
                       originalCurrency={income.originalCurrency}
                     />
                   )}
-                  {collectionStatus && !collectionStatus.isFullyCollected && (
+                  {collectionStatus && (
                     <div className="space-y-1">
                       <div className="flex justify-between text-[11px] text-muted-foreground tabular-nums">
                         <span>
@@ -189,6 +196,29 @@ const IncomeList = ({
                         </span>
                       </div>
                       <Progress value={collectionStatus.percentCollected} className="h-1.5" />
+                      {collectionHistory.length > 0 && (
+                        <div className="pt-1 space-y-0.5">
+                          <p className="text-[11px] font-medium text-muted-foreground">
+                            {t('income.collection.history')}
+                          </p>
+                          <ul className="space-y-0.5">
+                            {collectionHistory.map((collection) => (
+                              <li
+                                key={collection.id}
+                                className="flex justify-between gap-2 text-[11px] text-muted-foreground tabular-nums"
+                              >
+                                <span className="truncate">
+                                  {format(parseISO(collection.date), "yyyy MMM d")}
+                                  {collection.note ? ` · ${collection.note}` : ""}
+                                </span>
+                                <span className="text-teal-600 dark:text-teal-400 shrink-0">
+                                  +{formatCurrency(collection.amount)}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
                   )}
                   {editingId === income.id ? (

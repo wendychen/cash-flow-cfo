@@ -39,6 +39,7 @@ export const zhTW: Messages = {
       record: '登記收款',
       collected: '已收',
       outstanding: '未收',
+      history: '收款紀錄',
       date: '收款日期',
       amount: '金額',
       note: '備註',
@@ -47,6 +48,12 @@ export const zhTW: Messages = {
       cancel: '取消',
       invalidAmount: '收款金額無效',
       fromAccrued: '來自應收：{source}',
+      errors: {
+        notAccrued: '只有應收收入可以登記收款。',
+        invalidAmount: '收款金額必須大於零。',
+        exceedsOutstanding: '收款金額超過未收餘額。',
+        belowCollected: '應收金額不能低於已收金額。',
+      },
     },
     form: {
       addIncome: '新增收入',

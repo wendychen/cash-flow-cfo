@@ -39,6 +39,7 @@ export const ja: Messages = {
       record: '入金を記録',
       collected: '回収済',
       outstanding: '未収',
+      history: '入金履歴',
       date: '入金日',
       amount: '金額',
       note: 'メモ',
@@ -47,6 +48,12 @@ export const ja: Messages = {
       cancel: 'キャンセル',
       invalidAmount: '入金額が無効です',
       fromAccrued: '未収から：{source}',
+      errors: {
+        notAccrued: '未収収入のみ入金を記録できます。',
+        invalidAmount: '入金額はゼロより大きい必要があります。',
+        exceedsOutstanding: '入金額が未収残高を超えています。',
+        belowCollected: '未収額は既に回収済みの金額より少なくできません。',
+      },
     },
     form: {
       addIncome: '収入を追加',

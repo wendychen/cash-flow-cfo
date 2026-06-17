@@ -35,7 +35,26 @@ describe('incomeConversion', () => {
 
   it('validates collection amount against outstanding', () => {
     expect(validateCollectionAmount(accrued, 600, [accrued, partialCollection]).valid).toBe(true);
-    expect(validateCollectionAmount(accrued, 601, [accrued, partialCollection]).valid).toBe(false);
+    const over = validateCollectionAmount(accrued, 601, [accrued, partialCollection]);
+    expect(over.valid).toBe(false);
+    if (!over.valid) {
+      expect(over.errorKey).toBe('income.collection.errors.exceedsOutstanding');
+    }
+  });
+
+  it('returns error keys for invalid collection input', () => {
+    const cashIncome = { ...accrued, incomeType: 'cash' as const };
+    const notAccrued = validateCollectionAmount(cashIncome, 100, [cashIncome]);
+    expect(notAccrued.valid).toBe(false);
+    if (!notAccrued.valid) {
+      expect(notAccrued.errorKey).toBe('income.collection.errors.notAccrued');
+    }
+
+    const invalidAmount = validateCollectionAmount(accrued, 0, [accrued]);
+    expect(invalidAmount.valid).toBe(false);
+    if (!invalidAmount.valid) {
+      expect(invalidAmount.errorKey).toBe('income.collection.errors.invalidAmount');
+    }
   });
 
   it('builds linked cash collection entry', () => {
@@ -51,5 +70,8 @@ describe('incomeConversion', () => {
   it('prevents accrued amount below collected', () => {
     const result = validateAccruedAmountUpdate(accrued, 300, [accrued, partialCollection]);
     expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.errorKey).toBe('income.collection.errors.belowCollected');
+    }
   });
 });

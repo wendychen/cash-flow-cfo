@@ -37,6 +37,7 @@ export const en = {
       record: 'Record collection',
       collected: 'Collected',
       outstanding: 'Outstanding',
+      history: 'Collection history',
       date: 'Collection date',
       amount: 'Amount',
       note: 'Note',
@@ -45,6 +46,12 @@ export const en = {
       cancel: 'Cancel',
       invalidAmount: 'Invalid collection amount',
       fromAccrued: 'From accrued: {source}',
+      errors: {
+        notAccrued: 'Only accrued income can receive collections.',
+        invalidAmount: 'Collection amount must be greater than zero.',
+        exceedsOutstanding: 'Collection exceeds outstanding accrued balance.',
+        belowCollected: 'Accrued amount cannot be less than already collected.',
+      },
     },
     form: {
       addIncome: 'Add Income',

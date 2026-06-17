@@ -39,7 +39,7 @@ export default function IncomeCollectForm({
     const parsedNtd = convertToNTD(parsedDisplay, currency);
     const check = validateCollectionAmount(accrued, parsedNtd, allIncomes);
     if (!check.valid) {
-      setError(check.error ?? t('income.collection.invalidAmount'));
+      setError(t(check.errorKey));
       return;
     }
     onCollect(accrued.id, {
