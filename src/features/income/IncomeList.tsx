@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { format, parseISO } from "date-fns";
-import { Trash2, Pencil, Check, X, Banknote, Clock } from "lucide-react";
+import { Trash2, Pencil, Check, X, Banknote, Clock, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ import {
   getEditAmountAndCurrency,
   shouldShowOriginalCurrencyBadge,
 } from "@/lib/currencyEntry";
+import { duplicateEntry } from "@/lib/duplicateEntry";
 import {
   Select,
   SelectContent,
@@ -32,6 +33,7 @@ interface IncomeListProps {
   incomes: Income[];
   onDeleteIncome: (id: string) => void;
   onUpdateIncome: (id: string, updates: Partial<Omit<Income, "id">>) => void;
+  onDuplicateIncome?: (income: Omit<Income, "id">) => void;
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -40,6 +42,7 @@ const IncomeList = ({
   incomes,
   onDeleteIncome,
   onUpdateIncome,
+  onDuplicateIncome,
 }: IncomeListProps) => {
   const { format: formatCurrency, currency, convertFromNTD, convertToNTD } = useCurrency();
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -264,6 +267,17 @@ const IncomeList = ({
                         <span className="text-violet-600 dark:text-violet-400 font-semibold tabular-nums whitespace-nowrap min-w-[90px] text-right">
                           +{formatCurrency(income.amount)}
                         </span>
+                        {onDuplicateIncome && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-violet-600 hover:bg-violet-100"
+                            title="Duplicate entry"
+                            onClick={() => onDuplicateIncome(duplicateEntry(income))}
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"

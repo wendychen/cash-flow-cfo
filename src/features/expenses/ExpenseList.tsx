@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { format, parseISO } from "date-fns";
-import { Trash2, Pencil, Check, X, Filter, Link } from "lucide-react";
+import { Trash2, Pencil, Check, X, Filter, Link, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -23,6 +23,7 @@ import {
   getEditAmountAndCurrency,
   shouldShowOriginalCurrencyBadge,
 } from "@/lib/currencyEntry";
+import { duplicateEntry } from "@/lib/duplicateEntry";
 import {
   Pagination,
   PaginationContent,
@@ -37,6 +38,7 @@ interface ExpenseListProps {
   onDeleteExpense: (id: string) => void;
   onToggleNeedsCheck: (id: string) => void;
   onUpdateExpense: (id: string, updates: Partial<Omit<Expense, "id">>) => void;
+  onDuplicateExpense?: (expense: Omit<Expense, "id">) => void;
   goals?: Goal[];
 }
 
@@ -47,6 +49,7 @@ const ExpenseList = ({
   onDeleteExpense,
   onToggleNeedsCheck,
   onUpdateExpense,
+  onDuplicateExpense,
   goals = [],
 }: ExpenseListProps) => {
   const { format: formatCurrency, currency, convertFromNTD, convertToNTD } = useCurrency();
@@ -331,6 +334,17 @@ const ExpenseList = ({
                           <span className="text-foreground font-semibold tabular-nums whitespace-nowrap">
                             {formatCurrency(expense.amount)}
                           </span>
+                          {onDuplicateExpense && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                              title="Duplicate entry"
+                              onClick={() => onDuplicateExpense(duplicateEntry(expense))}
+                            >
+                              <Copy className="w-4 h-4" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"

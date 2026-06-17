@@ -16,7 +16,8 @@ import { Income } from "@/types/income";
 import { Saving } from "@/types/saving";
 import { FinancialTarget, TargetType, TargetPeriod } from "@/types/target";
 import { type TimePeriod } from "@/components/shared";
-import { TrendingUp, PiggyBank, Wallet, Target } from "lucide-react";
+import { TrendingUp, PiggyBank, Wallet, Target, ChevronDown } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useCurrency, Currency } from "@/hooks/use-currency";
 import { Button } from "@/components/ui/button";
 import {
@@ -47,7 +48,8 @@ interface CombinedChartProps {
 
 const CombinedChart = ({ expenses, incomes, savings, targets = [], onUpdateTarget, selectedPeriod }: CombinedChartProps) => {
   const { format: formatCurrency, convert, symbol, currency, convertToNTD, convertFromNTD } = useCurrency();
-  
+  const [isOpen, setIsOpen] = useState(true);
+
   const [editingTarget, setEditingTarget] = useState<{
     type: TargetType;
     period: TargetPeriod;
@@ -313,34 +315,45 @@ const CombinedChart = ({ expenses, incomes, savings, targets = [], onUpdateTarge
   }
 
   return (
-    <div className="bg-card rounded-xl shadow-card p-5">
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <h2 className="text-lg font-semibold text-foreground">Cash Flow Trend</h2>
-        <div className="flex items-center gap-4 text-sm flex-wrap">
-          {chartData.avgDailyIncome > 0 && (
-            <div className="flex items-center gap-2">
-              <Wallet className="w-4 h-4 text-violet-500" />
-              <span className="text-muted-foreground">Earn:</span>
-              <span className="font-medium text-violet-600">{formatCurrency(chartData.avgDailyIncome)}/day</span>
-            </div>
-          )}
-          {chartData.avgDailyExpense > 0 && (
-            <div className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-primary" />
-              <span className="text-muted-foreground">Spend:</span>
-              <span className="font-medium text-foreground">{formatCurrency(chartData.avgDailyExpense)}/day</span>
-            </div>
-          )}
-          {chartData.avgDailySavingsGrowth !== 0 && (
-            <div className="flex items-center gap-2">
-              <PiggyBank className="w-4 h-4 text-emerald-500" />
-              <span className="text-muted-foreground">Save:</span>
-              <span className="font-medium text-emerald-600">{chartData.avgDailySavingsGrowth >= 0 ? '+' : ''}{formatCurrency(chartData.avgDailySavingsGrowth)}/day</span>
-            </div>
-          )}
-        </div>
-      </div>
+    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="bg-card rounded-xl shadow-card">
+      <CollapsibleTrigger asChild>
+        <button
+          type="button"
+          className="flex w-full items-center justify-between gap-2 p-5 text-left hover:bg-muted/30 transition-colors rounded-xl"
+        >
+          <h2 className="text-lg font-semibold text-foreground">Cash Flow Trend</h2>
+          <div className="flex items-center gap-4 text-sm flex-wrap justify-end">
+            {isOpen && chartData.avgDailyIncome > 0 && (
+              <div className="flex items-center gap-2">
+                <Wallet className="w-4 h-4 text-violet-500" />
+                <span className="text-muted-foreground">Earn:</span>
+                <span className="font-medium text-violet-600">{formatCurrency(chartData.avgDailyIncome)}/day</span>
+              </div>
+            )}
+            {isOpen && chartData.avgDailyExpense > 0 && (
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-primary" />
+                <span className="text-muted-foreground">Spend:</span>
+                <span className="font-medium text-foreground">{formatCurrency(chartData.avgDailyExpense)}/day</span>
+              </div>
+            )}
+            {isOpen && chartData.avgDailySavingsGrowth !== 0 && (
+              <div className="flex items-center gap-2">
+                <PiggyBank className="w-4 h-4 text-emerald-500" />
+                <span className="text-muted-foreground">Save:</span>
+                <span className="font-medium text-emerald-600">{chartData.avgDailySavingsGrowth >= 0 ? '+' : ''}{formatCurrency(chartData.avgDailySavingsGrowth)}/day</span>
+              </div>
+            )}
+            <ChevronDown
+              className={`h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200 ${
+                isOpen ? "rotate-180" : ""
+              }`}
+            />
+          </div>
+        </button>
+      </CollapsibleTrigger>
 
+      <CollapsibleContent className="px-5 pb-5">
       <div className="h-72">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData.data} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
@@ -581,6 +594,7 @@ const CombinedChart = ({ expenses, incomes, savings, targets = [], onUpdateTarge
           </div>
         </div>
       )}
+      </CollapsibleContent>
 
       <Dialog open={!!editingTarget} onOpenChange={() => setEditingTarget(null)}>
         <DialogContent>
@@ -666,7 +680,7 @@ const CombinedChart = ({ expenses, incomes, savings, targets = [], onUpdateTarge
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </Collapsible>
   );
 };
 

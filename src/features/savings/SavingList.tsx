@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { format, parseISO } from "date-fns";
-import { Trash2, Pencil, Check, X, PiggyBank, Target } from "lucide-react";
+import { Trash2, Pencil, Check, X, PiggyBank, Target, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ import {
   getEditAmountAndCurrency,
   shouldShowOriginalCurrencyBadge,
 } from "@/lib/currencyEntry";
+import { duplicateEntry } from "@/lib/duplicateEntry";
 import {
   Select,
   SelectContent,
@@ -32,6 +33,7 @@ interface SavingListProps {
   savings: Saving[];
   onDeleteSaving: (id: string) => void;
   onUpdateSaving: (id: string, updates: Partial<Omit<Saving, "id">>) => void;
+  onDuplicateSaving?: (saving: Omit<Saving, "id">) => void;
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -40,6 +42,7 @@ const SavingList = ({
   savings,
   onDeleteSaving,
   onUpdateSaving,
+  onDuplicateSaving,
 }: SavingListProps) => {
   const { format: formatCurrency, currency, convertFromNTD, convertToNTD } = useCurrency();
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -236,6 +239,17 @@ const SavingList = ({
                 }`}>
                   {formatCurrency(saving.amount)}
                 </span>
+                {onDuplicateSaving && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-emerald-600 hover:bg-emerald-100"
+                    title="Duplicate entry"
+                    onClick={() => onDuplicateSaving(duplicateEntry(saving))}
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="icon"

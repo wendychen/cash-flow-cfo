@@ -374,7 +374,12 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <IncomeForm onAddIncome={addIncome} />
-                <IncomeList incomes={filteredIncomes} onDeleteIncome={deleteIncome} onUpdateIncome={updateIncome} />
+                <IncomeList
+                  incomes={filteredIncomes}
+                  onDeleteIncome={deleteIncome}
+                  onUpdateIncome={updateIncome}
+                  onDuplicateIncome={addIncome}
+                />
               </CardContent>
             </Card>
           </TabsContent>
@@ -396,6 +401,7 @@ export default function Dashboard() {
                   onDeleteExpense={deleteExpense}
                   onToggleNeedsCheck={handleToggleNeedsCheck}
                   onUpdateExpense={updateExpense}
+                  onDuplicateExpense={addExpense}
                   goals={goals}
                 />
               </CardContent>
@@ -432,6 +438,7 @@ export default function Dashboard() {
                   savings={filteredSavings}
                   onDeleteSaving={deleteSaving}
                   onUpdateSaving={handleUpdateSaving}
+                  onDuplicateSaving={(saving) => addSaving(saving, currency)}
                 />
               </CardContent>
             </Card>
