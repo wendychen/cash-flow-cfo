@@ -358,6 +358,8 @@ export default function Dashboard() {
       tasks,
       formatAmount: format,
       displayCurrency: currency,
+      t,
+      locale,
       longTermFinGoal,
       currentSavings: latestSavingsBalance,
     });
@@ -378,6 +380,8 @@ export default function Dashboard() {
           goals,
           tasks,
         },
+        t,
+        locale,
       },
       { formatAmount: format }
     );

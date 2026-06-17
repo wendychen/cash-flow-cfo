@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { en } from '@/i18n/locales/en';
 import {
   buildBackupPrintHtml,
   buildGoalsPrintHtml,
@@ -9,6 +10,7 @@ import type { Goal } from '@/types/goal';
 import type { TaskNode } from '@/types/task';
 
 const formatAmount = (n: number) => `$${n.toFixed(2)}`;
+const testT = _test.createTestPrintT(en as unknown as Record<string, unknown>);
 
 const sampleGoal: Goal = {
   id: 'g1',
@@ -53,6 +55,7 @@ describe('printReport', () => {
       tasks: [sampleTask],
       formatAmount,
       displayCurrency: 'USD',
+      t: testT,
       printedAt: new Date('2026-06-16T12:00:00'),
     });
 
@@ -69,6 +72,7 @@ describe('printReport', () => {
       tasks: [],
       formatAmount,
       displayCurrency: 'USD',
+      t: testT,
     });
 
     expect(html).toContain('Completed Goals');
@@ -113,16 +117,17 @@ describe('printReport', () => {
           goals: [],
           tasks: [],
         },
+        t: testT,
       },
       { formatAmount }
     );
 
-    expect(html).toContain('Income &amp; Collections');
+    expect(html).toContain('Income & Collections');
     expect(html).toContain('Direct cash');
     expect(html).toContain('Outstanding accrued');
     expect(html).toContain('Invoice A');
     expect(html).toContain('Cash Collections');
-    expect(html).toContain('incomeCollections');
+    expect(html).toContain('Income collections');
   });
 
   it('buildGoalsPrintHtml includes 20-year fin goal when set', () => {
@@ -131,6 +136,7 @@ describe('printReport', () => {
       tasks: [],
       formatAmount,
       displayCurrency: 'USD',
+      t: testT,
       longTermFinGoal: {
         targetAmount: 1e6,
         endYear: 2046,
@@ -152,6 +158,7 @@ describe('printReport', () => {
       tasks: [],
       formatAmount,
       displayCurrency: 'USD',
+      t: testT,
     });
 
     expect(html).toContain('Duplicate tasks:');
@@ -187,6 +194,7 @@ describe('printReport', () => {
         goals: [sampleGoal],
         tasks: [sampleTask],
       },
+      t: testT,
       printedAt: new Date('2026-06-16T12:00:00'),
     });
 
@@ -226,6 +234,7 @@ describe('printReport', () => {
           goals: [],
           tasks: [],
         },
+        t: testT,
       },
       { formatAmount }
     );
@@ -236,8 +245,9 @@ describe('printReport', () => {
   });
 
   it('wrapPrintDocument produces valid HTML shell', () => {
-    const doc = wrapPrintDocument('Test Title', '<p>Body</p>');
+    const doc = wrapPrintDocument('Test Title', '<p>Body</p>', 'zh-TW');
     expect(doc).toContain('<title>Test Title</title>');
     expect(doc).toContain('<p>Body</p>');
+    expect(doc).toContain('lang="zh-Hant"');
   });
 });

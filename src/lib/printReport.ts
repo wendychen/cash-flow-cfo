@@ -1,11 +1,13 @@
 import { format, parseISO, isValid } from 'date-fns';
+import type { TranslationKey } from '@/i18n';
 import type { Goal } from '@/types/goal';
 import { isRepeatingGoal, normalizeRepeatInterval } from '@/types/goalRepeat';
 import type { TaskNode, TaskType } from '@/types/task';
 import type { Income } from '@/types/income';
 import type { FinanceStateV2 } from '@/stores/finance/financeStore';
 import type { AutoBackupEntry } from '@/lib/autoBackup';
-import { EXPENSE_CATEGORIES, migrateExpenseCategory } from '@/types/expenseCategory';
+import { migrateExpenseCategory } from '@/types/expenseCategory';
+import { getExpenseCategoryLabel } from '@/lib/categoryLabels';
 import { buildTree, flattenTree } from '@/features/goals/hooks/use-task-tree';
 import { computeSankeyIncomeSplit } from '@/lib/incomeBreakdown';
 import { getAccruedCollectionStatus, isAccruedCollection } from '@/lib/incomeConversion';
@@ -20,10 +22,27 @@ import type { Saving } from '@/types/saving';
 
 export type AmountFormatter = (amountInNTD: number) => string;
 
-const TASK_SECTION_LABELS: Record<TaskType, string> = {
-  pre: 'Pre-Tasks',
-  post: 'Post-Tasks',
-  dream: 'Post-Dreams',
+export type PrintTranslateFn = (
+  key: TranslationKey,
+  params?: Record<string, string | number>
+) => string;
+
+const TASK_SECTION_KEYS: Record<TaskType, TranslationKey> = {
+  pre: 'printReport.taskSection.pre',
+  post: 'printReport.taskSection.post',
+  dream: 'printReport.taskSection.dream',
+};
+
+const DOMAIN_KEYS: Record<string, TranslationKey> = {
+  expenses: 'printReport.domains.expenses',
+  incomes: 'printReport.domains.incomes',
+  incomeCollections: 'printReport.domains.incomeCollections',
+  savings: 'printReport.domains.savings',
+  fixedExpenses: 'printReport.domains.fixedExpenses',
+  targets: 'printReport.domains.targets',
+  longTermFinGoal: 'printReport.domains.longTermFinGoal',
+  goals: 'printReport.domains.goals',
+  tasks: 'printReport.domains.tasks',
 };
 
 function escapeHtml(value: string): string {
@@ -44,7 +63,12 @@ function formatDeadline(deadline: string): string {
   }
 }
 
-function renderTaskList(tasks: TaskNode[], goalId: string, taskType: TaskType): string {
+function renderTaskList(
+  tasks: TaskNode[],
+  goalId: string,
+  taskType: TaskType,
+  t: PrintTranslateFn
+): string {
   const tree = buildTree(tasks, goalId, taskType);
   const flat = flattenTree(tree);
   if (flat.length === 0) return '';
@@ -62,38 +86,43 @@ function renderTaskList(tasks: TaskNode[], goalId: string, taskType: TaskType): 
 
   return `
     <div class="task-section">
-      <h4>${TASK_SECTION_LABELS[taskType]}</h4>
+      <h4>${t(TASK_SECTION_KEYS[taskType])}</h4>
       <ul>${items}</ul>
     </div>
   `;
 }
 
-function renderGoalCard(goal: Goal, tasks: TaskNode[], formatAmount: AmountFormatter): string {
+function renderGoalCard(
+  goal: Goal,
+  tasks: TaskNode[],
+  formatAmount: AmountFormatter,
+  t: PrintTranslateFn
+): string {
   const categoryKey = migrateExpenseCategory(goal.category);
-  const categoryLabel = EXPENSE_CATEGORIES[categoryKey]?.label ?? categoryKey;
+  const categoryLabel = getExpenseCategoryLabel(categoryKey, t);
   const budget = goal.budget > 0 ? formatAmount(goal.budget) : '—';
   const constraint = goal.constraint
-    ? `<p class="meta"><strong>Constraint:</strong> ${escapeHtml(goal.constraint)}</p>`
+    ? `<p class="meta"><strong>${t('printReport.goal.constraint')}</strong> ${escapeHtml(goal.constraint)}</p>`
     : '';
   const urls =
     goal.urlPack.length > 0
-      ? `<p class="meta"><strong>Links:</strong> ${goal.urlPack.map((u) => escapeHtml(u)).join(', ')}</p>`
+      ? `<p class="meta"><strong>${t('printReport.goal.links')}</strong> ${goal.urlPack.map((u) => escapeHtml(u)).join(', ')}</p>`
       : '';
   const ideations =
     goal.ideations.length > 0
-      ? `<div class="ideations"><strong>Ideations</strong><ul>${goal.ideations
+      ? `<div class="ideations"><strong>${t('printReport.goal.ideations')}</strong><ul>${goal.ideations
           .map((i) => `<li>${escapeHtml(i.content)}</li>`)
           .join('')}</ul></div>`
       : '';
 
   const taskSections = (['pre', 'post', 'dream'] as TaskType[])
-    .map((type) => renderTaskList(tasks, goal.id, type))
+    .map((type) => renderTaskList(tasks, goal.id, type, t))
     .filter(Boolean)
     .join('');
 
   const milestoneSection =
     goal.milestones && goal.milestones.length > 0
-      ? `<div class="task-section"><h4>Milestones</h4><ul>${goal.milestones
+      ? `<div class="task-section"><h4>${t('printReport.goal.milestones')}</h4><ul>${goal.milestones
           .map((m) => {
             const status = m.completed ? '✓' : '○';
             return `<li>${status} ${escapeHtml(m.title)} — ${formatDeadline(m.targetDate)}</li>`;
@@ -103,18 +132,18 @@ function renderGoalCard(goal: Goal, tasks: TaskNode[], formatAmount: AmountForma
 
   const repeatInterval = normalizeRepeatInterval(goal.repeatInterval);
   const repeatMeta = isRepeatingGoal(repeatInterval)
-    ? `<span><strong>Repeat:</strong> ${escapeHtml(repeatInterval)}${goal.repeatCycle && goal.repeatCycle > 1 ? ` (cycle ${goal.repeatCycle})` : ''}</span>
-        <span><strong>Duplicate tasks:</strong> ${goal.repeatDuplicateTasks === false ? 'No' : 'Yes'}</span>`
+    ? `<span><strong>${t('printReport.goal.repeat')}</strong> ${escapeHtml(repeatInterval)}${goal.repeatCycle && goal.repeatCycle > 1 ? ` ${t('printReport.goal.cycle', { n: goal.repeatCycle })}` : ''}</span>
+        <span><strong>${t('printReport.goal.duplicateTasks')}</strong> ${goal.repeatDuplicateTasks === false ? t('printReport.goal.no') : t('printReport.goal.yes')}</span>`
     : '';
 
   return `
     <article class="goal-card ${goal.completed ? 'completed' : ''}">
-      <h3>${escapeHtml(goal.title)}${goal.isMagicWand ? ' ★' : ''}${goal.completed ? ' (Completed)' : ''}</h3>
+      <h3>${escapeHtml(goal.title)}${goal.isMagicWand ? ' ★' : ''}${goal.completed ? ` ${t('printReport.goals.completed')}` : ''}</h3>
       <p class="meta">
-        <span><strong>Deadline:</strong> ${formatDeadline(goal.deadline)}</span>
-        <span><strong>Budget:</strong> ${budget}</span>
-        <span><strong>Category:</strong> ${escapeHtml(categoryLabel)}</span>
-        ${goal.timeCost ? `<span><strong>Time:</strong> ${escapeHtml(goal.timeCost)}</span>` : ''}
+        <span><strong>${t('printReport.goal.deadline')}</strong> ${formatDeadline(goal.deadline)}</span>
+        <span><strong>${t('printReport.goal.budget')}</strong> ${budget}</span>
+        <span><strong>${t('printReport.goal.category')}</strong> ${escapeHtml(categoryLabel)}</span>
+        ${goal.timeCost ? `<span><strong>${t('printReport.goal.time')}</strong> ${escapeHtml(goal.timeCost)}</span>` : ''}
         ${repeatMeta}
       </p>
       ${constraint}
@@ -131,6 +160,8 @@ export interface GoalsPrintInput {
   tasks: TaskNode[];
   formatAmount: AmountFormatter;
   displayCurrency: string;
+  t: PrintTranslateFn;
+  locale?: string;
   longTermFinGoal?: LongTermFinGoal | null;
   currentSavings?: number;
   printedAt?: Date;
@@ -141,6 +172,7 @@ export function buildGoalsPrintHtml({
   tasks,
   formatAmount,
   displayCurrency,
+  t,
   longTermFinGoal,
   currentSavings = 0,
   printedAt = new Date(),
@@ -150,30 +182,33 @@ export function buildGoalsPrintHtml({
   const finGoalSection = renderFinGoalPrintSection(
     longTermFinGoal,
     currentSavings,
-    formatAmount
+    formatAmount,
+    t
   );
 
   const activeHtml =
     active.length > 0
-      ? active.map((g) => renderGoalCard(g, tasks, formatAmount)).join('')
-      : '<p class="empty">No active goals.</p>';
+      ? active.map((g) => renderGoalCard(g, tasks, formatAmount, t)).join('')
+      : `<p class="empty">${t('printReport.goals.noActiveGoals')}</p>`;
 
   const completedHtml =
     completed.length > 0
-      ? `<section class="section"><h2>Completed Goals (${completed.length})</h2>${completed
-          .map((g) => renderGoalCard(g, tasks, formatAmount))
+      ? `<section class="section"><h2>${t('printReport.goals.completedGoals', { count: completed.length })}</h2>${completed
+          .map((g) => renderGoalCard(g, tasks, formatAmount, t))
           .join('')}</section>`
       : '';
 
+  const printedDate = format(printedAt, 'MMMM d, yyyy h:mm a');
+
   return `
     <header class="report-header">
-      <h1>Cash Flow CFO — Goals Report</h1>
-      <p class="subtitle">Printed ${format(printedAt, 'MMMM d, yyyy h:mm a')} · Display currency: ${escapeHtml(displayCurrency)}</p>
-      <p class="subtitle">${active.length} active · ${completed.length} completed · ${tasks.length} tasks</p>
+      <h1>${t('printReport.goals.title')}</h1>
+      <p class="subtitle">${t('printReport.goals.printedAt', { date: printedDate, currency: escapeHtml(displayCurrency) })}</p>
+      <p class="subtitle">${t('printReport.goals.summary', { active: active.length, completed: completed.length, tasks: tasks.length })}</p>
     </header>
     ${finGoalSection}
     <section class="section">
-      <h2>Active Goals (${active.length})</h2>
+      <h2>${t('printReport.goals.activeGoals', { count: active.length })}</h2>
       ${activeHtml}
     </section>
     ${completedHtml}
@@ -183,6 +218,8 @@ export function buildGoalsPrintHtml({
 export interface BackupPrintInput {
   backups: AutoBackupEntry[];
   currentState: FinanceStateV2;
+  t: PrintTranslateFn;
+  locale?: string;
   printedAt?: Date;
 }
 
@@ -205,7 +242,8 @@ function formatFinGoalTargetLabel(goal: LongTermFinGoal, formatAmount: AmountFor
 function renderFinGoalPrintSection(
   goal: LongTermFinGoal | null | undefined,
   currentSavings: number,
-  formatAmount: AmountFormatter
+  formatAmount: AmountFormatter,
+  t: PrintTranslateFn
 ): string {
   if (!goal || goal.targetAmount <= 0) return '';
 
@@ -215,15 +253,15 @@ function renderFinGoalPrintSection(
 
   return `
     <section class="section">
-      <h2>20-Year Fin Goal</h2>
+      <h2>${t('printReport.finGoal.title')}</h2>
       <table class="counts-table fin-goal-table">
         <tbody>
-          <tr><td>Target</td><td class="num">${escapeHtml(targetLabel)} (${formatAmount(goal.targetAmount)})</td></tr>
-          <tr><td>End year</td><td class="num">${goal.endYear}</td></tr>
-          <tr><td>Years remaining</td><td class="num">${yearsLeft}</td></tr>
-          <tr><td>Current savings</td><td class="num">${formatAmount(currentSavings)}</td></tr>
-          <tr><td>Progress</td><td class="num">${progress}%</td></tr>
-          <tr><td>Preset</td><td>${goal.presetKey ? escapeHtml(goal.presetKey) : 'Custom'}</td></tr>
+          <tr><td>${t('printReport.finGoal.target')}</td><td class="num">${escapeHtml(targetLabel)} (${formatAmount(goal.targetAmount)})</td></tr>
+          <tr><td>${t('printReport.finGoal.endYear')}</td><td class="num">${goal.endYear}</td></tr>
+          <tr><td>${t('printReport.finGoal.yearsRemaining')}</td><td class="num">${yearsLeft}</td></tr>
+          <tr><td>${t('printReport.finGoal.currentSavings')}</td><td class="num">${formatAmount(currentSavings)}</td></tr>
+          <tr><td>${t('printReport.finGoal.progress')}</td><td class="num">${progress}%</td></tr>
+          <tr><td>${t('printReport.finGoal.preset')}</td><td>${goal.presetKey ? escapeHtml(goal.presetKey) : t('printReport.finGoal.custom')}</td></tr>
         </tbody>
       </table>
     </section>
@@ -254,7 +292,11 @@ function formatIncomeDate(dateStr: string): string {
   }
 }
 
-function renderIncomePrintSection(incomes: Income[], formatAmount: AmountFormatter): string {
+function renderIncomePrintSection(
+  incomes: Income[],
+  formatAmount: AmountFormatter,
+  t: PrintTranslateFn
+): string {
   if (incomes.length === 0) return '';
 
   const split = computeSankeyIncomeSplit(incomes);
@@ -266,14 +308,14 @@ function renderIncomePrintSection(incomes: Income[], formatAmount: AmountFormatt
     .sort((a, b) => b.date.localeCompare(a.date));
 
   const summaryRows = [
-    ['Direct cash', split.directCash],
-    ['Collections', split.collections],
-    ['Outstanding accrued', split.accruedOutstanding],
-    ['Total (cash + outstanding)', split.total],
+    [t('printReport.income.directCash'), split.directCash],
+    [t('printReport.income.collections'), split.collections],
+    [t('printReport.income.outstandingAccrued'), split.accruedOutstanding],
+    [t('printReport.income.total'), split.total],
   ]
     .map(
       ([label, amount]) =>
-        `<tr><td>${escapeHtml(label)}</td><td class="num">${formatAmount(amount as number)}</td></tr>`
+        `<tr><td>${escapeHtml(label as string)}</td><td class="num">${formatAmount(amount as number)}</td></tr>`
     )
     .join('');
 
@@ -283,8 +325,8 @@ function renderIncomePrintSection(incomes: Income[], formatAmount: AmountFormatt
           .map((accrued) => {
             const status = getAccruedCollectionStatus(accrued, incomes);
             const statusLabel = status.isFullyCollected
-              ? 'Fully collected'
-              : `${status.percentCollected}% collected`;
+              ? t('printReport.income.fullyCollected')
+              : t('printReport.income.percentCollected', { percent: status.percentCollected });
             return `<tr>
               <td>${formatIncomeDate(accrued.date)}</td>
               <td>${escapeHtml(accrued.source)}</td>
@@ -295,7 +337,7 @@ function renderIncomePrintSection(incomes: Income[], formatAmount: AmountFormatt
             </tr>`;
           })
           .join('')
-      : '<tr><td colspan="6" class="empty">No accrued income records.</td></tr>';
+      : `<tr><td colspan="6" class="empty">${t('printReport.income.noAccrued')}</td></tr>`;
 
   const collectionRows =
     collectionEntries.length > 0
@@ -314,40 +356,40 @@ function renderIncomePrintSection(incomes: Income[], formatAmount: AmountFormatt
             </tr>`;
           })
           .join('')
-      : '<tr><td colspan="5" class="empty">No collection entries recorded.</td></tr>';
+      : `<tr><td colspan="5" class="empty">${t('printReport.income.noCollections')}</td></tr>`;
 
   return `
     <section class="section">
-      <h2>Income &amp; Collections</h2>
+      <h2>${t('printReport.income.title')}</h2>
       <table class="counts-table income-summary-table">
-        <thead><tr><th>Category</th><th>Amount</th></tr></thead>
+        <thead><tr><th>${t('printReport.income.category')}</th><th>${t('printReport.income.amount')}</th></tr></thead>
         <tbody>${summaryRows}</tbody>
       </table>
 
-      <h3>Accrued Income</h3>
+      <h3>${t('printReport.income.accruedIncome')}</h3>
       <table class="income-table">
         <thead>
           <tr>
-            <th>Date</th>
-            <th>Source</th>
-            <th>Accrued</th>
-            <th>Collected</th>
-            <th>Outstanding</th>
-            <th>Status</th>
+            <th>${t('printReport.income.date')}</th>
+            <th>${t('printReport.income.source')}</th>
+            <th>${t('printReport.income.accrued')}</th>
+            <th>${t('printReport.income.collected')}</th>
+            <th>${t('printReport.income.outstanding')}</th>
+            <th>${t('printReport.income.status')}</th>
           </tr>
         </thead>
         <tbody>${accruedRows}</tbody>
       </table>
 
-      <h3>Cash Collections</h3>
+      <h3>${t('printReport.income.cashCollections')}</h3>
       <table class="income-table">
         <thead>
           <tr>
-            <th>Date</th>
-            <th>Source</th>
-            <th>From accrued</th>
-            <th>Amount</th>
-            <th>Note</th>
+            <th>${t('printReport.income.date')}</th>
+            <th>${t('printReport.income.source')}</th>
+            <th>${t('printReport.income.fromAccrued')}</th>
+            <th>${t('printReport.income.amount')}</th>
+            <th>${t('printReport.income.note')}</th>
           </tr>
         </thead>
         <tbody>${collectionRows}</tbody>
@@ -364,6 +406,7 @@ export function buildBackupPrintHtml(
   {
     backups,
     currentState,
+    t,
     printedAt = new Date(),
   }: BackupPrintInput,
   options: BackupPrintOptions = {}
@@ -374,9 +417,10 @@ export function buildBackupPrintHtml(
   const finGoalSection = renderFinGoalPrintSection(
     currentState.longTermFinGoal,
     currentSavings,
-    formatAmount
+    formatAmount,
+    t
   );
-  const incomeSection = renderIncomePrintSection(currentState.incomes ?? [], formatAmount);
+  const incomeSection = renderIncomePrintSection(currentState.incomes ?? [], formatAmount, t);
 
   const backupRows =
     backups.length > 0
@@ -385,8 +429,10 @@ export function buildBackupPrintHtml(
             const counts = countState(entry.data);
             const total = Object.values(counts).reduce((a, b) => a + b, 0);
             const saved = format(new Date(entry.savedAt), 'MMM d, yyyy h:mm a');
+            const slotLabel =
+              index === 0 ? t('printReport.backup.latest') : t('printReport.backup.slotNumber', { n: index + 1 });
             return `<tr>
-              <td>${index === 0 ? 'Latest' : `#${index + 1}`}</td>
+              <td>${slotLabel}</td>
               <td>${saved}</td>
               <td class="num">${counts.goals}</td>
               <td class="num">${counts.tasks}</td>
@@ -397,25 +443,32 @@ export function buildBackupPrintHtml(
             </tr>`;
           })
           .join('')
-      : '<tr><td colspan="8" class="empty">No auto-backups stored yet.</td></tr>';
+      : `<tr><td colspan="8" class="empty">${t('printReport.backup.noBackups')}</td></tr>`;
+
+  const printedDate = format(printedAt, 'MMMM d, yyyy h:mm a');
+  const snapshotInfo =
+    backups.length === 1
+      ? t('printReport.backup.snapshotInfoOne')
+      : t('printReport.backup.snapshotInfoPlural', { count: backups.length });
 
   return `
     <header class="report-header">
-      <h1>Cash Flow CFO — Backup Report</h1>
-      <p class="subtitle">Printed ${format(printedAt, 'MMMM d, yyyy h:mm a')}</p>
-      <p class="subtitle">Auto-backup keeps the last ${backups.length} snapshot${backups.length === 1 ? '' : 's'} locally in your browser.</p>
+      <h1>${t('printReport.backup.title')}</h1>
+      <p class="subtitle">${t('printReport.backup.printedAt', { date: printedDate })}</p>
+      <p class="subtitle">${snapshotInfo}</p>
     </header>
 
     <section class="section">
-      <h2>Current Data (Live)</h2>
+      <h2>${t('printReport.backup.currentData')}</h2>
       <table class="counts-table">
-        <thead><tr><th>Domain</th><th>Records</th></tr></thead>
+        <thead><tr><th>${t('printReport.backup.domain')}</th><th>${t('printReport.backup.records')}</th></tr></thead>
         <tbody>
           ${Object.entries(currentCounts)
-            .map(
-              ([key, value]) =>
-                `<tr><td>${escapeHtml(key)}</td><td class="num">${value}</td></tr>`
-            )
+            .map(([key, value]) => {
+              const labelKey = DOMAIN_KEYS[key];
+              const label = labelKey ? t(labelKey) : escapeHtml(key);
+              return `<tr><td>${escapeHtml(label)}</td><td class="num">${value}</td></tr>`;
+            })
             .join('')}
         </tbody>
       </table>
@@ -426,18 +479,18 @@ export function buildBackupPrintHtml(
     ${incomeSection}
 
     <section class="section">
-      <h2>Auto-Backup History</h2>
+      <h2>${t('printReport.backup.history')}</h2>
       <table class="backup-table">
         <thead>
           <tr>
-            <th>Slot</th>
-            <th>Saved At</th>
-            <th>Goals</th>
-            <th>Tasks</th>
-            <th>Expenses</th>
-            <th>Income</th>
-            <th>Savings</th>
-            <th>Total</th>
+            <th>${t('printReport.backup.slot')}</th>
+            <th>${t('printReport.backup.savedAt')}</th>
+            <th>${t('printReport.backup.goals')}</th>
+            <th>${t('printReport.backup.tasks')}</th>
+            <th>${t('printReport.backup.expenses')}</th>
+            <th>${t('printReport.backup.income')}</th>
+            <th>${t('printReport.backup.savings')}</th>
+            <th>${t('printReport.backup.total')}</th>
           </tr>
         </thead>
         <tbody>${backupRows}</tbody>
@@ -445,11 +498,11 @@ export function buildBackupPrintHtml(
     </section>
 
     <section class="section notes">
-      <h2>Notes</h2>
+      <h2>${t('printReport.backup.notesTitle')}</h2>
       <ul>
-        <li>Use <strong>Export JSON</strong> in the app for a full portable backup file.</li>
-        <li>Auto-backups are stored only in this browser's local storage.</li>
-        <li>Restore from the latest auto-backup via the Dashboard when needed.</li>
+        <li>${t('printReport.backup.noteExportJson')}</li>
+        <li>${t('printReport.backup.noteLocalStorage')}</li>
+        <li>${t('printReport.backup.noteRestore')}</li>
       </ul>
     </section>
   `;
@@ -498,9 +551,16 @@ const PRINT_STYLES = `
   }
 `;
 
-export function wrapPrintDocument(title: string, bodyHtml: string): string {
+function resolveHtmlLang(locale?: string): string {
+  if (locale === 'zh-TW') return 'zh-Hant';
+  if (locale === 'ja') return 'ja';
+  return 'en';
+}
+
+export function wrapPrintDocument(title: string, bodyHtml: string, locale?: string): string {
+  const lang = resolveHtmlLang(locale);
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="${lang}">
 <head>
   <meta charset="utf-8" />
   <title>${escapeHtml(title)}</title>
@@ -511,11 +571,15 @@ export function wrapPrintDocument(title: string, bodyHtml: string): string {
 }
 
 /** Open a print-friendly document in a new window and trigger the browser print dialog. */
-export function openPrintDocument(title: string, bodyHtml: string): void {
-  const html = wrapPrintDocument(title, bodyHtml);
+export function openPrintDocument(
+  title: string,
+  bodyHtml: string,
+  options: { locale?: string; popUpBlocked?: string } = {}
+): void {
+  const html = wrapPrintDocument(title, bodyHtml, options.locale);
   const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=900,height=700');
   if (!printWindow) {
-    alert('Please allow pop-ups to print this report.');
+    alert(options.popUpBlocked ?? 'Please allow pop-ups to print this report.');
     return;
   }
 
@@ -533,7 +597,10 @@ export function openPrintDocument(title: string, bodyHtml: string): void {
 
 export function printGoalsReport(input: GoalsPrintInput): void {
   const body = buildGoalsPrintHtml(input);
-  openPrintDocument('Cash Flow CFO — Goals Report', body);
+  openPrintDocument(input.t('printReport.goals.title'), body, {
+    locale: input.locale,
+    popUpBlocked: input.t('printReport.popUpBlocked'),
+  });
 }
 
 export function printBackupReport(
@@ -541,8 +608,36 @@ export function printBackupReport(
   options: BackupPrintOptions = {}
 ): void {
   const body = buildBackupPrintHtml(input, options);
-  openPrintDocument('Cash Flow CFO — Backup Report', body);
+  openPrintDocument(input.t('printReport.backup.title'), body, {
+    locale: input.locale,
+    popUpBlocked: input.t('printReport.popUpBlocked'),
+  });
+}
+
+function getNestedValue(obj: Record<string, unknown>, path: string): string | undefined {
+  return path.split('.').reduce<unknown>((current, key) => {
+    if (current && typeof current === 'object') {
+      return (current as Record<string, unknown>)[key];
+    }
+    return undefined;
+  }, obj) as string | undefined;
+}
+
+function interpolate(str: string, params?: Record<string, string | number>): string {
+  if (!params) return str;
+  return Object.entries(params).reduce(
+    (result, [key, value]) => result.replace(new RegExp(`\\{${key}\\}`, 'g'), String(value)),
+    str
+  );
+}
+
+/** Resolve English labels for unit tests. */
+export function createTestPrintT(messages: Record<string, unknown> = {}): PrintTranslateFn {
+  return (key, params) => {
+    const value = getNestedValue(messages as Record<string, unknown>, key);
+    return value ? interpolate(value, params) : key;
+  };
 }
 
 // Exported for tests
-export const _test = { escapeHtml, formatDeadline };
+export const _test = { escapeHtml, formatDeadline, createTestPrintT };
