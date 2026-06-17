@@ -46,8 +46,9 @@ The write-up must include: summary, commits, architecture, test count, user how-
 | ✅ | PR-4 Simulator bridge | — |
 | ✅ | PR-5 Planner fields on Goal | — |
 | ✅ | PR-6 Print/CSV plan section | — |
-| ⏳ | **PR-7** i18n goalReach polish | **← next** (mostly done) |
-| ⏳ | **PR-8** `/api/goal-coach` Gemini | after PR-7 |
+| ✅ | PR-7 i18n goalReach + locale parity tests | — |
+| ✅ | PR-8 `/api/goal-coach` Gemini proxy | — |
+| ⏳ | **PR-9** AI Coach dialog + apply flow | **← next** |
 | | PR-6 Print/CSV plan section | |
 | | PR-7 i18n polish | |
 | | PR-8–10 AI coach | |
