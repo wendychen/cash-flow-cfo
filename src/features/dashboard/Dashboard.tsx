@@ -65,13 +65,6 @@ export default function Dashboard() {
 
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod | null>(null);
 
-  // Period filtering helper (still needed for some calculations)
-  const isInPeriod = (dateStr?: string) => {
-    if (!selectedPeriod || !dateStr) return true;
-    const d = new Date(dateStr);
-    return d >= selectedPeriod.startDate && d <= selectedPeriod.endDate;
-  };
-
   // Ref for hidden file input (import)
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -146,9 +139,10 @@ export default function Dashboard() {
     activeGoals,
   } = useFinance(selectedPeriod);
 
-  // For Goals & Tasks tab we also want the tasks of the filtered goals
-  const filteredTasks = tasks.filter(t => 
-    filteredGoals.some(g => g.id === t.goalId) || (selectedPeriod ? isInPeriod(t.deadline) : true)
+  // Goals tab: always show all active goals (period filter must not hide goals when deadline moves)
+  const goalsForManagement = activeGoals;
+  const tasksForManagement = tasks.filter((t) =>
+    goalsForManagement.some((g) => g.id === t.goalId)
   );
 
   const { totalIncome, totalExpenses, totalSavings } = dashboardSummary;
@@ -418,9 +412,9 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <GoalList
-                  goals={filteredGoals}
-                  allGoals={filteredGoals}
-                  tasks={filteredTasks}
+                  goals={goalsForManagement}
+                  allGoals={goalsForManagement}
+                  tasks={tasksForManagement}
                   onUpdateGoal={updateGoal}
                   onAddGoal={handleAddGoalFromList}
                   onDeleteGoal={deleteGoal}
@@ -443,8 +437,8 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <GoalBudgetAllocator
-                  goals={filteredGoals}
-                  tasks={filteredTasks}
+                  goals={goalsForManagement}
+                  tasks={tasksForManagement}
                   latestSavingsBalance={latestSavingsBalance}
                   onUpdateGoal={updateGoal}
                 />

@@ -16,6 +16,7 @@ import {
   syncSavingsGoalFromTarget,
   targetAmountFromSaving,
 } from '@/lib/domain/savingsTargetSync';
+import { isDateInPeriod } from '@/lib/date';
 import { Expense } from '@/types/expense';
 import { Income } from '@/types/income';
 import { Saving } from '@/types/saving';
@@ -652,10 +653,7 @@ export const useFinanceStore = create<FinanceStore>()(
       getFilteredExpenses: (period: { startDate: Date; endDate: Date } | null) => {
         const expenses = get().expenses;
         if (!period) return expenses;
-        return expenses.filter(exp => {
-          const d = new Date(exp.date);
-          return d >= period.startDate && d <= period.endDate;
-        });
+        return expenses.filter((exp) => isDateInPeriod(exp.date, period));
       },
 
       getTotalIncome: () => {
@@ -710,39 +708,28 @@ export const useFinanceStore = create<FinanceStore>()(
       getFilteredIncomes: (period?: { startDate: Date; endDate: Date } | null) => {
         const incomes = get().incomes;
         if (!period) return incomes;
-        return incomes.filter(inc => {
-          const d = new Date(inc.date);
-          return d >= period.startDate && d <= period.endDate;
-        });
+        return incomes.filter((inc) => isDateInPeriod(inc.date, period));
       },
 
       getFilteredSavings: (period?: { startDate: Date; endDate: Date } | null) => {
         const savings = get().savings;
         if (!period) return savings;
-        return savings.filter(s => {
-          const d = new Date(s.date);
-          return d >= period.startDate && d <= period.endDate;
-        });
+        return savings.filter((s) => isDateInPeriod(s.date, period));
       },
 
       getFilteredFixedExpenses: (period?: { startDate: Date; endDate: Date } | null) => {
         const fixed = get().fixedExpenses;
         if (!period) return fixed;
-        return fixed.filter(f => {
-          const date = f.date || f.createdAt;
-          if (!date) return true;
-          const d = new Date(date);
-          return d >= period.startDate && d <= period.endDate;
-        });
+        return fixed.filter((f) => isDateInPeriod(f.date || f.createdAt, period));
       },
 
+      /** Goals whose deadline falls in period — for charts only; management UI uses getActiveGoals(). */
       getFilteredGoals: (period?: { startDate: Date; endDate: Date } | null) => {
         const goals = get().goals;
-        if (!period) return goals.filter(g => !g.completed);
-        return goals.filter(g => {
+        if (!period) return goals.filter((g) => !g.completed);
+        return goals.filter((g) => {
           if (g.completed) return false;
-          const d = new Date(g.deadline || g.createdAt);
-          return d >= period.startDate && d <= period.endDate;
+          return isDateInPeriod(g.deadline || g.createdAt?.slice(0, 10), period);
         });
       },
 
