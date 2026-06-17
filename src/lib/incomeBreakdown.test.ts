@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeIncomeBreakdown } from './incomeBreakdown';
+import { computeIncomeBreakdown, computeSankeyIncomeSplit } from './incomeBreakdown';
 import type { Income } from '@/types/income';
 
 describe('incomeBreakdown', () => {
@@ -42,5 +42,25 @@ describe('incomeBreakdown', () => {
     const breakdown = computeIncomeBreakdown([]);
     expect(breakdown.total).toBe(0);
     expect(breakdown.cashPercent).toBe(0);
+  });
+
+  it('splits sankey income into direct cash, collections, and outstanding', () => {
+    const incomes: Income[] = [
+      { id: 'a1', date: '2026-01-01', source: 'Invoice', amount: 1000, incomeType: 'accrued' },
+      {
+        id: 'c1',
+        date: '2026-01-15',
+        source: 'Invoice',
+        amount: 400,
+        incomeType: 'cash',
+        linkedAccruedIncomeId: 'a1',
+      },
+      { id: 'c2', date: '2026-01-20', source: 'Salary', amount: 200, incomeType: 'cash' },
+    ];
+    const split = computeSankeyIncomeSplit(incomes);
+    expect(split.directCash).toBe(200);
+    expect(split.collections).toBe(400);
+    expect(split.accruedOutstanding).toBe(600);
+    expect(split.total).toBe(1200);
   });
 });

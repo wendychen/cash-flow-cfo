@@ -17,7 +17,7 @@ import { FixedExpense } from "@/types/fixedExpense";
 import { useCurrency } from "@/hooks/use-currency";
 import { type TimePeriod } from "@/components/shared";
 import { EXPENSE_CATEGORIES, FIXED_EXPENSE_CATEGORIES, ExpenseCategory, FixedExpenseCategory, migrateFixedExpenseCategory } from "@/types/expenseCategory";
-import { getAccruedCollectionStatus } from "@/lib/incomeConversion";
+import { computeSankeyIncomeSplit } from "@/lib/incomeBreakdown";
 
 interface SankeyNode {
   id: string;
@@ -58,19 +58,15 @@ const SankeyFlowChart = ({
   const { format: formatCurrency } = useCurrency();
   const [drillDownLevel, setDrillDownLevel] = useState<SankeyDrillLevel>("overview");
 
+  const incomeSplit = useMemo(() => computeSankeyIncomeSplit(incomes), [incomes]);
+
   const sankeyData = useMemo<SankeyData>(() => {
-    const totalIncome = incomes.reduce((sum, inc) => sum + inc.amount, 0);
+    const totalIncome = incomeSplit.total;
     const totalSavings = savings.filter(s => s.savingType === "balance").reduce((sum, sav) => sum + sav.amount, 0);
     const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
     const activeGoals = goals.filter(g => !g.completed && g.title);
 
-    const cashIncome = incomes.filter(i => i.incomeType === "cash").reduce((sum, inc) => sum + inc.amount, 0);
-    const accruedIncome = incomes
-      .filter((i) => i.incomeType === "accrued")
-      .reduce(
-        (sum, inc) => sum + getAccruedCollectionStatus(inc, incomes).outstanding,
-        0
-      );
+    const { directCash, collections, accruedOutstanding } = incomeSplit;
 
     const fixedExpenseTotal = fixedExpenses.filter(f => f.isActive).reduce((sum, exp) => sum + exp.amount, 0);
     const discretionaryExpenseTotal = totalExpenses - fixedExpenseTotal;
@@ -122,16 +118,25 @@ const SankeyFlowChart = ({
       }
     } else if (drillDownLevel === "income-detail") {
       nodes.push(
-        { id: "cash-income", name: "Cash Income", color: "#8b5cf6", value: cashIncome },
-        { id: "accrued-income", name: "Accrued Income", color: "#a78bfa", value: accruedIncome },
+        { id: "direct-cash", name: "Direct Cash", color: "#8b5cf6", value: directCash },
+        { id: "collections", name: "Collections", color: "#14b8a6", value: collections },
+        { id: "accrued-outstanding", name: "Outstanding Accrued", color: "#a78bfa", value: accruedOutstanding },
         { id: "total-income", name: "Total Income", color: "#7c3aed", value: totalIncome }
       );
 
-      if (cashIncome > 0) {
-        links.push({ source: "cash-income", target: "total-income", value: cashIncome, color: "#8b5cf680" });
+      if (directCash > 0) {
+        links.push({ source: "direct-cash", target: "total-income", value: directCash, color: "#8b5cf680" });
       }
-      if (accruedIncome > 0) {
-        links.push({ source: "accrued-income", target: "total-income", value: accruedIncome, color: "#a78bfa80" });
+      if (collections > 0) {
+        links.push({ source: "collections", target: "total-income", value: collections, color: "#14b8a680" });
+      }
+      if (accruedOutstanding > 0) {
+        links.push({
+          source: "accrued-outstanding",
+          target: "total-income",
+          value: accruedOutstanding,
+          color: "#a78bfa80",
+        });
       }
     } else if (drillDownLevel === "savings-detail") {
       const balanceTotal = savings
@@ -402,7 +407,7 @@ const SankeyFlowChart = ({
     }
 
     return { nodes, links };
-  }, [drillDownLevel, incomes, expenses, savings, goals, fixedExpenses]);
+  }, [drillDownLevel, incomeSplit, expenses, savings, goals, fixedExpenses]);
 
   const handleNodeClick = (nodeId: string) => {
     const next = resolveSankeyDrill(drillDownLevel, nodeId);
@@ -438,7 +443,7 @@ const SankeyFlowChart = ({
             </CardTitle>
             <CardDescription>
               {drillDownLevel === "overview" && "Click Income, Savings, Goals, or Expenses to drill down"}
-              {drillDownLevel === "income-detail" && "Cash vs accrued income sources"}
+              {drillDownLevel === "income-detail" && "Direct cash, accrued collections, and outstanding accrued"}
               {drillDownLevel === "savings-detail" && "Balance snapshots vs goal savings entries"}
               {drillDownLevel === "goal-detail" && "Savings allocated to active goal budgets"}
               {drillDownLevel === "expense-detail" && "Fixed vs one-time expenses — click either to view categories side by side"}
@@ -494,7 +499,7 @@ const SankeyFlowChart = ({
                 <span className="text-xs font-medium">Total Income</span>
               </div>
               <div className="text-sm font-semibold tabular-nums leading-snug break-all text-violet-700 dark:text-violet-300">
-                {formatCurrency(incomes.reduce((s, i) => s + i.amount, 0))}
+                {formatCurrency(incomeSplit.total)}
               </div>
             </div>
 
@@ -606,9 +611,10 @@ const SankeyVisualization = ({
       );
 
       if (isSource) {
+        const sourceNodes = nodes.filter((n) => links.some((link) => link.source === n.id));
         col = 0;
-        rowIdx = 0;
-        totalInCol = 1;
+        rowIdx = sourceNodes.indexOf(node);
+        totalInCol = sourceNodes.length;
       } else {
         col = isCategoryView ? 3 : 2;
         rowIdx = targetNodes.indexOf(node);

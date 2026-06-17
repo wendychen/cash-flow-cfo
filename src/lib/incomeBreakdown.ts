@@ -12,6 +12,13 @@ export interface IncomeBreakdown {
   accruedPercent: number;
 }
 
+export interface SankeyIncomeSplit {
+  directCash: number;
+  collections: number;
+  accruedOutstanding: number;
+  total: number;
+}
+
 export function computeIncomeBreakdown(incomes: Income[]): IncomeBreakdown {
   let cash = 0;
   let accruedGross = 0;
@@ -43,5 +50,16 @@ export function computeIncomeBreakdown(incomes: Income[]): IncomeBreakdown {
     total,
     cashPercent,
     accruedPercent,
+  };
+}
+
+/** Income split for Sankey drill-down: direct cash, accrued collections, outstanding accrued. */
+export function computeSankeyIncomeSplit(incomes: Income[]): SankeyIncomeSplit {
+  const breakdown = computeIncomeBreakdown(incomes);
+  return {
+    directCash: breakdown.cash - breakdown.collected,
+    collections: breakdown.collected,
+    accruedOutstanding: breakdown.accrued,
+    total: breakdown.total,
   };
 }
