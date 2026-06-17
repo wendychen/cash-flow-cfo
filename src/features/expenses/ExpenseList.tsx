@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { ExpenseCategory, EXPENSE_CATEGORIES, migrateExpenseCategory } from "@/types/expenseCategory";
 import { ExpenseCategoryIcon } from "./ExpenseCategoryIcon";
-import { OriginalCurrencyBadge } from "@/components/shared";
+import { OriginalCurrencyBadge } from "@/features/shared";
 import {
   buildStoredAmountFields,
   getEditAmountAndCurrency,

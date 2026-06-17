@@ -4,7 +4,7 @@ import { useFinance } from './useFinance';
 import { useFinanceStore } from './financeStore';
 import { resetFinanceStore } from '@/test/helpers/storeTestUtils';
 import { buildMonthPeriod } from '@/lib/date';
-import type { TimePeriod } from '@/components/shared';
+import type { TimePeriod } from '@/types/timePeriod';
 
 function april2026Period(): TimePeriod {
   const bounds = buildMonthPeriod(2026, 3);

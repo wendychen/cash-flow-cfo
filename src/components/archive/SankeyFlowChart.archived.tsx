@@ -8,7 +8,7 @@ import { Saving } from "@/types/saving";
 import { Goal } from "@/types/goal";
 import { FixedExpense } from "@/types/fixedExpense";
 import { useCurrency } from "@/hooks/use-currency";
-import { TimePeriod } from "../TimeNavigator";
+import type { TimePeriod } from "@/types/timePeriod";
 import { EXPENSE_CATEGORIES, FIXED_EXPENSE_CATEGORIES, ExpenseCategory, FixedExpenseCategory, migrateFixedExpenseCategory } from "@/types/expenseCategory";
 
 interface SankeyNode {

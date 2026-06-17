@@ -16,7 +16,7 @@ import { Goal } from "@/types/goal";
 import { FixedExpense } from "@/types/fixedExpense";
 import { useCurrency } from "@/hooks/use-currency";
 import { useI18n } from "@/i18n";
-import { type TimePeriod } from "@/components/shared";
+import type { TimePeriod } from "@/types/timePeriod";
 import { ExpenseCategory, FixedExpenseCategory, migrateFixedExpenseCategory } from "@/types/expenseCategory";
 import { getExpenseCategoryLabel, getFixedExpenseCategoryLabel } from "@/lib/categoryLabels";
 import { computeSankeyIncomeSplit } from "@/lib/incomeBreakdown";

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Saving, SavingType } from "@/types/saving";
 import { useCurrency, Currency } from "@/hooks/use-currency";
-import { OriginalCurrencyBadge } from "@/components/shared";
+import { OriginalCurrencyBadge } from "@/features/shared";
 import {
   buildStoredAmountFields,
   getEditAmountAndCurrency,

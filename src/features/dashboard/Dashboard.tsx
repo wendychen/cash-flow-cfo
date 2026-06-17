@@ -21,7 +21,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Currency } from "@/hooks/use-currency";
-import { TimeNavigator, UserGuide, type TimePeriod } from "@/components/shared";
+import { TimeNavigator, UserGuide } from "@/features/shared";
+import type { TimePeriod } from "@/types/timePeriod";
 import { hasSeenUserGuide } from "@/lib/onboarding";
 import { GoalList, GoalBudgetAllocator } from "@/features/goals";
 import { ExpenseForm, ExpenseList } from "@/features/expenses";

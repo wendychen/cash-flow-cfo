@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useFinanceStore } from './financeStore';
-import type { TimePeriod } from '@/components/shared';
+import type { TimePeriod } from '@/types/timePeriod';
 import type { DatePeriod } from '@/lib/date';
 
 function toPeriodObj(period?: TimePeriod | null): DatePeriod | null {

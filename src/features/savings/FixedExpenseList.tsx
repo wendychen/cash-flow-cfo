@@ -16,7 +16,7 @@ import {
 import { FixedExpense, Frequency, getMonthlyEquivalent } from "@/types/fixedExpense";
 import { useCurrency, Currency } from "@/hooks/use-currency";
 import { FixedExpenseCategory, FIXED_EXPENSE_CATEGORIES, FIXED_EXPENSE_CATEGORY_GROUPS, migrateFixedExpenseCategory } from "@/types/expenseCategory";
-import { FrequencySelectField } from "@/components/shared";
+import { FrequencySelectField } from "@/features/shared";
 import { getFrequencyMeta } from "@/lib/frequencyLabels";
 import { useI18n } from "@/i18n";
 import { getFixedExpenseCategoryLabel, getFixedExpenseGroupLabel } from "@/lib/categoryLabels";

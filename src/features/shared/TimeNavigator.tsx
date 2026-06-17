@@ -9,17 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useI18n, type Locale } from "@/i18n";
-
-export type TimePeriod = {
-  type: "year" | "quarter" | "month" | "week";
-  year: number;
-  quarter?: number;
-  month?: number;
-  week?: number;
-  label: string;
-  startDate: Date;
-  endDate: Date;
-};
+import type { TimePeriod } from "@/types/timePeriod";
 
 interface TimeNavigatorProps {
   selectedPeriod: TimePeriod | null;

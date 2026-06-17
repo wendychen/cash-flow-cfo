@@ -15,7 +15,7 @@ import { Expense } from "@/types/expense";
 import { Income } from "@/types/income";
 import { Saving } from "@/types/saving";
 import { FinancialTarget, TargetType, TargetPeriod } from "@/types/target";
-import { type TimePeriod } from "@/components/shared";
+import type { TimePeriod } from "@/types/timePeriod";
 import { TrendingUp, PiggyBank, Wallet, Target, ChevronDown } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useCurrency, Currency } from "@/hooks/use-currency";
