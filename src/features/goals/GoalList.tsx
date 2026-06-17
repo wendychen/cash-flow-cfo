@@ -378,6 +378,7 @@ const SortableGoalItem = ({
 
   return (
     <div
+      id={`goal-${goal.id}`}
       ref={setNodeRef}
       style={style}
       className={`flex flex-col gap-2 p-3 rounded-lg border transition-colors ${

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { RefreshCw, Route, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCurrency } from '@/hooks/use-currency';
@@ -13,6 +13,8 @@ import type { LongTermFinGoal } from '@/types/longTermFinGoal';
 import FeasibilitySummaryChip from './FeasibilitySummaryChip';
 import GoalMasterTimeline from './GoalMasterTimeline';
 import MonthlyFundingChart from './MonthlyFundingChart';
+import PlannerConflictDrawer from './PlannerConflictDrawer';
+import WeeklyFocusList from './WeeklyFocusList';
 
 interface GoalReachPlannerCardProps {
   goals: Goal[];
@@ -20,6 +22,9 @@ interface GoalReachPlannerCardProps {
   latestSavingsBalance: number;
   monthlySurplus: number;
   longTermFinGoal?: LongTermFinGoal | null;
+  onOpenBudgetAllocator?: () => void;
+  onOpenGoal?: (goalId: string) => void;
+  onApplyDeadlineShift?: (goalId: string, newDeadline: string) => void;
 }
 
 export default function GoalReachPlannerCard({
@@ -28,10 +33,14 @@ export default function GoalReachPlannerCard({
   latestSavingsBalance,
   monthlySurplus,
   longTermFinGoal = null,
+  onOpenBudgetAllocator,
+  onOpenGoal,
+  onApplyDeadlineShift,
 }: GoalReachPlannerCardProps) {
   const { t } = useI18n();
   const { format } = useCurrency();
   const [now, setNow] = useState(() => new Date());
+  const [conflictsOpen, setConflictsOpen] = useState(false);
 
   const plan = useMemo(
     () =>
@@ -50,6 +59,11 @@ export default function GoalReachPlannerCard({
   );
 
   const atRiskCount = plan.goalRows.filter((r) => r.atRisk).length;
+  const showConflicts = plan.conflicts.length > 0 || plan.feasibility < 100 || atRiskCount > 0;
+
+  useEffect(() => {
+    if (!showConflicts) setConflictsOpen(false);
+  }, [showConflicts]);
 
   if (plan.activeGoalCount === 0) {
     return (
@@ -84,7 +98,13 @@ export default function GoalReachPlannerCard({
         breakdown={plan.feasibilityBreakdown}
         activeGoalCount={plan.activeGoalCount}
         atRiskCount={atRiskCount}
+        conflictCount={plan.conflicts.length}
+        onViewConflicts={
+          plan.conflicts.length > 0 ? () => setConflictsOpen(true) : undefined
+        }
       />
+
+      <WeeklyFocusList items={plan.weeklyFocus} onOpenGoal={onOpenGoal} />
 
       {plan.savingsGap > 0.01 && (
         <p className="text-sm text-red-600 dark:text-red-400">
@@ -108,6 +128,16 @@ export default function GoalReachPlannerCard({
       <MonthlyFundingChart
         monthlyFunding={plan.monthlyFunding}
         goalRows={plan.goalRows}
+      />
+
+      <PlannerConflictDrawer
+        open={conflictsOpen}
+        onOpenChange={setConflictsOpen}
+        conflicts={plan.conflicts}
+        goalRows={plan.goalRows}
+        onOpenBudgetAllocator={onOpenBudgetAllocator}
+        onOpenGoal={onOpenGoal}
+        onApplyDeadlineShift={onApplyDeadlineShift}
       />
     </div>
   );

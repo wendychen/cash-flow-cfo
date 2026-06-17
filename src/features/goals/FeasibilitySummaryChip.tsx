@@ -1,5 +1,7 @@
+import { AlertTriangle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useI18n } from '@/i18n';
 import { cn } from '@/lib/utils';
 import type { FeasibilityBreakdown } from '@/lib/goalReachPlanner';
@@ -9,6 +11,8 @@ interface FeasibilitySummaryChipProps {
   breakdown: FeasibilityBreakdown;
   activeGoalCount: number;
   atRiskCount: number;
+  conflictCount?: number;
+  onViewConflicts?: () => void;
 }
 
 function feasibilityTone(score: number): string {
@@ -22,6 +26,8 @@ export default function FeasibilitySummaryChip({
   breakdown,
   activeGoalCount,
   atRiskCount,
+  conflictCount = 0,
+  onViewConflicts,
 }: FeasibilitySummaryChipProps) {
   const { t } = useI18n();
 
@@ -41,12 +47,30 @@ export default function FeasibilitySummaryChip({
             {t('goalReach.goalCount', { count: activeGoalCount })}
           </span>
           {atRiskCount > 0 && (
-            <Badge variant="outline" className="text-amber-600 border-amber-300">
+            <Badge
+              variant="outline"
+              className="text-amber-600 border-amber-300 cursor-pointer"
+              onClick={onViewConflicts}
+              role={onViewConflicts ? 'button' : undefined}
+            >
               {t('goalReach.atRisk', { count: atRiskCount })}
             </Badge>
           )}
         </div>
       </div>
+
+      {conflictCount > 0 && onViewConflicts && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="w-full sm:w-auto"
+          onClick={onViewConflicts}
+        >
+          <AlertTriangle className="mr-2 h-4 w-4 text-amber-500" />
+          {t('goalReach.conflictsPanel.view', { count: conflictCount })}
+        </Button>
+      )}
 
       <Progress value={feasibility} className="h-2" />
 

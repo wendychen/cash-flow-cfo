@@ -113,6 +113,8 @@ export default function Dashboard() {
   // Ref for hidden file input (import)
   const fileInputRef = useRef<HTMLInputElement>(null);
   const goalImportRef = useRef<HTMLInputElement>(null);
+  const goalBudgetAllocatorRef = useRef<HTMLDivElement>(null);
+  const pendingFocusGoalIdRef = useRef<string | null>(null);
 
   const handleExport = async () => {
     const stateSnapshot = {
@@ -256,6 +258,32 @@ export default function Dashboard() {
   const monthlyIncome = (totalIncome / periodDays) * 30;
   const monthlyExpenses = (totalExpenses / periodDays) * 30;
   const monthlySurplus = monthlyIncome - monthlyExpenses;
+
+  useEffect(() => {
+    if (goalsView !== 'list' || !pendingFocusGoalIdRef.current) return;
+    const goalId = pendingFocusGoalIdRef.current;
+    pendingFocusGoalIdRef.current = null;
+    const timer = window.setTimeout(() => {
+      document.getElementById(`goal-${goalId}`)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    }, 100);
+    return () => window.clearTimeout(timer);
+  }, [goalsView]);
+
+  const handleOpenGoalFromPlanner = (goalId: string) => {
+    pendingFocusGoalIdRef.current = goalId;
+    setGoalsView('list');
+  };
+
+  const handleOpenBudgetAllocatorFromPlanner = () => {
+    goalBudgetAllocatorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const handleApplyDeadlineShiftFromPlanner = (goalId: string, newDeadline: string) => {
+    updateGoal(goalId, { deadline: newDeadline });
+  };
 
   const handleExportGoal = (goalId: string) => {
     const goal = goals.find((g) => g.id === goalId);
@@ -723,6 +751,9 @@ export default function Dashboard() {
                     latestSavingsBalance={latestSavingsBalance}
                     monthlySurplus={monthlySurplus}
                     longTermFinGoal={longTermFinGoal}
+                    onOpenBudgetAllocator={handleOpenBudgetAllocatorFromPlanner}
+                    onOpenGoal={handleOpenGoalFromPlanner}
+                    onApplyDeadlineShift={handleApplyDeadlineShiftFromPlanner}
                   />
                 </CardContent>
               </Card>
@@ -766,7 +797,7 @@ export default function Dashboard() {
               </Card>
             )}
 
-            <Card>
+            <Card ref={goalBudgetAllocatorRef} data-testid="goal-budget-allocator">
               <CardHeader>
                 <CardTitle>{t('dashboard.goalBudgetAllocator')}</CardTitle>
               </CardHeader>

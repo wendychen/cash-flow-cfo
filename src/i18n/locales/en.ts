@@ -704,12 +704,41 @@ export const en = {
       surplus: 'Monthly surplus',
       moreGoals: '+{count} more',
     },
+    weeklyFocus: {
+      title: 'This week',
+      empty: 'Nothing due in the next 7 days',
+      task: 'Task',
+      milestone: 'Milestone',
+      daysLeft: '{count}d left',
+      dueToday: 'Due today',
+    },
+    conflictsPanel: {
+      title: 'Conflicts',
+      count: '{count} conflicts detected',
+      view: 'View conflicts ({count})',
+      noConflicts: 'All goals on track',
+    },
     conflicts: {
       overAllocated: 'Over-allocated budgets',
+      overAllocatedDetail:
+        'Sum of budgets {allocated} exceeds savings {savings} (gap {gap})',
       taskCostExceedsBudget: 'Task costs exceed budget',
+      taskCostExceedsBudgetDetail:
+        '{title}: task costs {taskCost} exceed budget {budget}',
       deadlineCluster: 'Deadline cluster',
+      deadlineClusterDetail:
+        '{count} goals due near {windowStart} — combined need {combinedNeed}',
+      deadlineClusterGoals: 'Goals: {names}',
       fundingGap: 'Funding gap',
+      fundingGapDetail:
+        '{title} needs {gap} more — earliest feasible {earliest}',
       overdue: 'Overdue goal',
+      overdueDetail: '{title} is past its deadline',
+      unknownEarliest: 'unknown',
+      openBudgetAllocator: 'Open Budget Allocator',
+      openGoal: 'Open goal',
+      suggestShift: 'Suggest: move {title} → {date}',
+      applyShift: 'Apply {title} → {date}',
     },
   },
   language: {
