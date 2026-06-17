@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { PiggyBank, Target } from "lucide-react";
 import { Saving, SavingType } from "@/types/saving";
 import { useCurrency, Currency } from "@/hooks/use-currency";
+import { buildStoredAmountFields, DEFAULT_DISPLAY_CURRENCY } from "@/lib/currencyEntry";
 import {
   Select,
   SelectContent,
@@ -20,7 +21,7 @@ const SavingForm = ({ onAddSaving }: SavingFormProps) => {
   const { convertToNTD } = useCurrency();
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [amount, setAmount] = useState("");
-  const [inputCurrency, setInputCurrency] = useState<Currency>("NTD");
+  const [inputCurrency, setInputCurrency] = useState<Currency>(DEFAULT_DISPLAY_CURRENCY);
   const [note, setNote] = useState("");
   const [savingType, setSavingType] = useState<SavingType>("balance");
 
@@ -28,11 +29,15 @@ const SavingForm = ({ onAddSaving }: SavingFormProps) => {
     e.preventDefault();
     if (!amount || !date) return;
 
-    const amountInNTD = convertToNTD(parseFloat(amount), inputCurrency);
+    const stored = buildStoredAmountFields(
+      parseFloat(amount),
+      inputCurrency,
+      convertToNTD
+    );
 
     onAddSaving({
       date,
-      amount: amountInNTD,
+      ...stored,
       note: note.trim() || undefined,
       savingType,
     });

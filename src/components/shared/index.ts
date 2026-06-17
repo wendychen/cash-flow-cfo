@@ -5,3 +5,4 @@ export type { TimePeriod } from './TimeNavigator';
 
 // NavLink is exported as a named export (not default)
 export { NavLink } from './NavLink';
+export { OriginalCurrencyBadge } from './OriginalCurrencyBadge';

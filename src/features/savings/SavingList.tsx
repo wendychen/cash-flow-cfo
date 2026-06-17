@@ -6,6 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Saving, SavingType } from "@/types/saving";
 import { useCurrency, Currency } from "@/hooks/use-currency";
+import { OriginalCurrencyBadge } from "@/components/shared";
+import {
+  buildStoredAmountFields,
+  getEditAmountAndCurrency,
+  shouldShowOriginalCurrencyBadge,
+} from "@/lib/currencyEntry";
 import {
   Select,
   SelectContent,
@@ -38,7 +44,7 @@ const SavingList = ({
   const { format: formatCurrency, currency, convertFromNTD, convertToNTD } = useCurrency();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editAmount, setEditAmount] = useState("");
-  const [editCurrency, setEditCurrency] = useState<Currency>("NTD");
+  const [editCurrency, setEditCurrency] = useState<Currency>("USD");
   const [editNote, setEditNote] = useState("");
   const [editReviewCount, setEditReviewCount] = useState("");
   const [editDate, setEditDate] = useState("");
@@ -47,9 +53,9 @@ const SavingList = ({
 
   const startEdit = (saving: Saving) => {
     setEditingId(saving.id);
-    // Convert stored NTD to current display currency for editing
-    setEditAmount(convertFromNTD(saving.amount, currency).toFixed(currency === "NTD" ? 0 : 2));
-    setEditCurrency(currency);
+    const editValues = getEditAmountAndCurrency(saving, currency, convertFromNTD);
+    setEditAmount(editValues.amount);
+    setEditCurrency(editValues.currency);
     setEditNote(saving.note || "");
     setEditReviewCount(saving.reviewCount?.toString() || "");
     setEditDate(saving.date);
@@ -66,9 +72,13 @@ const SavingList = ({
 
   const saveEdit = (id: string) => {
     if (!editAmount || !editDate) return;
-    const amountInNTD = convertToNTD(parseFloat(editAmount), editCurrency);
+    const stored = buildStoredAmountFields(
+      parseFloat(editAmount),
+      editCurrency,
+      convertToNTD
+    );
     onUpdateSaving(id, {
-      amount: amountInNTD,
+      ...stored,
       note: editNote.trim() || undefined,
       reviewCount: editReviewCount ? parseInt(editReviewCount) : undefined,
       date: editDate,
@@ -100,13 +110,19 @@ const SavingList = ({
       {paginatedSavings.map((saving, index) => (
         <div
           key={saving.id}
-          className={`flex items-center justify-between p-3 bg-card rounded-lg shadow-card hover:shadow-card-hover transition-shadow duration-200 animate-fade-in ring-1 ${
+          className={`relative flex items-center justify-between p-3 bg-card rounded-lg shadow-card hover:shadow-card-hover transition-shadow duration-200 animate-fade-in ring-1 ${
             saving.savingType === "goal" 
               ? "ring-purple-200 dark:ring-purple-900" 
               : "ring-emerald-200 dark:ring-emerald-900"
-          }`}
+          } ${shouldShowOriginalCurrencyBadge(saving.originalCurrency) ? "pt-6" : ""}`}
           style={{ animationDelay: `${index * 50}ms` }}
         >
+          {editingId !== saving.id && (
+            <OriginalCurrencyBadge
+              originalAmount={saving.originalAmount}
+              originalCurrency={saving.originalCurrency}
+            />
+          )}
           {editingId === saving.id ? (
             <>
               <div className="flex-1 flex items-center gap-2 mr-2 flex-wrap">

@@ -6,6 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Income, IncomeType } from "@/types/income";
 import { useCurrency, Currency } from "@/hooks/use-currency";
+import { OriginalCurrencyBadge } from "@/components/shared";
+import {
+  buildStoredAmountFields,
+  getEditAmountAndCurrency,
+  shouldShowOriginalCurrencyBadge,
+} from "@/lib/currencyEntry";
 import {
   Select,
   SelectContent,
@@ -39,7 +45,7 @@ const IncomeList = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editSource, setEditSource] = useState("");
   const [editAmount, setEditAmount] = useState("");
-  const [editCurrency, setEditCurrency] = useState<Currency>("NTD");
+  const [editCurrency, setEditCurrency] = useState<Currency>("USD");
   const [editIncomeType, setEditIncomeType] = useState<IncomeType>("cash");
   const [editNote, setEditNote] = useState("");
   const [editReviewCount, setEditReviewCount] = useState("");
@@ -49,8 +55,9 @@ const IncomeList = ({
   const startEdit = (income: Income) => {
     setEditingId(income.id);
     setEditSource(income.source);
-    setEditAmount(convertFromNTD(income.amount, currency).toFixed(currency === "NTD" ? 0 : 2));
-    setEditCurrency(currency);
+    const editValues = getEditAmountAndCurrency(income, currency, convertFromNTD);
+    setEditAmount(editValues.amount);
+    setEditCurrency(editValues.currency);
     setEditIncomeType(income.incomeType || "cash");
     setEditNote(income.note || "");
     setEditReviewCount(income.reviewCount?.toString() || "");
@@ -69,10 +76,14 @@ const IncomeList = ({
 
   const saveEdit = (id: string) => {
     if (!editAmount || !editSource.trim() || !editDate) return;
-    const amountInNTD = convertToNTD(parseFloat(editAmount), editCurrency);
+    const stored = buildStoredAmountFields(
+      parseFloat(editAmount),
+      editCurrency,
+      convertToNTD
+    );
     onUpdateIncome(id, {
       source: editSource.trim(),
-      amount: amountInNTD,
+      ...stored,
       incomeType: editIncomeType,
       note: editNote.trim() || undefined,
       reviewCount: editReviewCount ? parseInt(editReviewCount) : undefined,
@@ -127,9 +138,17 @@ const IncomeList = ({
               {dayIncomes.map((income, index) => (
                 <div
                   key={income.id}
-                  className="flex items-center justify-between p-3 bg-card rounded-lg shadow-card hover:shadow-card-hover transition-shadow duration-200 ring-1 ring-violet-200 dark:ring-violet-900"
+                  className={`relative flex items-center justify-between p-3 bg-card rounded-lg shadow-card hover:shadow-card-hover transition-shadow duration-200 ring-1 ring-violet-200 dark:ring-violet-900 ${
+                    shouldShowOriginalCurrencyBadge(income.originalCurrency) ? "pt-6" : ""
+                  }`}
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
+                  {editingId !== income.id && (
+                    <OriginalCurrencyBadge
+                      originalAmount={income.originalAmount}
+                      originalCurrency={income.originalCurrency}
+                    />
+                  )}
                   {editingId === income.id ? (
                     <>
                       <div className="flex-1 flex items-center gap-2 mr-2 flex-wrap">

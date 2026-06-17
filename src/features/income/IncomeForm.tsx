@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Wallet } from "lucide-react";
 import { Income, IncomeType } from "@/types/income";
 import { useCurrency, Currency } from "@/hooks/use-currency";
+import { buildStoredAmountFields, DEFAULT_DISPLAY_CURRENCY } from "@/lib/currencyEntry";
 import {
   Select,
   SelectContent,
@@ -21,7 +22,7 @@ const IncomeForm = ({ onAddIncome }: IncomeFormProps) => {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [source, setSource] = useState("");
   const [amount, setAmount] = useState("");
-  const [inputCurrency, setInputCurrency] = useState<Currency>("NTD");
+  const [inputCurrency, setInputCurrency] = useState<Currency>(DEFAULT_DISPLAY_CURRENCY);
   const [incomeType, setIncomeType] = useState<IncomeType>("cash");
   const [note, setNote] = useState("");
 
@@ -29,12 +30,16 @@ const IncomeForm = ({ onAddIncome }: IncomeFormProps) => {
     e.preventDefault();
     if (!amount || !date || !source.trim()) return;
 
-    const amountInNTD = convertToNTD(parseFloat(amount), inputCurrency);
+    const stored = buildStoredAmountFields(
+      parseFloat(amount),
+      inputCurrency,
+      convertToNTD
+    );
 
     onAddIncome({
       date,
       source: source.trim(),
-      amount: amountInNTD,
+      ...stored,
       incomeType,
       note: note.trim() || undefined,
     });

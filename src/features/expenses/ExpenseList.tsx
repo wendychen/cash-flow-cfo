@@ -17,6 +17,12 @@ import {
 } from "@/components/ui/select";
 import { ExpenseCategory, EXPENSE_CATEGORIES, migrateExpenseCategory } from "@/types/expenseCategory";
 import { ExpenseCategoryIcon } from "./ExpenseCategoryIcon";
+import { OriginalCurrencyBadge } from "@/components/shared";
+import {
+  buildStoredAmountFields,
+  getEditAmountAndCurrency,
+  shouldShowOriginalCurrencyBadge,
+} from "@/lib/currencyEntry";
 import {
   Pagination,
   PaginationContent,
@@ -48,7 +54,7 @@ const ExpenseList = ({
   const [editDescription, setEditDescription] = useState("");
   const [editAmount, setEditAmount] = useState("");
   const [editTimeCost, setEditTimeCost] = useState("");
-  const [editCurrency, setEditCurrency] = useState<Currency>("NTD");
+  const [editCurrency, setEditCurrency] = useState<Currency>("USD");
   const [editReviewCount, setEditReviewCount] = useState("");
   const [editDate, setEditDate] = useState("");
   const [editCategory, setEditCategory] = useState<ExpenseCategory>("misc");
@@ -68,10 +74,10 @@ const ExpenseList = ({
   const startEdit = (expense: Expense) => {
     setEditingId(expense.id);
     setEditDescription(expense.description);
-    // Convert stored NTD to current display currency for editing
-    setEditAmount(convertFromNTD(expense.amount, currency).toFixed(currency === "NTD" ? 0 : 2));
+    const editValues = getEditAmountAndCurrency(expense, currency, convertFromNTD);
+    setEditAmount(editValues.amount);
+    setEditCurrency(editValues.currency);
     setEditTimeCost(expense.timeCost || "");
-    setEditCurrency(currency);
     setEditReviewCount(expense.reviewCount?.toString() || "");
     setEditDate(expense.date);
     setEditCategory(expense.category || "misc");
@@ -89,10 +95,14 @@ const ExpenseList = ({
 
   const saveEdit = (id: string) => {
     if (!editDescription.trim() || !editAmount || !editDate) return;
-    const amountInNTD = convertToNTD(parseFloat(editAmount), editCurrency);
+    const stored = buildStoredAmountFields(
+      parseFloat(editAmount),
+      editCurrency,
+      convertToNTD
+    );
     onUpdateExpense(id, {
       description: editDescription.trim(),
-      amount: amountInNTD,
+      ...stored,
       timeCost: editTimeCost.trim(),
       reviewCount: editReviewCount ? parseInt(editReviewCount) : undefined,
       date: editDate,
@@ -178,11 +188,17 @@ const ExpenseList = ({
                 return (
                   <div
                     key={expense.id}
-                    className={`flex items-center justify-between p-3 bg-card rounded-lg shadow-card hover:shadow-card-hover transition-shadow duration-200 animate-slide-in ${
+                    className={`relative flex items-center justify-between p-3 bg-card rounded-lg shadow-card hover:shadow-card-hover transition-shadow duration-200 animate-slide-in ${
                       expense.needsCheck ? "ring-2 ring-yellow-400" : ""
-                    }`}
+                    } ${shouldShowOriginalCurrencyBadge(expense.originalCurrency) ? "pt-6" : ""}`}
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
+                    {editingId !== expense.id && (
+                      <OriginalCurrencyBadge
+                        originalAmount={expense.originalAmount}
+                        originalCurrency={expense.originalCurrency}
+                      />
+                    )}
                     {editingId === expense.id ? (
                       <>
                         <div className="flex-1 flex items-center gap-2 mr-2 flex-wrap">

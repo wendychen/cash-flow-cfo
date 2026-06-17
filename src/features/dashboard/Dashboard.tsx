@@ -10,6 +10,14 @@ import { getLatestAutoBackup } from "@/lib/autoBackup";
 import { useAutoBackup } from "@/hooks/use-auto-backup";
 import { parseCsvToFinanceState } from "@/lib/csvImport";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { Currency } from "@/hooks/use-currency";
 import { TimeNavigator, type TimePeriod } from "@/components/shared";
 import { GoalList, GoalBudgetAllocator } from "@/features/goals";
 import { ExpenseForm, ExpenseList } from "@/features/expenses";
@@ -59,7 +67,7 @@ export default function Dashboard() {
     backfillMissingShadowExpenses,
   } = useFinanceStore();
 
-  const { format, currency } = useCurrency();
+  const { format, currency, setCurrency } = useCurrency();
 
   useEffect(() => {
     backfillMissingShadowExpenses();
@@ -252,7 +260,17 @@ export default function Dashboard() {
             <h1 className="text-4xl font-bold tracking-tight">Cash Flow CFO</h1>
             <p className="text-muted-foreground">Personal cash flow and goal planning</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={currency} onValueChange={(val) => setCurrency(val as Currency)}>
+              <SelectTrigger className="w-[110px]" aria-label="Display currency">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="USD">USD ($)</SelectItem>
+                <SelectItem value="NTD">NTD (NT$)</SelectItem>
+                <SelectItem value="CAD">CAD (CA$)</SelectItem>
+              </SelectContent>
+            </Select>
             <Button variant="outline" onClick={handleExport}>
               <Download className="mr-2 h-4 w-4" />
               Export JSON

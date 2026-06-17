@@ -1,6 +1,9 @@
 import { createContext, useContext, useState, ReactNode } from "react";
+import { DEFAULT_DISPLAY_CURRENCY } from "@/lib/currencyEntry";
 
 export type Currency = "NTD" | "USD" | "CAD";
+
+const DISPLAY_CURRENCY_STORAGE_KEY = "cash-flow-cfo-display-currency";
 
 interface CurrencyContextType {
   currency: Currency;
@@ -34,8 +37,27 @@ const CURRENCY_SYMBOLS: Record<Currency, string> = {
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
+function readStoredDisplayCurrency(): Currency {
+  try {
+    const saved = localStorage.getItem(DISPLAY_CURRENCY_STORAGE_KEY);
+    if (saved === "NTD" || saved === "USD" || saved === "CAD") return saved;
+  } catch {
+    // ignore
+  }
+  return DEFAULT_DISPLAY_CURRENCY;
+}
+
 export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
-  const [currency, setCurrency] = useState<Currency>("NTD");
+  const [currency, setCurrencyState] = useState<Currency>(readStoredDisplayCurrency);
+
+  const setCurrency = (next: Currency) => {
+    setCurrencyState(next);
+    try {
+      localStorage.setItem(DISPLAY_CURRENCY_STORAGE_KEY, next);
+    } catch {
+      // ignore
+    }
+  };
 
   const convert = (amountInNTD: number): number => {
     return amountInNTD * EXCHANGE_RATES[currency];

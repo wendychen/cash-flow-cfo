@@ -18,6 +18,7 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { ExpenseCategoryIcon } from "./ExpenseCategoryIcon";
+import { buildStoredAmountFields, DEFAULT_DISPLAY_CURRENCY } from "@/lib/currencyEntry";
 
 interface ExpenseFormProps {
   onAddExpense: (expense: Omit<Expense, "id">) => void;
@@ -32,18 +33,22 @@ const ExpenseForm = ({ onAddExpense }: ExpenseFormProps) => {
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [timeCost, setTimeCost] = useState("");
-  const [inputCurrency, setInputCurrency] = useState<Currency>("NTD");
+  const [inputCurrency, setInputCurrency] = useState<Currency>(DEFAULT_DISPLAY_CURRENCY);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!description.trim() || !amount || !date) return;
 
-    const amountInNTD = convertToNTD(parseFloat(amount), inputCurrency);
+    const stored = buildStoredAmountFields(
+      parseFloat(amount),
+      inputCurrency,
+      convertToNTD
+    );
 
     onAddExpense({
       date,
       description: description.trim(),
-      amount: amountInNTD,
+      ...stored,
       timeCost: timeCost.trim(),
       needsCheck: false,
       category,
