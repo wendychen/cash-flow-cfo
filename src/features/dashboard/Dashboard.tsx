@@ -24,7 +24,13 @@ import { hasSeenUserGuide } from "@/lib/onboarding";
 import { GoalList, GoalBudgetAllocator } from "@/features/goals";
 import { ExpenseForm, ExpenseList } from "@/features/expenses";
 import { SavingForm, SavingList, FixedExpenseForm, FixedExpenseList } from "@/features/savings";
-import { SankeyFlowChart, CombinedChart } from "@/features/charts";
+import { SankeyFlowChart, CombinedChart, CashFlowSimulator } from "@/features/charts";
+import { useI18n, type Locale } from "@/i18n";
+import {
+  buildGoalExportPayload,
+  downloadGoalExport,
+  parseGoalImportJSON,
+} from "@/lib/goalExport";
 import { IncomeForm, IncomeList } from "@/features/income";
 import type { TaskType } from "@/types/task";
 
@@ -67,9 +73,11 @@ export default function Dashboard() {
     resetAllData,
     replaceAllData,
     backfillMissingShadowExpenses,
+    importGoalBundle,
   } = useFinanceStore();
 
   const { format, currency, setCurrency } = useCurrency();
+  const { t, locale, setLocale } = useI18n();
 
   useEffect(() => {
     backfillMissingShadowExpenses();
@@ -91,6 +99,7 @@ export default function Dashboard() {
 
   // Ref for hidden file input (import)
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const goalImportRef = useRef<HTMLInputElement>(null);
 
   const handleExport = async () => {
     const stateSnapshot = {
@@ -180,6 +189,46 @@ export default function Dashboard() {
   );
 
   const { totalIncome, totalExpenses, totalSavings } = dashboardSummary;
+
+  const periodDays = selectedPeriod
+    ? Math.max(
+        1,
+        Math.ceil(
+          (selectedPeriod.endDate.getTime() - selectedPeriod.startDate.getTime()) /
+            (1000 * 60 * 60 * 24)
+        ) + 1
+      )
+    : 30;
+  const monthlyIncome = (totalIncome / periodDays) * 30;
+  const monthlyExpenses = (totalExpenses / periodDays) * 30;
+
+  const handleExportGoal = (goalId: string) => {
+    const goal = goals.find((g) => g.id === goalId);
+    if (!goal) return;
+    downloadGoalExport(buildGoalExportPayload(goal, tasks));
+  };
+
+  const handleGoalImportFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const result = parseGoalImportJSON(text);
+      if (!result.success || !result.payload) {
+        alert(t('goals.importFailed', { error: result.error ?? 'Unknown error' }));
+        return;
+      }
+      importGoalBundle({
+        goal: result.payload.goal,
+        tasks: result.payload.tasks,
+      });
+      alert(t('goals.importSuccess'));
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+  };
 
 
 
@@ -293,8 +342,8 @@ export default function Dashboard() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold tracking-tight">Cash Flow CFO</h1>
-            <p className="text-muted-foreground">Personal cash flow and goal planning</p>
+            <h1 className="text-4xl font-bold tracking-tight">{t('app.title')}</h1>
+            <p className="text-muted-foreground">{t('app.subtitle')}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Button
@@ -304,10 +353,20 @@ export default function Dashboard() {
               aria-label="Open user guide"
             >
               <CircleHelp className="mr-2 h-4 w-4" />
-              Guide
+              {t('nav.guide')}
             </Button>
+            <Select value={locale} onValueChange={(val) => setLocale(val as Locale)}>
+              <SelectTrigger className="w-[120px]" aria-label={t('language.label')}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="en">{t('language.en')}</SelectItem>
+                <SelectItem value="zh-TW">{t('language.zh')}</SelectItem>
+                <SelectItem value="ja">{t('language.ja')}</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={currency} onValueChange={(val) => setCurrency(val as Currency)}>
-              <SelectTrigger className="w-[110px]" aria-label="Display currency">
+              <SelectTrigger className="w-[110px]" aria-label={t('nav.displayCurrency')}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -318,14 +377,14 @@ export default function Dashboard() {
             </Select>
             <Button variant="outline" onClick={handleExport}>
               <Download className="mr-2 h-4 w-4" />
-              Export JSON
+              {t('nav.exportJson')}
             </Button>
             <Button variant="outline" onClick={handleImportClick}>
               <Upload className="mr-2 h-4 w-4" />
-              Import JSON/CSV
+              {t('nav.importData')}
             </Button>
             <Button variant="outline" onClick={() => window.location.reload()}>
-              Reload
+              {t('nav.reload')}
             </Button>
             <Button 
               variant="destructive" 
@@ -335,7 +394,7 @@ export default function Dashboard() {
                 }
               }}
             >
-              Reset All Data
+              {t('nav.reset')}
             </Button>
             {/* Hidden file input for JSON import */}
             <input
@@ -369,9 +428,9 @@ export default function Dashboard() {
             {/* Summary Cards — auto-fit avoids clipping long currency values beside the sidebar */}
         <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,10.5rem),1fr))] gap-4">
           {[
-            { label: 'Total Income', value: format(totalIncome), className: 'text-emerald-600' },
-            { label: 'Total Expenses', value: format(totalExpenses), className: 'text-red-600' },
-            { label: 'Savings', value: format(totalSavings), className: 'text-blue-600' },
+            { label: t('summary.totalIncome'), value: format(totalIncome), className: 'text-emerald-600' },
+            { label: t('summary.totalExpenses'), value: format(totalExpenses), className: 'text-red-600' },
+            { label: t('summary.savings'), value: format(totalSavings), className: 'text-blue-600' },
           ].map((stat) => (
             <Card key={stat.label} className="min-w-0 overflow-hidden">
               <CardHeader className="px-5 pt-5 pb-2">
@@ -388,13 +447,13 @@ export default function Dashboard() {
           ))}
           <Card className="min-w-0 overflow-hidden">
             <CardHeader className="px-5 pt-5 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Active Goals</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t('summary.activeGoals')}</CardTitle>
             </CardHeader>
             <CardContent className="px-5 pb-5 pt-0">
               <div className="text-sm font-semibold tabular-nums leading-snug">
                 {activeGoals.length}
               </div>
-              <div className="text-xs text-muted-foreground mt-1">{tasks.length} total tasks</div>
+              <div className="text-xs text-muted-foreground mt-1">{t('summary.totalTasks', { count: tasks.length })}</div>
             </CardContent>
           </Card>
         </div>
@@ -402,10 +461,10 @@ export default function Dashboard() {
         {/* Tabs Section - Original UI Style with Time Period Filtering */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="income">Income</TabsTrigger>
-            <TabsTrigger value="expenses">Expenses</TabsTrigger>
-            <TabsTrigger value="savings">Savings</TabsTrigger>
-            <TabsTrigger value="goals">Goals &amp; Tasks</TabsTrigger>
+            <TabsTrigger value="income">{t('tabs.income')}</TabsTrigger>
+            <TabsTrigger value="expenses">{t('tabs.expenses')}</TabsTrigger>
+            <TabsTrigger value="savings">{t('tabs.savings')}</TabsTrigger>
+            <TabsTrigger value="goals">{t('tabs.goals')}</TabsTrigger>
           </TabsList>
 
           {/* Income Tab */}
@@ -503,6 +562,13 @@ export default function Dashboard() {
                 </Button>
               </CardHeader>
               <CardContent>
+                <input
+                  type="file"
+                  ref={goalImportRef}
+                  className="hidden"
+                  accept="application/json,.json"
+                  onChange={handleGoalImportFile}
+                />
                 <GoalList
                   goals={goalsForManagement}
                   allGoals={goalsForManagement}
@@ -510,6 +576,8 @@ export default function Dashboard() {
                   onUpdateGoal={updateGoal}
                   onAddGoal={handleAddGoalFromList}
                   onDeleteGoal={deleteGoal}
+                  onExportGoal={handleExportGoal}
+                  onImportGoal={() => goalImportRef.current?.click()}
                   onReorderGoals={(newGoals) => {
                     const orderedIds = newGoals.map(g => g.id);
                     reorderGoals(orderedIds);
@@ -542,8 +610,8 @@ export default function Dashboard() {
         {/* Charts Section — Always visible below tabs, reacts to left Time Navigator */}
         <div className="pt-4 border-t mt-2">
           <div className="mb-3">
-            <h2 className="text-xl font-semibold tracking-tight">Cash Flow Visualizations</h2>
-            <p className="text-sm text-muted-foreground">Sankey and overview charts update automatically when you change the period on the left</p>
+            <h2 className="text-xl font-semibold tracking-tight">{t('charts.visualizations')}</h2>
+            <p className="text-sm text-muted-foreground">{t('charts.visualizationsHint')}</p>
           </div>
 
           <div className="space-y-6">
@@ -556,9 +624,15 @@ export default function Dashboard() {
               selectedPeriod={selectedPeriod}
             />
 
+            <CashFlowSimulator
+              monthlyIncome={monthlyIncome}
+              monthlyExpenses={monthlyExpenses}
+              currentSavings={latestSavingsBalance}
+            />
+
             <Card>
               <CardHeader>
-                <CardTitle>Overview Charts (Summary)</CardTitle>
+                <CardTitle>{t('charts.overview')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <CombinedChart

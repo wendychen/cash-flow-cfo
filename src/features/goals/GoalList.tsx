@@ -31,6 +31,8 @@ import {
   ExternalLink,
   Trash2,
   Link,
+  Download,
+  Upload,
   Lightbulb,
   Lock,
   ListTodo,
@@ -88,6 +90,8 @@ interface GoalListProps {
   onDeleteTask: (taskId: string) => void;
   onReorderTasks: (reordered: TaskNode[]) => void;
   onMoveTask: (taskId: string, newParentId: string | null) => void;
+  onExportGoal?: (goalId: string) => void;
+  onImportGoal?: () => void;
 }
 
 interface SortableIdeationItemProps {
@@ -253,6 +257,7 @@ interface SortableGoalItemProps {
   onDeleteTask: GoalListProps["onDeleteTask"];
   onReorderTasks: GoalListProps["onReorderTasks"];
   onMoveTask: GoalListProps["onMoveTask"];
+  onExportGoal?: GoalListProps["onExportGoal"];
 }
 
 const SortableGoalItem = ({
@@ -273,6 +278,7 @@ const SortableGoalItem = ({
   onDeleteTask,
   onReorderTasks,
   onMoveTask,
+  onExportGoal,
 }: SortableGoalItemProps) => {
   const { format } = useCurrency();
   const [newIdeation, setNewIdeation] = useState("");
@@ -419,6 +425,17 @@ const SortableGoalItem = ({
             className={`h-4 w-4 ${goal.isMagicWand ? "fill-amber-500" : ""}`}
           />
         </Button>
+        {onExportGoal && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-primary"
+            onClick={() => onExportGoal(goal.id)}
+            title="Export goal"
+          >
+            <Download className="h-4 w-4" />
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="icon"
@@ -729,6 +746,8 @@ const GoalList = ({
   onDeleteTask,
   onReorderTasks,
   onMoveTask,
+  onExportGoal,
+  onImportGoal,
 }: GoalListProps) => {
   const [newGoalTitle, setNewGoalTitle] = useState("");
   const [newGoalDeadline, setNewGoalDeadline] = useState("");
@@ -901,6 +920,14 @@ const GoalList = ({
       </CollapsibleTrigger>
 
       <CollapsibleContent className="space-y-4">
+        {onImportGoal && (
+          <div className="flex justify-end">
+            <Button variant="outline" size="sm" onClick={onImportGoal}>
+              <Upload className="mr-2 h-4 w-4" />
+              Import goal
+            </Button>
+          </div>
+        )}
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -941,6 +968,7 @@ const GoalList = ({
                     onDeleteTask={onDeleteTask}
                     onReorderTasks={onReorderTasks}
                     onMoveTask={onMoveTask}
+                    onExportGoal={onExportGoal}
                   />
                 );
               })}

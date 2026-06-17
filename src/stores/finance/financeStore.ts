@@ -24,6 +24,7 @@ import { FixedExpense } from '@/types/fixedExpense';
 import { Goal } from '@/types/goal';
 import { TaskNode } from '@/types/task';
 import { FinancialTarget } from '@/types/target';
+import { sortTasksForImport } from '@/lib/goalExport';
 import { migratePersistedState } from './migration';
 
 /**
@@ -85,6 +86,7 @@ interface FinanceStore extends FinanceState {
   updateGoal: (id: string, updates: Partial<Omit<Goal, 'id'>>) => void;
   deleteGoal: (id: string) => void;
   reorderGoals: (orderedIds: string[]) => void;
+  importGoalBundle: (bundle: { goal: Goal; tasks: TaskNode[] }) => string;
 
   // Task actions (normalized - single source of truth)
   addTask: (task: Omit<TaskNode, 'id' | 'createdAt'>) => void;
@@ -471,6 +473,67 @@ export const useFinanceStore = create<FinanceStore>()(
             .filter(Boolean) as Goal[];
           return { goals: reordered };
         });
+      },
+      importGoalBundle: (bundle) => {
+        const goalId = crypto.randomUUID();
+        const { expense, expenseId } = createGoalShadowExpense(goalId, {
+          title: bundle.goal.title,
+          deadline: bundle.goal.deadline,
+          category: bundle.goal.category || 'misc',
+          budget: bundle.goal.budget ?? 0,
+          timeCost: bundle.goal.timeCost ?? '',
+        });
+
+        const newGoal: Goal = {
+          ...bundle.goal,
+          id: goalId,
+          createdAt: new Date().toISOString(),
+          linkedExpenseId: expenseId,
+          ideations: bundle.goal.ideations ?? [],
+          urlPack: bundle.goal.urlPack ?? [],
+        };
+
+        const taskIdMap = new Map<string, string>();
+        const newTasks: TaskNode[] = [];
+        const newExpenses: Expense[] = [expense];
+        const sorted = sortTasksForImport(bundle.tasks);
+
+        for (const task of sorted) {
+          const taskId = crypto.randomUUID();
+          taskIdMap.set(task.id, taskId);
+          const parentId = task.parentId ? taskIdMap.get(task.parentId) ?? null : null;
+
+          const { expense: taskExpense, expenseId: taskExpenseId } = createTaskShadowExpense(
+            goalId,
+            taskId,
+            task.taskType,
+            {
+              title: task.title,
+              cost: task.cost,
+              timeCost: task.timeCost,
+              deadline: task.deadline,
+            },
+            newGoal.category
+          );
+
+          newTasks.push({
+            ...task,
+            id: taskId,
+            goalId,
+            parentId,
+            linkedExpenseId: taskExpenseId,
+            createdAt: new Date().toISOString(),
+          });
+          newExpenses.push(taskExpense);
+        }
+
+        set((state) => ({
+          goals: [...state.goals, newGoal],
+          tasks: [...state.tasks, ...newTasks],
+          expenses: [...state.expenses, ...newExpenses],
+        }));
+
+        return goalId;
       },
 
       // ==================== TASKS (Normalized - Single Source of Truth) ====================

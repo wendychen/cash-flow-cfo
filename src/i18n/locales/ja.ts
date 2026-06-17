@@ -1,0 +1,63 @@
+import type { Messages } from './en';
+
+export const ja: Messages = {
+  app: {
+    title: 'Cash Flow CFO',
+    subtitle: '個人のキャッシュフローと目標計画',
+  },
+  nav: {
+    guide: 'ガイド',
+    exportJson: 'JSONエクスポート',
+    importData: 'JSON/CSVインポート',
+    reload: '再読み込み',
+    reset: '全データをリセット',
+    displayCurrency: '表示通貨',
+  },
+  summary: {
+    totalIncome: '総収入',
+    totalExpenses: '総支出',
+    savings: '貯蓄',
+    activeGoals: '進行中の目標',
+    totalTasks: 'タスク {count} 件',
+  },
+  tabs: {
+    income: '収入',
+    expenses: '支出',
+    savings: '貯蓄',
+    goals: '目標とタスク',
+  },
+  charts: {
+    visualizations: 'キャッシュフロー可視化',
+    visualizationsHint: '左の期間を変更すると Sankey と概要チャートが更新されます',
+    overview: '概要チャート',
+    simulator: 'キャッシュフローシミュレーター',
+    simulatorHint: '月平均に基づく what-if シナリオ',
+  },
+  simulator: {
+    incomeChange: '月収入の変化',
+    expenseChange: '月支出の変化',
+    horizon: '予測期間',
+    months: '{count} ヶ月',
+    endingSavings: '予測貯蓄',
+    vsBaseline: 'ベースライン比',
+  },
+  timeNav: {
+    title: 'タイムナビゲーター',
+    expandAll: 'すべて展開',
+    selected: '選択中：',
+    clear: '選択をクリア',
+    yearRange: '{start}–{end}',
+  },
+  goals: {
+    export: '目標をエクスポート',
+    import: '目標をインポート',
+    importSuccess: '目標をインポートしました。',
+    importFailed: 'インポート失敗：{error}',
+  },
+  language: {
+    label: '言語',
+    en: 'English',
+    zh: '繁體中文',
+    ja: '日本語',
+  },
+};

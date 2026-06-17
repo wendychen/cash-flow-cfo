@@ -1,9 +1,14 @@
 import { useState, useMemo } from "react";
 import { ChevronRight, ChevronDown, Calendar } from "lucide-react";
+import { format } from "date-fns";
+import { enUS, zhTW, ja } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { getWeeksInMonth } from "@/lib/date";
+import { getNavigatorYears } from "@/lib/timeNavigatorYears";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useI18n, type Locale } from "@/i18n";
 
 export type TimePeriod = {
   type: "year" | "quarter" | "month" | "week";
@@ -22,11 +27,6 @@ interface TimeNavigatorProps {
   currentYear?: number;
 }
 
-const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
-];
-
 const QUARTERS = [
   { name: "Q1", months: [0, 1, 2] },
   { name: "Q2", months: [3, 4, 5] },
@@ -34,48 +34,33 @@ const QUARTERS = [
   { name: "Q4", months: [9, 10, 11] },
 ];
 
+const DATE_FNS_LOCALES = {
+  en: enUS,
+  "zh-TW": zhTW,
+  ja,
+} as const;
+
 function formatDateRange(start: Date, end: Date): string {
   const startStr = `${start.getMonth() + 1}/${start.getDate()}`;
   const endStr = `${end.getMonth() + 1}/${end.getDate()}`;
   return `${startStr} - ${endStr}`;
 }
 
+function monthLabel(year: number, monthIndex: number, locale: Locale): string {
+  const date = new Date(year, monthIndex, 1);
+  return format(date, "MMM", { locale: DATE_FNS_LOCALES[locale] });
+}
+
 export default function TimeNavigator({ selectedPeriod, onSelectPeriod, currentYear }: TimeNavigatorProps) {
-  const year = currentYear || new Date().getFullYear();
-  const [expandedYear, setExpandedYear] = useState<number | null>(year);
-  const [expandedQuarters, setExpandedQuarters] = useState<Set<number>>(new Set());
-  const [expandedMonths, setExpandedMonths] = useState<Set<number>>(new Set());
+  const { t, locale } = useI18n();
+  const anchorYear = currentYear || new Date().getFullYear();
+  const years = useMemo(() => getNavigatorYears(anchorYear), [anchorYear]);
+  const focusYear = selectedPeriod?.year ?? anchorYear;
+
+  const [expandedYears, setExpandedYears] = useState<Set<number>>(() => new Set([anchorYear]));
+  const [expandedQuarters, setExpandedQuarters] = useState<Record<number, Set<number>>>({});
+  const [expandedMonths, setExpandedMonths] = useState<Record<number, Set<number>>>({});
   const [expandAll, setExpandAll] = useState(false);
-
-  const yearPeriod: TimePeriod = useMemo(() => ({
-    type: "year",
-    year,
-    label: year.toString(),
-    startDate: new Date(year, 0, 1),
-    endDate: new Date(year, 11, 31),
-  }), [year]);
-
-  const toggleQuarter = (quarterIndex: number) => {
-    const newSet = new Set(expandedQuarters);
-    if (newSet.has(quarterIndex)) {
-      newSet.delete(quarterIndex);
-      setExpandAll(false);
-    } else {
-      newSet.add(quarterIndex);
-    }
-    setExpandedQuarters(newSet);
-  };
-
-  const toggleMonth = (monthIndex: number) => {
-    const newSet = new Set(expandedMonths);
-    if (newSet.has(monthIndex)) {
-      newSet.delete(monthIndex);
-      setExpandAll(false);
-    } else {
-      newSet.add(monthIndex);
-    }
-    setExpandedMonths(newSet);
-  };
 
   const isPeriodSelected = (period: TimePeriod): boolean => {
     if (!selectedPeriod) return false;
@@ -96,51 +81,76 @@ export default function TimeNavigator({ selectedPeriod, onSelectPeriod, currentY
     }
   };
 
+  const toggleYear = (year: number) => {
+    setExpandedYears((prev) => {
+      const next = new Set(prev);
+      if (next.has(year)) next.delete(year);
+      else next.add(year);
+      return next;
+    });
+    setExpandAll(false);
+  };
+
+  const toggleQuarter = (year: number, quarterIndex: number) => {
+    setExpandedQuarters((prev) => {
+      const yearSet = new Set(prev[year] ?? []);
+      if (yearSet.has(quarterIndex)) yearSet.delete(quarterIndex);
+      else yearSet.add(quarterIndex);
+      return { ...prev, [year]: yearSet };
+    });
+    setExpandAll(false);
+  };
+
+  const toggleMonth = (year: number, monthIndex: number) => {
+    setExpandedMonths((prev) => {
+      const yearSet = new Set(prev[year] ?? []);
+      if (yearSet.has(monthIndex)) yearSet.delete(monthIndex);
+      else yearSet.add(monthIndex);
+      return { ...prev, [year]: yearSet };
+    });
+    setExpandAll(false);
+  };
+
   const handleExpandAllToggle = (checked: boolean) => {
     setExpandAll(checked);
     if (checked) {
-      setExpandedYear(year);
-      setExpandedQuarters(new Set([0, 1, 2, 3]));
-      setExpandedMonths(new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]));
+      setExpandedYears(new Set(years));
+      setExpandedQuarters({ [focusYear]: new Set([0, 1, 2, 3]) });
+      setExpandedMonths({ [focusYear]: new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]) });
     } else {
-      setExpandedYear(null);
-      setExpandedQuarters(new Set());
-      setExpandedMonths(new Set());
+      setExpandedYears(new Set([focusYear]));
+      setExpandedQuarters({});
+      setExpandedMonths({});
     }
   };
 
-  return (
-    <div className="bg-card rounded-xl shadow-card p-4 w-full" data-testid="time-navigator">
-      <div className="flex items-center gap-2 mb-3 pb-2 border-b">
-        <Calendar className="h-4 w-4 text-muted-foreground" />
-        <span className="text-sm font-medium text-foreground">Time Navigator</span>
-      </div>
+  const renderYear = (year: number) => {
+    const yearPeriod: TimePeriod = {
+      type: "year",
+      year,
+      label: year.toString(),
+      startDate: new Date(year, 0, 1),
+      endDate: new Date(year, 11, 31),
+    };
+    const yearQuarters = expandedQuarters[year] ?? new Set<number>();
+    const yearMonths = expandedMonths[year] ?? new Set<number>();
 
-      <div className="flex items-center gap-2 mb-3 pb-2 border-b">
-        <Switch
-          id="expand-all"
-          checked={expandAll}
-          onCheckedChange={handleExpandAllToggle}
-        />
-        <Label htmlFor="expand-all" className="text-sm text-muted-foreground cursor-pointer">
-          Expand All
-        </Label>
-      </div>
-
-      <div className="space-y-1">
+    return (
+      <div key={year}>
         <div
           className={cn(
             "flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer hover-elevate transition-colors",
-            isPeriodSelected(yearPeriod) && "bg-primary/10 text-primary"
+            isPeriodSelected(yearPeriod) && "bg-primary/10 text-primary",
+            year === anchorYear && "ring-1 ring-primary/20"
           )}
           data-testid={`time-nav-year-${year}`}
         >
           <button
-            onClick={() => setExpandedYear(expandedYear === year ? null : year)}
+            onClick={() => toggleYear(year)}
             className="p-0.5"
             data-testid={`toggle-year-${year}`}
           >
-            {expandedYear === year ? (
+            {expandedYears.has(year) ? (
               <ChevronDown className="h-4 w-4" />
             ) : (
               <ChevronRight className="h-4 w-4" />
@@ -154,7 +164,7 @@ export default function TimeNavigator({ selectedPeriod, onSelectPeriod, currentY
           </span>
         </div>
 
-        {expandedYear === year && (
+        {expandedYears.has(year) && (
           <div className="ml-4 space-y-0.5">
             {QUARTERS.map((quarter, qIndex) => {
               const quarterPeriod: TimePeriod = {
@@ -167,20 +177,19 @@ export default function TimeNavigator({ selectedPeriod, onSelectPeriod, currentY
               };
 
               return (
-                <div key={quarter.name}>
+                <div key={`${year}-${quarter.name}`}>
                   <div
                     className={cn(
                       "flex items-center gap-2 px-2 py-1 rounded-md cursor-pointer hover-elevate transition-colors",
                       isPeriodSelected(quarterPeriod) && "bg-primary/10 text-primary"
                     )}
-                    data-testid={`time-nav-quarter-${qIndex + 1}`}
+                    data-testid={`time-nav-quarter-${year}-${qIndex + 1}`}
                   >
                     <button
-                      onClick={() => toggleQuarter(qIndex)}
+                      onClick={() => toggleQuarter(year, qIndex)}
                       className="p-0.5"
-                      data-testid={`toggle-quarter-${qIndex + 1}`}
                     >
-                      {expandedQuarters.has(qIndex) ? (
+                      {yearQuarters.has(qIndex) ? (
                         <ChevronDown className="h-3.5 w-3.5" />
                       ) : (
                         <ChevronRight className="h-3.5 w-3.5" />
@@ -194,7 +203,7 @@ export default function TimeNavigator({ selectedPeriod, onSelectPeriod, currentY
                     </span>
                   </div>
 
-                  {expandedQuarters.has(qIndex) && (
+                  {yearQuarters.has(qIndex) && (
                     <div className="ml-4 space-y-0.5">
                       {quarter.months.map((monthIndex) => {
                         const monthPeriod: TimePeriod = {
@@ -202,27 +211,26 @@ export default function TimeNavigator({ selectedPeriod, onSelectPeriod, currentY
                           year,
                           quarter: qIndex + 1,
                           month: monthIndex + 1,
-                          label: `${MONTHS[monthIndex]} ${year}`,
+                          label: `${monthLabel(year, monthIndex, locale)} ${year}`,
                           startDate: new Date(year, monthIndex, 1),
                           endDate: new Date(year, monthIndex + 1, 0),
                         };
                         const weeks = getWeeksInMonth(year, monthIndex);
 
                         return (
-                          <div key={monthIndex}>
+                          <div key={`${year}-${monthIndex}`}>
                             <div
                               className={cn(
                                 "flex items-center gap-2 px-2 py-1 rounded-md cursor-pointer hover-elevate transition-colors",
                                 isPeriodSelected(monthPeriod) && "bg-primary/10 text-primary"
                               )}
-                              data-testid={`time-nav-month-${monthIndex + 1}`}
+                              data-testid={`time-nav-month-${year}-${monthIndex + 1}`}
                             >
                               <button
-                                onClick={() => toggleMonth(monthIndex)}
+                                onClick={() => toggleMonth(year, monthIndex)}
                                 className="p-0.5"
-                                data-testid={`toggle-month-${monthIndex + 1}`}
                               >
-                                {expandedMonths.has(monthIndex) ? (
+                                {yearMonths.has(monthIndex) ? (
                                   <ChevronDown className="h-3 w-3" />
                                 ) : (
                                   <ChevronRight className="h-3 w-3" />
@@ -232,11 +240,11 @@ export default function TimeNavigator({ selectedPeriod, onSelectPeriod, currentY
                                 onClick={() => handleSelectPeriod(monthPeriod)}
                                 className="flex-1 text-sm"
                               >
-                                {MONTHS[monthIndex].substring(0, 3)}
+                                {monthLabel(year, monthIndex, locale)}
                               </span>
                             </div>
 
-                            {expandedMonths.has(monthIndex) && (
+                            {yearMonths.has(monthIndex) && (
                               <div className="ml-4 space-y-0.5">
                                 {weeks.map((weekData) => {
                                   const weekPeriod: TimePeriod = {
@@ -245,20 +253,20 @@ export default function TimeNavigator({ selectedPeriod, onSelectPeriod, currentY
                                     quarter: qIndex + 1,
                                     month: monthIndex + 1,
                                     week: weekData.week,
-                                    label: `Week ${weekData.week}, ${MONTHS[monthIndex]} ${year}`,
+                                    label: `Week ${weekData.week}, ${monthLabel(year, monthIndex, locale)} ${year}`,
                                     startDate: weekData.startDate,
                                     endDate: weekData.endDate,
                                   };
 
                                   return (
                                     <div
-                                      key={weekData.week}
+                                      key={`${year}-${monthIndex}-${weekData.week}`}
                                       onClick={() => handleSelectPeriod(weekPeriod)}
                                       className={cn(
                                         "px-2 py-1 rounded-md cursor-pointer hover-elevate transition-colors text-xs",
                                         isPeriodSelected(weekPeriod) && "bg-primary/10 text-primary"
                                       )}
-                                      data-testid={`time-nav-week-${monthIndex + 1}-${weekData.week}`}
+                                      data-testid={`time-nav-week-${year}-${monthIndex + 1}-${weekData.week}`}
                                     >
                                       <span className="font-medium">W{weekData.week}</span>
                                       <span className="text-muted-foreground ml-1">
@@ -280,17 +288,48 @@ export default function TimeNavigator({ selectedPeriod, onSelectPeriod, currentY
           </div>
         )}
       </div>
+    );
+  };
+
+  return (
+    <div className="bg-card rounded-xl shadow-card p-4 w-full" data-testid="time-navigator">
+      <div className="flex items-center justify-between gap-2 mb-3 pb-2 border-b">
+        <div className="flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium text-foreground">{t("timeNav.title")}</span>
+        </div>
+        <span className="text-[10px] text-muted-foreground tabular-nums">
+          {t("timeNav.yearRange", { start: years[0], end: years[years.length - 1] })}
+        </span>
+      </div>
+
+      <div className="flex items-center gap-2 mb-3 pb-2 border-b">
+        <Switch
+          id="expand-all"
+          checked={expandAll}
+          onCheckedChange={handleExpandAllToggle}
+        />
+        <Label htmlFor="expand-all" className="text-sm text-muted-foreground cursor-pointer">
+          {t("timeNav.expandAll")}
+        </Label>
+      </div>
+
+      <ScrollArea className="h-[min(420px,55vh)] pr-2">
+        <div className="space-y-1">
+          {[...years].reverse().map((year) => renderYear(year))}
+        </div>
+      </ScrollArea>
 
       {selectedPeriod && (
         <div className="mt-3 pt-2 border-t">
-          <div className="text-xs text-muted-foreground">Selected:</div>
+          <div className="text-xs text-muted-foreground">{t("timeNav.selected")}</div>
           <div className="text-sm font-medium text-primary">{selectedPeriod.label}</div>
           <button
             onClick={() => onSelectPeriod(null)}
             className="text-xs text-muted-foreground underline mt-1 hover:text-foreground"
             data-testid="clear-time-selection"
           >
-            Clear selection
+            {t("timeNav.clear")}
           </button>
         </div>
       )}
