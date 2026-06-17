@@ -8,7 +8,7 @@ import {
   getCollectionsForAccrued,
   isAccruedCollection,
 } from "@/lib/incomeConversion";
-import type { IncomeUpdateResult } from "@/stores";
+import type { AccruedCollectionResult, IncomeUpdateResult } from "@/stores";
 import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,7 +47,7 @@ interface IncomeListProps {
   onRecordCollection?: (
     accruedId: string,
     collection: { date: string; amount: number; note?: string }
-  ) => void;
+  ) => AccruedCollectionResult;
 }
 
 const ITEMS_PER_PAGE = 10;

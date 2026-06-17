@@ -5,15 +5,16 @@ import { Banknote } from 'lucide-react';
 import type { Income } from '@/types/income';
 import { useCurrency } from '@/hooks/use-currency';
 import { useI18n } from '@/i18n';
-import {
-  getAccruedCollectionStatus,
-  validateCollectionAmount,
-} from '@/lib/incomeConversion';
+import { getAccruedCollectionStatus } from '@/lib/incomeConversion';
+import type { AccruedCollectionResult } from '@/stores';
 
 interface IncomeCollectFormProps {
   accrued: Income;
   allIncomes: Income[];
-  onCollect: (accruedId: string, collection: { date: string; amount: number; note?: string }) => void;
+  onCollect: (
+    accruedId: string,
+    collection: { date: string; amount: number; note?: string }
+  ) => AccruedCollectionResult;
   onCancel: () => void;
 }
 
@@ -37,16 +38,15 @@ export default function IncomeCollectForm({
     e.preventDefault();
     const parsedDisplay = parseFloat(amount);
     const parsedNtd = convertToNTD(parsedDisplay, currency);
-    const check = validateCollectionAmount(accrued, parsedNtd, allIncomes);
-    if (!check.valid) {
-      setError(t(check.errorKey));
-      return;
-    }
-    onCollect(accrued.id, {
+    const result = onCollect(accrued.id, {
       date,
       amount: parsedNtd,
       note: note.trim() || undefined,
     });
+    if (!result.ok) {
+      setError(t(result.errorKey));
+      return;
+    }
     onCancel();
   };
 

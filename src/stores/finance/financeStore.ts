@@ -45,6 +45,10 @@ export type IncomeUpdateResult =
   | { ok: true }
   | { ok: false; errorKey: TranslationKey };
 
+export type AccruedCollectionResult =
+  | { ok: true; id: string }
+  | { ok: false; errorKey: TranslationKey };
+
 /**
  * Versioned storage shape for the entire application.
  * v2 = Normalized model (goals + tasks are separate arrays)
@@ -92,7 +96,7 @@ interface FinanceStore extends FinanceState {
   recordAccruedCollection: (
     accruedIncomeId: string,
     collection: { date: string; amount: number; note?: string }
-  ) => string | null;
+  ) => AccruedCollectionResult;
 
   // Saving actions
   addSaving: (saving: Omit<Saving, 'id'>, displayCurrency?: Currency) => void;
@@ -429,10 +433,10 @@ export const useFinanceStore = create<FinanceStore>()(
         const accrued = state.incomes.find(
           (i) => i.id === accruedIncomeId && i.incomeType === 'accrued'
         );
-        if (!accrued) return null;
+        if (!accrued) return { ok: false, errorKey: 'income.collection.errors.notAccrued' };
 
         const check = validateCollectionAmount(accrued, collection.amount, state.incomes);
-        if (!check.valid) return null;
+        if (!check.valid) return { ok: false, errorKey: check.errorKey };
 
         const newIncome: Income = {
           ...buildAccruedCollectionIncome(accrued, collection),
@@ -440,7 +444,7 @@ export const useFinanceStore = create<FinanceStore>()(
         };
 
         set((current) => ({ incomes: [newIncome, ...current.incomes] }));
-        return newIncome.id;
+        return { ok: true, id: newIncome.id };
       },
 
       // ==================== SAVINGS ====================

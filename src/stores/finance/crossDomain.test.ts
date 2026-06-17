@@ -351,6 +351,43 @@ describe('income update validation', () => {
     expect(useFinanceStore.getState().incomes.find((i) => i.id === 'a1')?.amount).toBe(1200);
   });
 
+  it('recordAccruedCollection returns validation errors', () => {
+    useFinanceStore.setState({
+      incomes: [
+        {
+          id: 'a1',
+          date: '2026-01-01',
+          source: 'Invoice',
+          amount: 1000,
+          incomeType: 'accrued',
+        },
+        {
+          id: 'c1',
+          date: '2026-01-15',
+          source: 'Invoice',
+          amount: 400,
+          incomeType: 'cash',
+          linkedAccruedIncomeId: 'a1',
+        },
+      ],
+    });
+
+    const over = useFinanceStore.getState().recordAccruedCollection('a1', {
+      date: '2026-02-01',
+      amount: 700,
+    });
+    expect(over).toEqual({ ok: false, errorKey: 'income.collection.errors.exceedsOutstanding' });
+
+    const ok = useFinanceStore.getState().recordAccruedCollection('a1', {
+      date: '2026-02-01',
+      amount: 200,
+    });
+    expect(ok.ok).toBe(true);
+    if (ok.ok) {
+      expect(useFinanceStore.getState().incomes.some((i) => i.id === ok.id)).toBe(true);
+    }
+  });
+
   it('rejects accrued to cash when collections exist', () => {
     useFinanceStore.setState({
       incomes: [
