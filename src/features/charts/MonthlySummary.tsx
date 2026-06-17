@@ -8,8 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Expense } from "@/types/expense";
 import { Income } from "@/types/income";
 import { Saving } from "@/types/saving";
-import { FixedExpense, getMonthlyEquivalent } from "@/types/fixedExpense";
+import { FixedExpense } from "@/types/fixedExpense";
 import { useCurrency } from "@/hooks/use-currency";
+import { useI18n } from "@/i18n";
+import { buildMonthlySummaryData } from "@/lib/monthlySummary";
 
 interface MonthlySummaryProps {
   expenses: Expense[];
@@ -18,242 +20,24 @@ interface MonthlySummaryProps {
   fixedExpenses: FixedExpense[];
 }
 
-interface MonthData {
-  month: string; // YYYY-MM format
-  displayMonth: string; // "January 2026" format
-  totalIncome: number;
-  totalExpenses: number;
-  fixedExpensesMonthly: number;
-  savingsBalance: number | null;
-  netFlow: number;
-  isPrediction: boolean;
-  isCurrentMonth: boolean;
-}
-
 const MonthlySummary = ({ expenses, incomes, savings, fixedExpenses }: MonthlySummaryProps) => {
   const [isOpen, setIsOpen] = useState(true);
   const [showPredictions, setShowPredictions] = useState(false);
   const { format } = useCurrency();
+  const { t, locale } = useI18n();
 
-  // Get current month in YYYY-MM format
-  const currentMonth = useMemo(() => {
-    return new Date().toISOString().slice(0, 7);
-  }, []);
-
-  // Calculate fixed expenses monthly equivalent (same for all months)
-  const fixedExpensesMonthly = useMemo(() => {
-    return fixedExpenses
-      .filter((exp) => exp.isActive)
-      .reduce((sum, exp) => sum + getMonthlyEquivalent(exp.amount, exp.frequency), 0);
-  }, [fixedExpenses]);
-
-  // Calculate historical averages for predictions
-  const historicalAverages = useMemo(() => {
-    const pastMonthsIncome = new Map<string, number>();
-    const pastMonthsExpenses = new Map<string, number>();
-    const savingsBalances: { month: string; balance: number }[] = [];
-
-    // Aggregate income by month (only past months)
-    incomes.forEach((inc) => {
-      const month = inc.date.substring(0, 7);
-      if (month < currentMonth) {
-        pastMonthsIncome.set(month, (pastMonthsIncome.get(month) || 0) + inc.amount);
-      }
-    });
-
-    // Aggregate expenses by month (only past months)
-    expenses.forEach((exp) => {
-      const month = exp.date.substring(0, 7);
-      if (month < currentMonth) {
-        pastMonthsExpenses.set(month, (pastMonthsExpenses.get(month) || 0) + exp.amount);
-      }
-    });
-
-    // Get savings balances per month (for calculating growth)
-    const savingsByMonth = new Map<string, Saving[]>();
-    savings.forEach((sav) => {
-      const month = sav.date.substring(0, 7);
-      if (!savingsByMonth.has(month)) {
-        savingsByMonth.set(month, []);
-      }
-      savingsByMonth.get(month)!.push(sav);
-    });
-
-    savingsByMonth.forEach((monthSavings, month) => {
-      const sorted = [...monthSavings].sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-      );
-      savingsBalances.push({ month, balance: sorted[0].amount });
-    });
-
-    // Sort savings by month
-    savingsBalances.sort((a, b) => a.month.localeCompare(b.month));
-
-    // Calculate averages
-    const incomeValues = Array.from(pastMonthsIncome.values());
-    const expenseValues = Array.from(pastMonthsExpenses.values());
-
-    const avgIncome = incomeValues.length > 0
-      ? incomeValues.reduce((a, b) => a + b, 0) / incomeValues.length
-      : 0;
-
-    const avgExpenses = expenseValues.length > 0
-      ? expenseValues.reduce((a, b) => a + b, 0) / expenseValues.length
-      : 0;
-
-    // Calculate average monthly savings growth
-    let avgSavingsGrowth = 0;
-    if (savingsBalances.length >= 2) {
-      const growths: number[] = [];
-      for (let i = 1; i < savingsBalances.length; i++) {
-        growths.push(savingsBalances[i].balance - savingsBalances[i - 1].balance);
-      }
-      avgSavingsGrowth = growths.reduce((a, b) => a + b, 0) / growths.length;
-    }
-
-    // Get the latest savings balance
-    const latestSavings = savingsBalances.length > 0
-      ? savingsBalances[savingsBalances.length - 1].balance
-      : null;
-
-    return { avgIncome, avgExpenses, avgSavingsGrowth, latestSavings };
-  }, [incomes, expenses, savings, currentMonth]);
-
-  // Generate prediction months
-  const predictionMonths = useMemo((): MonthData[] => {
-    if (!showPredictions) return [];
-
-    const predictions: MonthData[] = [];
-    const { avgIncome, avgExpenses, avgSavingsGrowth, latestSavings } = historicalAverages;
-
-    for (let i = 1; i <= 3; i++) {
-      const date = new Date();
-      date.setMonth(date.getMonth() + i);
-      const month = date.toISOString().slice(0, 7);
-      const displayMonth = date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-
-      const predictedSavings = latestSavings !== null
-        ? latestSavings + (avgSavingsGrowth * i)
-        : null;
-
-      predictions.push({
-        month,
-        displayMonth,
-        totalIncome: avgIncome,
-        totalExpenses: avgExpenses,
-        fixedExpensesMonthly,
-        savingsBalance: predictedSavings,
-        netFlow: avgIncome - avgExpenses - fixedExpensesMonthly,
-        isPrediction: true,
-        isCurrentMonth: false,
-      });
-    }
-
-    return predictions;
-  }, [showPredictions, historicalAverages, fixedExpensesMonthly]);
-
-  // Aggregate data by month
-  const monthlyData = useMemo(() => {
-    const monthMap = new Map<string, MonthData>();
-
-    // Get all unique months from all data sources
-    const allMonths = new Set<string>();
-
-    expenses.forEach((exp) => {
-      const month = exp.date.substring(0, 7);
-      allMonths.add(month);
-    });
-
-    incomes.forEach((inc) => {
-      const month = inc.date.substring(0, 7);
-      allMonths.add(month);
-    });
-
-    savings.forEach((sav) => {
-      const month = sav.date.substring(0, 7);
-      allMonths.add(month);
-    });
-
-    // Initialize month data
-    allMonths.forEach((month) => {
-      const [year, monthNum] = month.split("-");
-      const date = new Date(parseInt(year), parseInt(monthNum) - 1);
-      const displayMonth = date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-
-      monthMap.set(month, {
-        month,
-        displayMonth,
-        totalIncome: 0,
-        totalExpenses: 0,
-        fixedExpensesMonthly,
-        savingsBalance: null,
-        netFlow: 0,
-        isPrediction: false,
-        isCurrentMonth: month === currentMonth,
-      });
-    });
-
-    // Aggregate incomes
-    incomes.forEach((inc) => {
-      const month = inc.date.substring(0, 7);
-      const data = monthMap.get(month);
-      if (data) {
-        data.totalIncome += inc.amount;
-      }
-    });
-
-    // Aggregate expenses
-    expenses.forEach((exp) => {
-      const month = exp.date.substring(0, 7);
-      const data = monthMap.get(month);
-      if (data) {
-        data.totalExpenses += exp.amount;
-      }
-    });
-
-    // Get latest savings balance per month
-    const savingsByMonth = new Map<string, Saving[]>();
-    savings.forEach((sav) => {
-      const month = sav.date.substring(0, 7);
-      if (!savingsByMonth.has(month)) {
-        savingsByMonth.set(month, []);
-      }
-      savingsByMonth.get(month)!.push(sav);
-    });
-
-    savingsByMonth.forEach((monthSavings, month) => {
-      const data = monthMap.get(month);
-      if (data) {
-        // Sort by date descending and take the latest
-        const sorted = [...monthSavings].sort(
-          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-        );
-        data.savingsBalance = sorted[0].amount;
-      }
-    });
-
-    // Calculate net flow
-    monthMap.forEach((data) => {
-      data.netFlow = data.totalIncome - data.totalExpenses - data.fixedExpensesMonthly;
-    });
-
-    // Get actual months sorted
-    const actualMonths = Array.from(monthMap.values());
-
-    // Custom sort: current month first, then past months descending
-    actualMonths.sort((a, b) => {
-      // Current month always comes first among actual months
-      if (a.isCurrentMonth && !b.isCurrentMonth) return -1;
-      if (!a.isCurrentMonth && b.isCurrentMonth) return 1;
-      // Otherwise sort by month descending
-      return b.month.localeCompare(a.month);
-    });
-
-    // Combine predictions (furthest future first) + actual months
-    const sortedPredictions = [...predictionMonths].sort((a, b) => b.month.localeCompare(a.month));
-    
-    return [...sortedPredictions, ...actualMonths];
-  }, [expenses, incomes, savings, fixedExpensesMonthly, currentMonth, predictionMonths]);
+  const monthlyData = useMemo(
+    () =>
+      buildMonthlySummaryData({
+        expenses,
+        incomes,
+        savings,
+        fixedExpenses,
+        showPredictions,
+        locale,
+      }),
+    [expenses, incomes, savings, fixedExpenses, showPredictions, locale]
+  );
 
   if (monthlyData.length === 0) {
     return null;
@@ -267,10 +51,10 @@ const MonthlySummary = ({ expenses, incomes, savings, fixedExpenses }: MonthlySu
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-lg">📊</span>
-                <h3 className="font-semibold text-foreground">Monthly Summary</h3>
+                <h3 className="font-semibold text-foreground">{t('monthlySummary.title')}</h3>
               </div>
               <div className="flex items-center gap-3">
-                <div 
+                <div
                   className="flex items-center gap-2"
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -280,7 +64,7 @@ const MonthlySummary = ({ expenses, incomes, savings, fixedExpenses }: MonthlySu
                     onCheckedChange={setShowPredictions}
                   />
                   <Label htmlFor="predictions-toggle" className="text-xs text-muted-foreground cursor-pointer">
-                    Predictions
+                    {t('monthlySummary.predictions')}
                   </Label>
                 </div>
                 <ChevronDown
@@ -316,18 +100,21 @@ const MonthlySummary = ({ expenses, incomes, savings, fixedExpenses }: MonthlySu
                       )}
                       <span>{data.displayMonth}</span>
                       {data.isPrediction && (
-                        <span className="text-xs text-purple-500 font-normal">(Prediction)</span>
+                        <span className="text-xs text-purple-500 font-normal">
+                          ({t('monthlySummary.prediction')})
+                        </span>
                       )}
                       {data.isCurrentMonth && (
-                        <span className="text-xs text-amber-600 font-normal">(Current Month)</span>
+                        <span className="text-xs text-amber-600 font-normal">
+                          ({t('monthlySummary.currentMonth')})
+                        </span>
                       )}
                     </h4>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
-                      {/* Income */}
                       <div className="flex items-start gap-2">
                         <TrendingUp className="h-4 w-4 text-violet-500 mt-0.5 shrink-0" />
                         <div className="min-w-0">
-                          <p className="text-xs text-muted-foreground">Income</p>
+                          <p className="text-xs text-muted-foreground">{t('monthlySummary.income')}</p>
                           <p className={`font-semibold text-violet-600 text-sm truncate ${data.isPrediction ? "opacity-75" : ""}`}>
                             {data.isPrediction ? "~" : "+"}
                             {format(data.totalIncome)}
@@ -335,11 +122,10 @@ const MonthlySummary = ({ expenses, incomes, savings, fixedExpenses }: MonthlySu
                         </div>
                       </div>
 
-                      {/* One-time Expenses */}
                       <div className="flex items-start gap-2">
                         <Wallet className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
                         <div className="min-w-0">
-                          <p className="text-xs text-muted-foreground">Expenses</p>
+                          <p className="text-xs text-muted-foreground">{t('monthlySummary.expenses')}</p>
                           <p className={`font-semibold text-blue-600 text-sm truncate ${data.isPrediction ? "opacity-75" : ""}`}>
                             {data.isPrediction ? "~" : "-"}
                             {format(data.totalExpenses)}
@@ -347,24 +133,22 @@ const MonthlySummary = ({ expenses, incomes, savings, fixedExpenses }: MonthlySu
                         </div>
                       </div>
 
-                      {/* Fixed Expenses */}
                       <div className="flex items-start gap-2">
                         <RefreshCw className="h-4 w-4 text-orange-500 mt-0.5 shrink-0" />
                         <div className="min-w-0">
-                          <p className="text-xs text-muted-foreground">Fixed</p>
+                          <p className="text-xs text-muted-foreground">{t('monthlySummary.fixed')}</p>
                           <p className="font-semibold text-orange-600 text-sm truncate">
                             -{format(data.fixedExpensesMonthly)}
                           </p>
                         </div>
                       </div>
 
-                      {/* Savings */}
                       <div className="flex items-start gap-2">
                         <PiggyBank className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
                         <div className="min-w-0">
-                          <p className="text-xs text-muted-foreground">Savings</p>
+                          <p className="text-xs text-muted-foreground">{t('monthlySummary.savings')}</p>
                           <p className={`font-semibold text-emerald-600 text-sm truncate ${data.isPrediction ? "opacity-75" : ""}`}>
-                            {data.savingsBalance !== null 
+                            {data.savingsBalance !== null
                               ? `${data.isPrediction ? "~" : ""}${format(data.savingsBalance)}`
                               : "—"}
                           </p>
@@ -372,7 +156,6 @@ const MonthlySummary = ({ expenses, incomes, savings, fixedExpenses }: MonthlySu
                       </div>
                     </div>
 
-                    {/* Net Flow */}
                     <div className="flex items-center justify-between pt-2 border-t border-border">
                       <div className="flex items-center gap-2">
                         {data.netFlow >= 0 ? (
@@ -380,7 +163,7 @@ const MonthlySummary = ({ expenses, incomes, savings, fixedExpenses }: MonthlySu
                         ) : (
                           <TrendingDown className="h-4 w-4 text-red-500" />
                         )}
-                        <span className="text-sm text-muted-foreground">Net Flow</span>
+                        <span className="text-sm text-muted-foreground">{t('monthlySummary.netFlow')}</span>
                       </div>
                       <p
                         className={`font-bold ${
@@ -388,7 +171,6 @@ const MonthlySummary = ({ expenses, incomes, savings, fixedExpenses }: MonthlySu
                         } ${data.isPrediction ? "opacity-75" : ""}`}
                       >
                         {data.isPrediction ? "~" : data.netFlow >= 0 ? "+" : ""}
-                        {data.netFlow >= 0 && !data.isPrediction ? "" : ""}
                         {format(data.netFlow)}
                       </p>
                     </div>

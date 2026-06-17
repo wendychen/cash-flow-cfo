@@ -26,6 +26,17 @@ export const ja: Messages = {
     savings: '貯蓄',
     goals: '目標とタスク',
   },
+  monthlySummary: {
+    title: '月次サマリー',
+    predictions: '予測',
+    prediction: '予測',
+    currentMonth: '今月',
+    income: '収入',
+    expenses: '支出',
+    fixed: '固定費',
+    savings: '貯蓄',
+    netFlow: '純収支',
+  },
   charts: {
     visualizations: 'キャッシュフロー可視化',
     visualizationsHint: '左の期間を変更すると Sankey と概要チャートが更新されます',

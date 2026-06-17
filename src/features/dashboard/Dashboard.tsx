@@ -24,7 +24,7 @@ import { hasSeenUserGuide } from "@/lib/onboarding";
 import { GoalList, GoalBudgetAllocator } from "@/features/goals";
 import { ExpenseForm, ExpenseList } from "@/features/expenses";
 import { SavingForm, SavingList, FixedExpenseForm, FixedExpenseList } from "@/features/savings";
-import { SankeyFlowChart, CombinedChart, CashFlowSimulator } from "@/features/charts";
+import { SankeyFlowChart, CombinedChart, CashFlowSimulator, MonthlySummary } from "@/features/charts";
 import { useI18n, type Locale } from "@/i18n";
 import {
   buildGoalExportPayload,
@@ -458,6 +458,13 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
+
+        <MonthlySummary
+          expenses={expenses}
+          incomes={incomes}
+          savings={savings}
+          fixedExpenses={fixedExpenses}
+        />
 
         {/* Tabs Section - Original UI Style with Time Period Filtering */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

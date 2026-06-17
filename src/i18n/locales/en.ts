@@ -24,6 +24,17 @@ export const en = {
     savings: 'Savings',
     goals: 'Goals & Tasks',
   },
+  monthlySummary: {
+    title: 'Monthly Summary',
+    predictions: 'Predictions',
+    prediction: 'Prediction',
+    currentMonth: 'Current Month',
+    income: 'Income',
+    expenses: 'Expenses',
+    fixed: 'Fixed',
+    savings: 'Savings',
+    netFlow: 'Net Flow',
+  },
   charts: {
     visualizations: 'Cash Flow Visualizations',
     visualizationsHint: 'Sankey and overview charts update when you change the period on the left',

@@ -26,6 +26,17 @@ export const zhTW: Messages = {
     savings: '儲蓄',
     goals: '目標與任務',
   },
+  monthlySummary: {
+    title: '每月摘要',
+    predictions: '預測',
+    prediction: '預測',
+    currentMonth: '本月',
+    income: '收入',
+    expenses: '支出',
+    fixed: '固定支出',
+    savings: '儲蓄',
+    netFlow: '淨流量',
+  },
   charts: {
     visualizations: '現金流視覺化',
     visualizationsHint: '左側時間區間變更時，Sankey 與總覽圖表會自動更新',
