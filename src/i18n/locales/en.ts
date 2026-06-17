@@ -348,6 +348,48 @@ export const en = {
       count: '{count} fixed expenses',
       countOne: '1 fixed expense',
       monthlyEquivalent: 'Monthly Equivalent',
+      perMonthApprox: '(≈ {amount}/mo)',
+    },
+  },
+  frequency: {
+    helpTitle: 'Bi-weekly vs Bi-monthly',
+    helpAria: 'Frequency help',
+    weekly: {
+      label: 'Weekly',
+      shortHint: 'Every 7 days',
+      description: 'Charged once per week. Monthly equivalent ≈ amount × 4.33.',
+    },
+    biWeekly: {
+      label: 'Bi-weekly',
+      shortHint: 'Every 2 weeks',
+      description:
+        'Charged every 14 days (e.g. paycheck cycle). Monthly equivalent ≈ amount × 2.17.',
+    },
+    biMonthly: {
+      label: 'Bi-monthly',
+      shortHint: 'Twice per month',
+      description:
+        'Twice per month (~every 15 days). This is not "every 2 months." Monthly equivalent ≈ amount × 2.',
+    },
+    monthly: {
+      label: 'Monthly',
+      shortHint: 'Once per month',
+      description: 'Charged once per calendar month.',
+    },
+    quarterly: {
+      label: 'Quarterly',
+      shortHint: 'Every 3 months',
+      description: 'Charged four times per year. Monthly equivalent ≈ amount ÷ 3.',
+    },
+    yearly: {
+      label: 'Yearly',
+      shortHint: 'Once per year',
+      description: 'Charged once per year. Monthly equivalent ≈ amount ÷ 12.',
+    },
+    custom: {
+      label: 'Custom',
+      shortHint: 'Custom interval',
+      description: 'Uses a custom day interval you define.',
     },
   },
   goals: {

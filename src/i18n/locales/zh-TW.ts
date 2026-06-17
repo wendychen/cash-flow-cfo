@@ -350,6 +350,46 @@ export const zhTW: Messages = {
       count: '{count} 筆固定支出',
       countOne: '1 筆固定支出',
       monthlyEquivalent: '月化金額',
+      perMonthApprox: '（≈ {amount}/月）',
+    },
+  },
+  frequency: {
+    helpTitle: '雙週 vs 雙月',
+    helpAria: '頻率說明',
+    weekly: {
+      label: '每週',
+      shortHint: '每 7 天',
+      description: '每週扣款一次。月化金額 ≈ 金額 × 4.33。',
+    },
+    biWeekly: {
+      label: '雙週',
+      shortHint: '每 2 週',
+      description: '每 14 天扣款一次（例如薪資週期）。月化金額 ≈ 金額 × 2.17。',
+    },
+    biMonthly: {
+      label: '雙月',
+      shortHint: '每月兩次',
+      description: '每月兩次（約每 15 天），不是「每兩個月一次」。月化金額 ≈ 金額 × 2。',
+    },
+    monthly: {
+      label: '每月',
+      shortHint: '每月一次',
+      description: '每個曆月扣款一次。',
+    },
+    quarterly: {
+      label: '每季',
+      shortHint: '每 3 個月',
+      description: '每年四次。月化金額 ≈ 金額 ÷ 3。',
+    },
+    yearly: {
+      label: '每年',
+      shortHint: '每年一次',
+      description: '每年扣款一次。月化金額 ≈ 金額 ÷ 12。',
+    },
+    custom: {
+      label: '自訂',
+      shortHint: '自訂間隔',
+      description: '使用你自訂的天數間隔。',
     },
   },
   goals: {

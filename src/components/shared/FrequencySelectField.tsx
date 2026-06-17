@@ -13,8 +13,9 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Info } from 'lucide-react';
-import { FREQUENCY_META, STANDARD_FREQUENCIES } from '@/lib/frequencyLabels';
+import { getFrequencyMeta, STANDARD_FREQUENCIES } from '@/lib/frequencyLabels';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/i18n';
 
 interface FrequencySelectFieldProps {
   value: Frequency;
@@ -29,7 +30,10 @@ export function FrequencySelectField({
   triggerClassName,
   showHint = true,
 }: FrequencySelectFieldProps) {
-  const meta = FREQUENCY_META[value];
+  const { t } = useI18n();
+  const meta = getFrequencyMeta(value, t);
+  const biWeeklyMeta = getFrequencyMeta('bi-weekly', t);
+  const biMonthlyMeta = getFrequencyMeta('bi-monthly', t);
 
   return (
     <div className="space-y-1">
@@ -39,14 +43,17 @@ export function FrequencySelectField({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {STANDARD_FREQUENCIES.map((freq) => (
-              <SelectItem key={freq} value={freq} title={FREQUENCY_META[freq].description}>
-                <span>{FREQUENCY_META[freq].label}</span>
-                <span className="ml-2 text-xs text-muted-foreground">
-                  ({FREQUENCY_META[freq].shortHint})
-                </span>
-              </SelectItem>
-            ))}
+            {STANDARD_FREQUENCIES.map((freq) => {
+              const freqMeta = getFrequencyMeta(freq, t);
+              return (
+                <SelectItem key={freq} value={freq} title={freqMeta.description}>
+                  <span>{freqMeta.label}</span>
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    ({freqMeta.shortHint})
+                  </span>
+                </SelectItem>
+              );
+            })}
           </SelectContent>
         </Select>
         <TooltipProvider delayDuration={200}>
@@ -55,15 +62,15 @@ export function FrequencySelectField({
               <button
                 type="button"
                 className="text-muted-foreground hover:text-foreground p-1"
-                aria-label="Frequency help"
+                aria-label={t('frequency.helpAria')}
               >
                 <Info className="h-3.5 w-3.5" />
               </button>
             </TooltipTrigger>
             <TooltipContent side="top" className="max-w-xs text-xs">
-              <p className="font-medium mb-1">Bi-weekly vs Bi-monthly</p>
-              <p>{FREQUENCY_META['bi-weekly'].description}</p>
-              <p className="mt-1">{FREQUENCY_META['bi-monthly'].description}</p>
+              <p className="font-medium mb-1">{t('frequency.helpTitle')}</p>
+              <p>{biWeeklyMeta.description}</p>
+              <p className="mt-1">{biMonthlyMeta.description}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

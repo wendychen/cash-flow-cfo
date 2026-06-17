@@ -17,7 +17,7 @@ import { FixedExpense, Frequency, getMonthlyEquivalent } from "@/types/fixedExpe
 import { useCurrency, Currency } from "@/hooks/use-currency";
 import { FixedExpenseCategory, FIXED_EXPENSE_CATEGORIES, FIXED_EXPENSE_CATEGORY_GROUPS, migrateFixedExpenseCategory } from "@/types/expenseCategory";
 import { FrequencySelectField } from "@/components/shared";
-import { FREQUENCY_META } from "@/lib/frequencyLabels";
+import { getFrequencyMeta } from "@/lib/frequencyLabels";
 import { useI18n } from "@/i18n";
 import { getFixedExpenseCategoryLabel, getFixedExpenseGroupLabel } from "@/lib/categoryLabels";
 import {
@@ -256,7 +256,9 @@ const FixedExpenseList = ({
                   <span className="font-medium tabular-nums whitespace-nowrap">{format(expense.amount)}</span>
                   {expense.frequency !== "monthly" && (
                     <span className="text-xs text-muted-foreground whitespace-nowrap">
-                      (≈ {format(getMonthlyEquivalent(expense.amount, expense.frequency))}/mo)
+                      {t('fixedExpenses.list.perMonthApprox', {
+                        amount: format(getMonthlyEquivalent(expense.amount, expense.frequency)),
+                      })}
                     </span>
                   )}
                 </p>
@@ -268,11 +270,11 @@ const FixedExpenseList = ({
                       variant="secondary"
                       className={`cursor-help ${frequencyColors[expense.frequency]}`}
                     >
-                      {FREQUENCY_META[expense.frequency].label}
+                      {getFrequencyMeta(expense.frequency, t).label}
                     </Badge>
                   </TooltipTrigger>
                   <TooltipContent side="top" className="max-w-xs text-xs">
-                    {FREQUENCY_META[expense.frequency].description}
+                    {getFrequencyMeta(expense.frequency, t).description}
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>

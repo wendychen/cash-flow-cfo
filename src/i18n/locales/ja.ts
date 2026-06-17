@@ -350,6 +350,46 @@ export const ja: Messages = {
       count: '固定費 {count} 件',
       countOne: '固定費 1 件',
       monthlyEquivalent: '月額換算',
+      perMonthApprox: '（≈ {amount}/月）',
+    },
+  },
+  frequency: {
+    helpTitle: '隔週 vs 半月',
+    helpAria: '頻度のヘルプ',
+    weekly: {
+      label: '毎週',
+      shortHint: '7日ごと',
+      description: '週1回の請求。月額換算 ≈ 金額 × 4.33。',
+    },
+    biWeekly: {
+      label: '隔週',
+      shortHint: '2週ごと',
+      description: '14日ごとの請求（給与サイクルなど）。月額換算 ≈ 金額 × 2.17。',
+    },
+    biMonthly: {
+      label: '半月',
+      shortHint: '月2回',
+      description: '月2回（約15日ごと）。「2ヶ月に1回」ではありません。月額換算 ≈ 金額 × 2。',
+    },
+    monthly: {
+      label: '毎月',
+      shortHint: '月1回',
+      description: '暦月ごとに1回請求。',
+    },
+    quarterly: {
+      label: '四半期',
+      shortHint: '3ヶ月ごと',
+      description: '年4回。月額換算 ≈ 金額 ÷ 3。',
+    },
+    yearly: {
+      label: '毎年',
+      shortHint: '年1回',
+      description: '年1回の請求。月額換算 ≈ 金額 ÷ 12。',
+    },
+    custom: {
+      label: 'カスタム',
+      shortHint: 'カスタム間隔',
+      description: '自分で定義した日数間隔を使用。',
     },
   },
   goals: {
