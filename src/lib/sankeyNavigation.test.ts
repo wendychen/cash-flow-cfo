@@ -8,9 +8,9 @@ import {
 describe('sankeyNavigation', () => {
   it('builds breadcrumb from overview to nested category', () => {
     expect(getSankeyBreadcrumb('fixed-expense-categories')).toEqual([
-      { level: 'overview', label: 'Overview' },
-      { level: 'expense-detail', label: 'Expenses' },
-      { level: 'fixed-expense-categories', label: 'Fixed Categories' },
+      { level: 'overview', labelKey: 'sankey.breadcrumb.overview' },
+      { level: 'expense-detail', labelKey: 'sankey.breadcrumb.expenses' },
+      { level: 'fixed-expense-categories', labelKey: 'sankey.breadcrumb.fixedCategories' },
     ]);
   });
 
@@ -32,9 +32,9 @@ describe('sankeyNavigation', () => {
 
   it('builds breadcrumb for split category view', () => {
     expect(getSankeyBreadcrumb('expense-categories-split')).toEqual([
-      { level: 'overview', label: 'Overview' },
-      { level: 'expense-detail', label: 'Expenses' },
-      { level: 'expense-categories-split', label: 'Categories' },
+      { level: 'overview', labelKey: 'sankey.breadcrumb.overview' },
+      { level: 'expense-detail', labelKey: 'sankey.breadcrumb.expenses' },
+      { level: 'expense-categories-split', labelKey: 'sankey.breadcrumb.categories' },
     ]);
   });
 });

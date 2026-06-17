@@ -8,9 +8,11 @@ export type SankeyDrillLevel =
   | 'fixed-expense-categories'
   | 'onetime-expense-categories';
 
+import type { TranslationKey } from '@/i18n';
+
 export interface SankeyBreadcrumbStep {
   level: SankeyDrillLevel;
-  label: string;
+  labelKey: TranslationKey;
 }
 
 const PARENT: Partial<Record<SankeyDrillLevel, SankeyDrillLevel>> = {
@@ -23,15 +25,15 @@ const PARENT: Partial<Record<SankeyDrillLevel, SankeyDrillLevel>> = {
   'onetime-expense-categories': 'expense-detail',
 };
 
-const LABELS: Record<SankeyDrillLevel, string> = {
-  overview: 'Overview',
-  'income-detail': 'Income',
-  'savings-detail': 'Savings',
-  'goal-detail': 'Goals',
-  'expense-detail': 'Expenses',
-  'expense-categories-split': 'Categories',
-  'fixed-expense-categories': 'Fixed Categories',
-  'onetime-expense-categories': 'One-Time Categories',
+export const SANKEY_BREADCRUMB_KEYS: Record<SankeyDrillLevel, TranslationKey> = {
+  overview: 'sankey.breadcrumb.overview',
+  'income-detail': 'sankey.breadcrumb.income',
+  'savings-detail': 'sankey.breadcrumb.savings',
+  'goal-detail': 'sankey.breadcrumb.goals',
+  'expense-detail': 'sankey.breadcrumb.expenses',
+  'expense-categories-split': 'sankey.breadcrumb.categories',
+  'fixed-expense-categories': 'sankey.breadcrumb.fixedCategories',
+  'onetime-expense-categories': 'sankey.breadcrumb.onetimeCategories',
 };
 
 /** Clickable overview nodes and their drill-down targets. */
@@ -52,7 +54,7 @@ export function getSankeyBreadcrumb(level: SankeyDrillLevel): SankeyBreadcrumbSt
   let current: SankeyDrillLevel | undefined = level;
 
   while (current) {
-    trail.unshift({ level: current, label: LABELS[current] });
+    trail.unshift({ level: current, labelKey: SANKEY_BREADCRUMB_KEYS[current] });
     current = PARENT[current];
   }
 

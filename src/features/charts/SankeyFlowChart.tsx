@@ -15,6 +15,7 @@ import { Saving } from "@/types/saving";
 import { Goal } from "@/types/goal";
 import { FixedExpense } from "@/types/fixedExpense";
 import { useCurrency } from "@/hooks/use-currency";
+import { useI18n } from "@/i18n";
 import { type TimePeriod } from "@/components/shared";
 import { EXPENSE_CATEGORIES, FIXED_EXPENSE_CATEGORIES, ExpenseCategory, FixedExpenseCategory, migrateFixedExpenseCategory } from "@/types/expenseCategory";
 import { computeSankeyIncomeSplit } from "@/lib/incomeBreakdown";
@@ -56,11 +57,30 @@ const SankeyFlowChart = ({
   selectedPeriod,
 }: SankeyFlowChartProps) => {
   const { format: formatCurrency } = useCurrency();
+  const { t } = useI18n();
   const [drillDownLevel, setDrillDownLevel] = useState<SankeyDrillLevel>("overview");
 
   const incomeSplit = useMemo(() => computeSankeyIncomeSplit(incomes), [incomes]);
 
   const sankeyData = useMemo<SankeyData>(() => {
+    const nodeLabels = {
+      income: t('sankey.nodes.income'),
+      savings: t('sankey.nodes.savings'),
+      goals: t('sankey.nodes.goals'),
+      expenses: t('sankey.nodes.expenses'),
+      directCash: t('sankey.nodes.directCash'),
+      collections: t('sankey.nodes.collections'),
+      accruedOutstanding: t('sankey.nodes.accruedOutstanding'),
+      totalIncome: t('sankey.nodes.totalIncome'),
+      balanceSnapshots: t('sankey.nodes.balanceSnapshots'),
+      goalSavings: t('sankey.nodes.goalSavings'),
+      totalSavings: t('sankey.nodes.totalSavings'),
+      noBudgetedGoals: t('sankey.nodes.noBudgetedGoals'),
+      totalExpenses: t('sankey.nodes.totalExpenses'),
+      fixedExpenses: t('sankey.nodes.fixedExpenses'),
+      onetimeExpenses: t('sankey.nodes.onetimeExpenses'),
+    };
+
     const totalIncome = incomeSplit.total;
     const totalSavings = savings.filter(s => s.savingType === "balance").reduce((sum, sav) => sum + sav.amount, 0);
     const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
@@ -82,10 +102,10 @@ const SankeyFlowChart = ({
       const goalsNodeValue = Math.max(totalGoalBudget, goalExpenseTotal);
 
       nodes.push(
-        { id: "income", name: "Income", color: "#8b5cf6", value: totalIncome },
-        { id: "savings", name: "Savings", color: "#3b82f6", value: totalSavings },
-        { id: "goals", name: "Goals", color: "#f59e0b", value: goalsNodeValue },
-        { id: "expenses", name: "Expenses", color: "#ef4444", value: totalExpenses }
+        { id: "income", name: nodeLabels.income, color: "#8b5cf6", value: totalIncome },
+        { id: "savings", name: nodeLabels.savings, color: "#3b82f6", value: totalSavings },
+        { id: "goals", name: nodeLabels.goals, color: "#f59e0b", value: goalsNodeValue },
+        { id: "expenses", name: nodeLabels.expenses, color: "#ef4444", value: totalExpenses }
       );
 
       if (totalIncome > 0) {
@@ -118,10 +138,10 @@ const SankeyFlowChart = ({
       }
     } else if (drillDownLevel === "income-detail") {
       nodes.push(
-        { id: "direct-cash", name: "Direct Cash", color: "#8b5cf6", value: directCash },
-        { id: "collections", name: "Collections", color: "#14b8a6", value: collections },
-        { id: "accrued-outstanding", name: "Outstanding Accrued", color: "#a78bfa", value: accruedOutstanding },
-        { id: "total-income", name: "Total Income", color: "#7c3aed", value: totalIncome }
+        { id: "direct-cash", name: nodeLabels.directCash, color: "#8b5cf6", value: directCash },
+        { id: "collections", name: nodeLabels.collections, color: "#14b8a6", value: collections },
+        { id: "accrued-outstanding", name: nodeLabels.accruedOutstanding, color: "#a78bfa", value: accruedOutstanding },
+        { id: "total-income", name: nodeLabels.totalIncome, color: "#7c3aed", value: totalIncome }
       );
 
       if (directCash > 0) {
@@ -148,9 +168,9 @@ const SankeyFlowChart = ({
       const savingsTotal = balanceTotal + goalSavingsTotal;
 
       nodes.push(
-        { id: "balance-savings", name: "Balance Snapshots", color: "#3b82f6", value: balanceTotal },
-        { id: "goal-savings", name: "Goal Savings", color: "#6366f1", value: goalSavingsTotal },
-        { id: "total-savings", name: "Total Savings", color: "#2563eb", value: savingsTotal }
+        { id: "balance-savings", name: nodeLabels.balanceSnapshots, color: "#3b82f6", value: balanceTotal },
+        { id: "goal-savings", name: nodeLabels.goalSavings, color: "#6366f1", value: goalSavingsTotal },
+        { id: "total-savings", name: nodeLabels.totalSavings, color: "#2563eb", value: savingsTotal }
       );
 
       if (balanceTotal > 0) {
@@ -174,7 +194,7 @@ const SankeyFlowChart = ({
         (sum, g) => sum + (g.budget > 0 ? g.budget : 0),
         0
       );
-      nodes.push({ id: "savings", name: "Savings", color: "#3b82f6", value: totalSavings });
+      nodes.push({ id: "savings", name: nodeLabels.savings, color: "#3b82f6", value: totalSavings });
 
       activeGoals.slice(0, 8).forEach((goal, idx) => {
         const linkedExpense = expenses.find((e) => e.id === goal.linkedExpenseId);
@@ -200,7 +220,7 @@ const SankeyFlowChart = ({
       if (nodes.length === 1 && goalsNodeValue === 0) {
         nodes.push({
           id: "no-goals",
-          name: "No budgeted goals",
+          name: nodeLabels.noBudgetedGoals,
           color: "#d97706",
           value: 1,
         });
@@ -209,9 +229,9 @@ const SankeyFlowChart = ({
       const oneTimeExpenseTotal = expenses.reduce((sum, exp) => sum + exp.amount, 0);
 
       nodes.push(
-        { id: "expenses", name: "Total Expenses", color: "#ef4444", value: totalExpenses },
-        { id: "fixed", name: "Fixed Expenses", color: "#dc2626", value: fixedExpenseTotal },
-        { id: "onetime", name: "One-Time Expenses", color: "#f87171", value: oneTimeExpenseTotal }
+        { id: "expenses", name: nodeLabels.totalExpenses, color: "#ef4444", value: totalExpenses },
+        { id: "fixed", name: nodeLabels.fixedExpenses, color: "#dc2626", value: fixedExpenseTotal },
+        { id: "onetime", name: nodeLabels.onetimeExpenses, color: "#f87171", value: oneTimeExpenseTotal }
       );
 
       if (fixedExpenseTotal > 0) {
@@ -224,8 +244,8 @@ const SankeyFlowChart = ({
       const splitOneTimeTotal = expenses.reduce((sum, exp) => sum + exp.amount, 0);
 
       nodes.push(
-        { id: "fixed-expenses", name: "Fixed Expenses", color: "#dc2626", value: fixedExpenseTotal },
-        { id: "onetime-expenses", name: "One-Time Expenses", color: "#f87171", value: splitOneTimeTotal }
+        { id: "fixed-expenses", name: nodeLabels.fixedExpenses, color: "#dc2626", value: fixedExpenseTotal },
+        { id: "onetime-expenses", name: nodeLabels.onetimeExpenses, color: "#f87171", value: splitOneTimeTotal }
       );
 
       const fixedCategoryKeys: FixedExpenseCategory[] = [
@@ -312,7 +332,7 @@ const SankeyFlowChart = ({
         }
       });
     } else if (drillDownLevel === "fixed-expense-categories") {
-      nodes.push({ id: "fixed-expenses", name: "Fixed Expenses", color: "#dc2626", value: fixedExpenseTotal });
+      nodes.push({ id: "fixed-expenses", name: nodeLabels.fixedExpenses, color: "#dc2626", value: fixedExpenseTotal });
 
       const fixedCategoryKeys: FixedExpenseCategory[] = [
         "housing", "utilities-water-electric", "utilities-gas", "utilities-telecom",
@@ -364,7 +384,7 @@ const SankeyFlowChart = ({
       });
     } else if (drillDownLevel === "onetime-expense-categories") {
       const oneTimeExpenseTotal = expenses.reduce((sum, exp) => sum + exp.amount, 0);
-      nodes.push({ id: "onetime-expenses", name: "One-Time Expenses", color: "#f87171", value: oneTimeExpenseTotal });
+      nodes.push({ id: "onetime-expenses", name: nodeLabels.onetimeExpenses, color: "#f87171", value: oneTimeExpenseTotal });
 
       const expenseCategoryKeys: ExpenseCategory[] = ["food", "necessities", "lifestyle", "family", "misc", "opex", "capex", "gna"];
       const categoryTotals: Record<string, number> = Object.fromEntries(expenseCategoryKeys.map((k) => [k, 0]));
@@ -407,7 +427,7 @@ const SankeyFlowChart = ({
     }
 
     return { nodes, links };
-  }, [drillDownLevel, incomeSplit, expenses, savings, goals, fixedExpenses]);
+  }, [drillDownLevel, incomeSplit, expenses, savings, goals, fixedExpenses, t]);
 
   const handleNodeClick = (nodeId: string) => {
     const next = resolveSankeyDrill(drillDownLevel, nodeId);
@@ -439,17 +459,17 @@ const SankeyFlowChart = ({
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
               )}
-              Financial Flow Sankey Diagram
+              {t('sankey.title')}
             </CardTitle>
             <CardDescription>
-              {drillDownLevel === "overview" && "Click Income, Savings, Goals, or Expenses to drill down"}
-              {drillDownLevel === "income-detail" && "Direct cash, accrued collections, and outstanding accrued"}
-              {drillDownLevel === "savings-detail" && "Balance snapshots vs goal savings entries"}
-              {drillDownLevel === "goal-detail" && "Savings allocated to active goal budgets"}
-              {drillDownLevel === "expense-detail" && "Fixed vs one-time expenses — click either to view categories side by side"}
-              {drillDownLevel === "expense-categories-split" && "Fixed and one-time categories shown in parallel columns"}
-              {drillDownLevel === "fixed-expense-categories" && "Fixed expenses by category (vertical breakdown)"}
-              {drillDownLevel === "onetime-expense-categories" && "One-time expenses by category (vertical breakdown)"}
+              {drillDownLevel === "overview" && t('sankey.hints.overview')}
+              {drillDownLevel === "income-detail" && t('sankey.hints.incomeDetail')}
+              {drillDownLevel === "savings-detail" && t('sankey.hints.savingsDetail')}
+              {drillDownLevel === "goal-detail" && t('sankey.hints.goalDetail')}
+              {drillDownLevel === "expense-detail" && t('sankey.hints.expenseDetail')}
+              {drillDownLevel === "expense-categories-split" && t('sankey.hints.categoriesSplit')}
+              {drillDownLevel === "fixed-expense-categories" && t('sankey.hints.fixedCategories')}
+              {drillDownLevel === "onetime-expense-categories" && t('sankey.hints.onetimeCategories')}
             </CardDescription>
           </div>
         </div>
@@ -458,7 +478,7 @@ const SankeyFlowChart = ({
           <div
             className="mt-4 flex items-center gap-1 overflow-x-auto pb-1"
             role="navigation"
-            aria-label="Sankey drill-down timeline"
+            aria-label={t('sankey.timeline')}
           >
             {breadcrumb.map((step, index) => (
               <Fragment key={step.level}>
@@ -476,7 +496,7 @@ const SankeyFlowChart = ({
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   )}
                 >
-                  {step.label}
+                  {t(step.labelKey)}
                 </button>
               </Fragment>
             ))}
@@ -490,13 +510,14 @@ const SankeyFlowChart = ({
             onNodeClick={handleNodeClick}
             formatCurrency={formatCurrency}
             drillDownLevel={drillDownLevel}
+            diagramAriaLabel={t('sankey.ariaDiagram')}
           />
 
           <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,9rem),1fr))] gap-3">
             <div className="min-w-0 overflow-hidden px-4 py-3 bg-violet-50 dark:bg-violet-950 rounded-lg border border-violet-200 dark:border-violet-800">
               <div className="flex items-center gap-1.5 text-violet-600 dark:text-violet-400 mb-1.5">
                 <TrendingUp className="w-3.5 h-3.5 shrink-0" />
-                <span className="text-xs font-medium">Total Income</span>
+                <span className="text-xs font-medium">{t('summary.totalIncome')}</span>
               </div>
               <div className="text-sm font-semibold tabular-nums leading-snug break-all text-violet-700 dark:text-violet-300">
                 {formatCurrency(incomeSplit.total)}
@@ -505,7 +526,7 @@ const SankeyFlowChart = ({
 
             <div className="min-w-0 overflow-hidden px-4 py-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
               <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 mb-1.5">
-                <span className="text-xs font-medium">Savings</span>
+                <span className="text-xs font-medium">{t('summary.savings')}</span>
               </div>
               <div className="text-sm font-semibold tabular-nums leading-snug break-all text-blue-700 dark:text-blue-300">
                 {formatCurrency(savings.filter(s => s.savingType === "balance").reduce((s, sav) => s + sav.amount, 0))}
@@ -514,7 +535,7 @@ const SankeyFlowChart = ({
 
             <div className="min-w-0 overflow-hidden px-4 py-3 bg-amber-50 dark:bg-amber-950 rounded-lg border border-amber-200 dark:border-amber-800">
               <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 mb-1.5">
-                <span className="text-xs font-medium">Active Goals</span>
+                <span className="text-xs font-medium">{t('summary.activeGoals')}</span>
               </div>
               <div className="text-sm font-semibold tabular-nums leading-snug text-amber-700 dark:text-amber-300">
                 {goals.filter(g => !g.completed && g.title).length}
@@ -524,7 +545,7 @@ const SankeyFlowChart = ({
             <div className="min-w-0 overflow-hidden px-4 py-3 bg-red-50 dark:bg-red-950 rounded-lg border border-red-200 dark:border-red-800">
               <div className="flex items-center gap-1.5 text-red-600 dark:text-red-400 mb-1.5">
                 <TrendingDown className="w-3.5 h-3.5 shrink-0" />
-                <span className="text-xs font-medium">Total Expenses</span>
+                <span className="text-xs font-medium">{t('summary.totalExpenses')}</span>
               </div>
               <div className="text-sm font-semibold tabular-nums leading-snug break-all text-red-700 dark:text-red-300">
                 {formatCurrency(expenses.reduce((s, e) => s + e.amount, 0))}
@@ -542,13 +563,15 @@ interface SankeyVisualizationProps {
   onNodeClick: (nodeId: string) => void;
   formatCurrency: (amount: number) => string;
   drillDownLevel: SankeyDrillLevel;
+  diagramAriaLabel: string;
 }
 
 const SankeyVisualization = ({ 
   data, 
   onNodeClick, 
   formatCurrency,
-  drillDownLevel 
+  drillDownLevel,
+  diagramAriaLabel,
 }: SankeyVisualizationProps) => {
   const svgWidth = 800;
   const svgHeight = drillDownLevel === "expense-categories-split" ? 520 : 400;
@@ -663,7 +686,7 @@ const SankeyVisualization = ({
         viewBox={`0 0 ${svgWidth} ${svgHeight}`}
         className="w-full max-w-full h-auto"
         preserveAspectRatio="xMidYMid meet"
-        aria-label="Financial flow sankey diagram"
+        aria-label={diagramAriaLabel}
       >
         <defs>
           {links.map((link, idx) => (

@@ -119,15 +119,15 @@ export default function Dashboard() {
     const result = await saveFinanceExport(stateSnapshot);
     if (!result.success) {
       if (result.method !== 'cancelled') {
-        alert('❌ Export failed. Please try again.');
+        alert(`❌ ${t('dashboard.exportFailed')}`);
       }
       return;
     }
     const methodNote =
       result.method === 'picker'
-        ? 'saved to your chosen location'
-        : 'downloaded to your browser default folder';
-    alert(`✅ Exported ${result.filename} (${methodNote})`);
+        ? t('dashboard.savedToChosen')
+        : t('dashboard.downloadedDefault');
+    alert(`✅ ${t('dashboard.exported', { filename: result.filename, method: methodNote })}`);
   };
 
   const handleCsvExport = async () => {
@@ -146,15 +146,15 @@ export default function Dashboard() {
       if (result.error) {
         alert(`❌ ${result.error}`);
       } else if (result.method !== 'cancelled') {
-        alert('❌ CSV export failed. Please try again.');
+        alert(`❌ ${t('dashboard.csvExportFailed')}`);
       }
       return;
     }
     const methodNote =
       result.method === 'picker'
-        ? 'saved to your chosen location'
-        : 'downloaded to your browser default folder';
-    alert(`✅ Exported ${result.filename} (${methodNote})`);
+        ? t('dashboard.savedToChosen')
+        : t('dashboard.downloadedDefault');
+    alert(`✅ ${t('dashboard.exported', { filename: result.filename, method: methodNote })}`);
   };
 
   const handleImportClick = () => {
@@ -175,7 +175,7 @@ export default function Dashboard() {
         : parseImportJSON(text);
 
       if (!result.success || !result.data) {
-        alert(`❌ Import failed: ${result.error || 'Unknown error'}`);
+        alert(`❌ ${t('dashboard.importFailed', { error: result.error || 'Unknown error' })}`);
         return;
       }
 
@@ -189,10 +189,17 @@ export default function Dashboard() {
 
       const sourceLabel = isCsv ? 'CSV' : 'JSON';
 
-      if (confirm(`Import will REPLACE ALL current data.\n\n${sourceLabel} file contains ~${recordCount} records.\n\nThis cannot be undone. Continue?`)) {
+      if (
+        confirm(
+          t('dashboard.importConfirm', {
+            source: sourceLabel,
+            count: String(recordCount),
+          })
+        )
+      ) {
         replaceAllData(result.data);
         backfillMissingShadowExpenses();
-        alert(`✅ ${sourceLabel} imported successfully!`);
+        alert(`✅ ${t('dashboard.importSuccess', { source: sourceLabel })}`);
       }
     };
     reader.readAsText(file);
@@ -428,7 +435,7 @@ export default function Dashboard() {
             <Button 
               variant="destructive" 
               onClick={() => {
-                if (confirm("Reset all data? This cannot be undone.")) {
+                if (confirm(t('dashboard.resetConfirm'))) {
                   resetAllData();
                 }
               }}
@@ -536,7 +543,7 @@ export default function Dashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5" />
-                  Income
+                  {t('tabs.income')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -560,7 +567,7 @@ export default function Dashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Receipt className="h-5 w-5" />
-                  Expenses
+                  {t('tabs.expenses')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -580,7 +587,7 @@ export default function Dashboard() {
             {/* Fixed Expenses inside Expenses tab */}
             <Card>
               <CardHeader>
-                <CardTitle>Fixed Expenses</CardTitle>
+                <CardTitle>{t('dashboard.fixedExpenses')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <FixedExpenseForm onAddFixedExpense={addFixedExpense} />
@@ -599,7 +606,7 @@ export default function Dashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <PiggyBank className="h-5 w-5" />
-                  Savings
+                  {t('tabs.savings')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -620,11 +627,11 @@ export default function Dashboard() {
               <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
                 <CardTitle className="flex items-center gap-2">
                   <GoalIcon className="h-5 w-5" />
-                  Goals &amp; Tasks
+                  {t('tabs.goals')}
                 </CardTitle>
                 <Button variant="outline" size="sm" onClick={handlePrintGoals}>
                   <Printer className="mr-2 h-4 w-4" />
-                  Print Goals
+                  {t('dashboard.printGoals')}
                 </Button>
               </CardHeader>
               <CardContent>
@@ -660,7 +667,7 @@ export default function Dashboard() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Goal Budget Allocator</CardTitle>
+                <CardTitle>{t('dashboard.goalBudgetAllocator')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <GoalBudgetAllocator
@@ -718,7 +725,7 @@ export default function Dashboard() {
         {/* Status + Migration Controls */}
         <Card>
           <CardHeader>
-            <CardTitle>Architecture Status + Data Portability</CardTitle>
+            <CardTitle>{t('dashboard.dataPortability')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <div className="space-y-1 text-muted-foreground">
@@ -742,13 +749,15 @@ export default function Dashboard() {
             <div className="pt-2 border-t space-y-3">
               {latestAutoBackup && (
                 <div className="text-xs text-muted-foreground">
-                  Last auto-backup: {new Date(latestAutoBackup.savedAt).toLocaleString()}
+                  {t('dashboard.lastAutoBackup', {
+                    date: new Date(latestAutoBackup.savedAt).toLocaleString(),
+                  })}
                 </div>
               )}
               <div className="flex flex-wrap gap-2">
                 <Button variant="outline" size="sm" onClick={handlePrintBackup}>
                   <Printer className="mr-2 h-4 w-4" />
-                  Print Backup Report
+                  {t('dashboard.printBackup')}
                 </Button>
                 <Button
                   variant="outline"
@@ -758,16 +767,18 @@ export default function Dashboard() {
                     if (!latestAutoBackup) return;
                     if (
                       confirm(
-                        `Restore auto-backup from ${new Date(latestAutoBackup.savedAt).toLocaleString()}?\n\nThis replaces all current data.`
+                        t('dashboard.restoreConfirm', {
+                          date: new Date(latestAutoBackup.savedAt).toLocaleString(),
+                        })
                       )
                     ) {
                       replaceAllData(latestAutoBackup.data);
                       backfillMissingShadowExpenses();
-                      alert('✅ Restored from latest auto-backup.');
+                      alert(`✅ ${t('dashboard.restoreSuccess')}`);
                     }
                   }}
                 >
-                  Restore latest auto-backup
+                  {t('dashboard.restoreBackup')}
                 </Button>
                 <Button
                   variant="outline"
@@ -780,11 +791,11 @@ export default function Dashboard() {
                     }
                   }}
                 >
-                  Re-import old data from localStorage
+                  {t('dashboard.reimportOld')}
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Auto-backup keeps the last 5 snapshots locally. Export JSON lets you pick a save location when your browser supports it.
+                {t('dashboard.backupHint')}
               </p>
             </div>
           </CardContent>
