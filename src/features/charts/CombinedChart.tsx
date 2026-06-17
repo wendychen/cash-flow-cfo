@@ -19,6 +19,8 @@ import { type TimePeriod } from "@/components/shared";
 import { TrendingUp, PiggyBank, Wallet, Target, ChevronDown } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useCurrency, Currency } from "@/hooks/use-currency";
+import { useI18n } from "@/i18n";
+import type { TranslationKey } from "@/i18n";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -46,9 +48,43 @@ interface CombinedChartProps {
   selectedPeriod?: TimePeriod | null;
 }
 
+const TARGET_TYPE_KEYS: Record<TargetType, TranslationKey> = {
+  income: 'charts.cashFlowTrend.targetTypes.income',
+  expense: 'charts.cashFlowTrend.targetTypes.expense',
+  savings: 'charts.cashFlowTrend.targetTypes.savings',
+};
+
+const PERIOD_KEYS: Record<TargetPeriod, TranslationKey> = {
+  weekly: 'goals.repeat.weekly',
+  monthly: 'goals.repeat.monthly',
+  quarterly: 'goals.repeat.quarterly',
+  yearly: 'goals.repeat.yearly',
+};
+
 const CombinedChart = ({ expenses, incomes, savings, targets = [], onUpdateTarget, selectedPeriod }: CombinedChartProps) => {
+  const { t } = useI18n();
   const { format: formatCurrency, convert, symbol, currency, convertToNTD, convertFromNTD } = useCurrency();
   const [isOpen, setIsOpen] = useState(true);
+
+  const getTargetTypeLabel = (type: TargetType) => t(TARGET_TYPE_KEYS[type]);
+  const getPeriodLabel = (period: TargetPeriod) => t(PERIOD_KEYS[period]);
+
+  const seriesLabels = useMemo(
+    () => ({
+      expenseCumulative: t('charts.cashFlowTrend.series.expenseCumulative'),
+      futureExpense: t('charts.cashFlowTrend.series.futureExpense'),
+      incomeCumulative: t('charts.cashFlowTrend.series.incomeCumulative'),
+      savings: t('charts.cashFlowTrend.series.savings'),
+      projectedExpense: t('charts.cashFlowTrend.series.projectedExpense'),
+      projectedIncome: t('charts.cashFlowTrend.series.projectedIncome'),
+      projectedSavings: t('charts.cashFlowTrend.series.projectedSavings'),
+      future: t('charts.cashFlowTrend.series.future'),
+      projectedExpenseShort: t('charts.cashFlowTrend.series.expProj'),
+      projectedIncomeShort: t('charts.cashFlowTrend.series.incProj'),
+      projectedSavingsShort: t('charts.cashFlowTrend.series.savProj'),
+    }),
+    [t]
+  );
 
   const [editingTarget, setEditingTarget] = useState<{
     type: TargetType;
@@ -309,7 +345,7 @@ const CombinedChart = ({ expenses, incomes, savings, targets = [], onUpdateTarge
   if (expenses.length === 0 && incomes.length === 0 && savings.length === 0) {
     return (
       <div className="bg-card rounded-xl shadow-card p-5 text-center text-muted-foreground">
-        Add expenses, income, or savings to see the chart
+        {t('charts.cashFlowTrend.empty')}
       </div>
     );
   }
@@ -321,27 +357,35 @@ const CombinedChart = ({ expenses, incomes, savings, targets = [], onUpdateTarge
           type="button"
           className="flex w-full items-center justify-between gap-2 p-5 text-left hover:bg-muted/30 transition-colors rounded-xl"
         >
-          <h2 className="text-lg font-semibold text-foreground">Cash Flow Trend</h2>
+          <h2 className="text-lg font-semibold text-foreground">{t('charts.cashFlowTrend.title')}</h2>
           <div className="flex items-center gap-4 text-sm flex-wrap justify-end">
             {isOpen && chartData.avgDailyIncome > 0 && (
               <div className="flex items-center gap-2">
                 <Wallet className="w-4 h-4 text-violet-500" />
-                <span className="text-muted-foreground">Earn:</span>
-                <span className="font-medium text-violet-600">{formatCurrency(chartData.avgDailyIncome)}/day</span>
+                <span className="text-muted-foreground">{t('charts.cashFlowTrend.earn')}</span>
+                <span className="font-medium text-violet-600">
+                  {t('charts.cashFlowTrend.perDay', { amount: formatCurrency(chartData.avgDailyIncome) })}
+                </span>
               </div>
             )}
             {isOpen && chartData.avgDailyExpense > 0 && (
               <div className="flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-primary" />
-                <span className="text-muted-foreground">Spend:</span>
-                <span className="font-medium text-foreground">{formatCurrency(chartData.avgDailyExpense)}/day</span>
+                <span className="text-muted-foreground">{t('charts.cashFlowTrend.spend')}</span>
+                <span className="font-medium text-foreground">
+                  {t('charts.cashFlowTrend.perDay', { amount: formatCurrency(chartData.avgDailyExpense) })}
+                </span>
               </div>
             )}
             {isOpen && chartData.avgDailySavingsGrowth !== 0 && (
               <div className="flex items-center gap-2">
                 <PiggyBank className="w-4 h-4 text-emerald-500" />
-                <span className="text-muted-foreground">Save:</span>
-                <span className="font-medium text-emerald-600">{chartData.avgDailySavingsGrowth >= 0 ? '+' : ''}{formatCurrency(chartData.avgDailySavingsGrowth)}/day</span>
+                <span className="text-muted-foreground">{t('charts.cashFlowTrend.save')}</span>
+                <span className="font-medium text-emerald-600">
+                  {t('charts.cashFlowTrend.perDay', {
+                    amount: `${chartData.avgDailySavingsGrowth >= 0 ? '+' : ''}${formatCurrency(chartData.avgDailySavingsGrowth)}`,
+                  })}
+                </span>
               </div>
             )}
             <ChevronDown
@@ -380,13 +424,13 @@ const CombinedChart = ({ expenses, incomes, savings, targets = [], onUpdateTarge
               }}
               formatter={(value: number, name: string) => {
                 const labels: Record<string, string> = {
-                  expenseCumulative: "Expenses",
-                  futureExpense: "Future Expenses",
-                  incomeCumulative: "Income",
-                  savings: "Savings",
-                  projectedExpense: "Projected Expenses",
-                  projectedIncome: "Projected Income",
-                  projectedSavings: "Projected Savings",
+                  expenseCumulative: seriesLabels.expenseCumulative,
+                  futureExpense: seriesLabels.futureExpense,
+                  incomeCumulative: seriesLabels.incomeCumulative,
+                  savings: seriesLabels.savings,
+                  projectedExpense: seriesLabels.projectedExpense,
+                  projectedIncome: seriesLabels.projectedIncome,
+                  projectedSavings: seriesLabels.projectedSavings,
                 };
                 return [formatCurrency(value), labels[name] || name];
               }}
@@ -396,13 +440,13 @@ const CombinedChart = ({ expenses, incomes, savings, targets = [], onUpdateTarge
               wrapperStyle={{ fontSize: "12px" }}
               formatter={(value) => {
                 const labels: Record<string, string> = {
-                  expenseCumulative: "Expenses",
-                  futureExpense: "Future",
-                  incomeCumulative: "Income",
-                  savings: "Savings",
-                  projectedExpense: "Exp. Proj.",
-                  projectedIncome: "Inc. Proj.",
-                  projectedSavings: "Sav. Proj.",
+                  expenseCumulative: seriesLabels.expenseCumulative,
+                  futureExpense: seriesLabels.future,
+                  incomeCumulative: seriesLabels.incomeCumulative,
+                  savings: seriesLabels.savings,
+                  projectedExpense: seriesLabels.projectedExpenseShort,
+                  projectedIncome: seriesLabels.projectedIncomeShort,
+                  projectedSavings: seriesLabels.projectedSavingsShort,
                 };
                 return labels[value] || value;
               }}
@@ -484,7 +528,9 @@ const CombinedChart = ({ expenses, incomes, savings, targets = [], onUpdateTarge
                 strokeDasharray="8 4"
                 strokeWidth={2}
                 label={{
-                  value: `Income Target: ${formatCurrency(getTargetValue("income")!)}`,
+                  value: t('charts.cashFlowTrend.incomeTargetLine', {
+                    amount: formatCurrency(getTargetValue("income")!),
+                  }),
                   position: "insideTopRight",
                   fill: "hsl(263, 70%, 50%)",
                   fontSize: 10,
@@ -498,7 +544,9 @@ const CombinedChart = ({ expenses, incomes, savings, targets = [], onUpdateTarge
                 strokeDasharray="8 4"
                 strokeWidth={2}
                 label={{
-                  value: `Expense Limit: ${formatCurrency(getTargetValue("expense")!)}`,
+                  value: t('charts.cashFlowTrend.expenseLimitLine', {
+                    amount: formatCurrency(getTargetValue("expense")!),
+                  }),
                   position: "insideTopRight",
                   fill: "hsl(0, 70%, 50%)",
                   fontSize: 10,
@@ -512,7 +560,9 @@ const CombinedChart = ({ expenses, incomes, savings, targets = [], onUpdateTarge
                 strokeDasharray="8 4"
                 strokeWidth={2}
                 label={{
-                  value: `Savings Target: ${formatCurrency(getTargetValue("savings")!)}`,
+                  value: t('charts.cashFlowTrend.savingsTargetLine', {
+                    amount: formatCurrency(getTargetValue("savings")!),
+                  }),
                   position: "insideTopRight",
                   fill: "hsl(152, 60%, 45%)",
                   fontSize: 10,
@@ -525,19 +575,19 @@ const CombinedChart = ({ expenses, incomes, savings, targets = [], onUpdateTarge
 
       <div className="mt-4 pt-4 border-t border-border grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="flex flex-col">
-          <span className="text-xs text-muted-foreground">30-day Income</span>
+          <span className="text-xs text-muted-foreground">{t('charts.cashFlowTrend.projection30Income')}</span>
           <span className="text-lg font-bold text-violet-600">{formatCurrency(chartData.incomeProjection)}</span>
         </div>
         <div className="flex flex-col">
-          <span className="text-xs text-muted-foreground">30-day Expenses</span>
+          <span className="text-xs text-muted-foreground">{t('charts.cashFlowTrend.projection30Expenses')}</span>
           <span className="text-lg font-bold text-foreground">{formatCurrency(chartData.expenseProjection)}</span>
         </div>
         <div className="flex flex-col">
-          <span className="text-xs text-muted-foreground">30-day Savings</span>
+          <span className="text-xs text-muted-foreground">{t('charts.cashFlowTrend.projection30Savings')}</span>
           <span className="text-lg font-bold text-emerald-600">{formatCurrency(chartData.savingsProjection)}</span>
         </div>
         <div className="flex flex-col">
-          <span className="text-xs text-muted-foreground">Net Cash Flow</span>
+          <span className="text-xs text-muted-foreground">{t('charts.cashFlowTrend.netCashFlow')}</span>
           <span className={`text-lg font-bold ${chartData.netProjection >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
             {chartData.netProjection >= 0 ? '+' : ''}{formatCurrency(chartData.netProjection)}
           </span>
@@ -549,7 +599,10 @@ const CombinedChart = ({ expenses, incomes, savings, targets = [], onUpdateTarge
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
               <Target className="w-4 h-4" />
-              {currentPeriod.charAt(0).toUpperCase() + currentPeriod.slice(1)} Targets ({currency})
+              {t('charts.cashFlowTrend.targets', {
+                period: getPeriodLabel(currentPeriod),
+                currency,
+              })}
             </h3>
             <Button 
               variant="outline" 
@@ -557,7 +610,7 @@ const CombinedChart = ({ expenses, incomes, savings, targets = [], onUpdateTarge
               onClick={() => setShowTargetDialog(true)}
               data-testid="button-add-target"
             >
-              + Add Target
+              {t('charts.cashFlowTrend.addTarget')}
             </Button>
           </div>
           <div className="grid grid-cols-3 gap-3">
@@ -566,9 +619,9 @@ const CombinedChart = ({ expenses, incomes, savings, targets = [], onUpdateTarge
               className="p-3 rounded-lg border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950 hover:bg-violet-100 dark:hover:bg-violet-900 transition-colors text-left"
               data-testid="button-edit-income-target"
             >
-              <div className="text-xs text-violet-600 dark:text-violet-400">Income Target</div>
+              <div className="text-xs text-violet-600 dark:text-violet-400">{t('charts.cashFlowTrend.incomeTarget')}</div>
               <div className="text-lg font-bold text-violet-700 dark:text-violet-300">
-                {getTargetValue("income") !== null ? formatCurrency(getTargetValue("income")!) : "Not set"}
+                {getTargetValue("income") !== null ? formatCurrency(getTargetValue("income")!) : t('charts.cashFlowTrend.notSet')}
               </div>
             </button>
             <button
@@ -576,9 +629,9 @@ const CombinedChart = ({ expenses, incomes, savings, targets = [], onUpdateTarge
               className="p-3 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 hover:bg-red-100 dark:hover:bg-red-900 transition-colors text-left"
               data-testid="button-edit-expense-target"
             >
-              <div className="text-xs text-red-600 dark:text-red-400">Expense Limit</div>
+              <div className="text-xs text-red-600 dark:text-red-400">{t('charts.cashFlowTrend.expenseLimit')}</div>
               <div className="text-lg font-bold text-red-700 dark:text-red-300">
-                {getTargetValue("expense") !== null ? formatCurrency(getTargetValue("expense")!) : "Not set"}
+                {getTargetValue("expense") !== null ? formatCurrency(getTargetValue("expense")!) : t('charts.cashFlowTrend.notSet')}
               </div>
             </button>
             <button
@@ -586,9 +639,9 @@ const CombinedChart = ({ expenses, incomes, savings, targets = [], onUpdateTarge
               className="p-3 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950 hover:bg-emerald-100 dark:hover:bg-emerald-900 transition-colors text-left"
               data-testid="button-edit-savings-target"
             >
-              <div className="text-xs text-emerald-600 dark:text-emerald-400">Savings Target</div>
+              <div className="text-xs text-emerald-600 dark:text-emerald-400">{t('charts.cashFlowTrend.savingsTarget')}</div>
               <div className="text-lg font-bold text-emerald-700 dark:text-emerald-300">
-                {getTargetValue("savings") !== null ? formatCurrency(getTargetValue("savings")!) : "Not set"}
+                {getTargetValue("savings") !== null ? formatCurrency(getTargetValue("savings")!) : t('charts.cashFlowTrend.notSet')}
               </div>
             </button>
           </div>
@@ -599,26 +652,36 @@ const CombinedChart = ({ expenses, incomes, savings, targets = [], onUpdateTarge
       <Dialog open={!!editingTarget} onOpenChange={() => setEditingTarget(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Update {editingTarget?.type} Target</DialogTitle>
+            <DialogTitle>
+              {editingTarget &&
+                t('charts.cashFlowTrend.updateTitle', {
+                  type: getTargetTypeLabel(editingTarget.type),
+                })}
+            </DialogTitle>
             <DialogDescription>
-              Update your {currentPeriod} {editingTarget?.type} target for {currency}.
+              {editingTarget &&
+                t('charts.cashFlowTrend.updateDescription', {
+                  period: getPeriodLabel(currentPeriod),
+                  type: getTargetTypeLabel(editingTarget.type),
+                  currency,
+                })}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <label className="text-sm font-medium">Amount ({currency})</label>
+            <label className="text-sm font-medium">{t('charts.cashFlowTrend.amount', { currency })}</label>
             <Input
               type="number"
               value={editingTarget?.amount || ""}
               onChange={(e) => setEditingTarget(prev => prev ? {...prev, amount: e.target.value} : null)}
-              placeholder="Enter target amount"
+              placeholder={t('charts.cashFlowTrend.amountPlaceholder')}
               className="mt-1"
               data-testid="input-edit-target-amount"
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingTarget(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setEditingTarget(null)}>{t('charts.cashFlowTrend.cancel')}</Button>
             <Button onClick={handleConfirmTargetUpdate} disabled={!isEditTargetValid} data-testid="button-confirm-target">
-              Update Target
+              {t('charts.cashFlowTrend.update')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -627,55 +690,55 @@ const CombinedChart = ({ expenses, incomes, savings, targets = [], onUpdateTarge
       <Dialog open={showTargetDialog} onOpenChange={setShowTargetDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add New Target</DialogTitle>
+            <DialogTitle>{t('charts.cashFlowTrend.addTitle')}</DialogTitle>
             <DialogDescription>
-              Set a financial target for tracking your progress.
+              {t('charts.cashFlowTrend.addDescription')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <label className="text-sm font-medium">Target Type</label>
+              <label className="text-sm font-medium">{t('charts.cashFlowTrend.targetType')}</label>
               <Select value={newTargetType} onValueChange={(val) => setNewTargetType(val as TargetType)}>
                 <SelectTrigger className="mt-1" data-testid="select-target-type">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="income">Income Target</SelectItem>
-                  <SelectItem value="expense">Expense Limit</SelectItem>
-                  <SelectItem value="savings">Savings Target</SelectItem>
+                  <SelectItem value="income">{t('charts.cashFlowTrend.incomeTarget')}</SelectItem>
+                  <SelectItem value="expense">{t('charts.cashFlowTrend.expenseLimit')}</SelectItem>
+                  <SelectItem value="savings">{t('charts.cashFlowTrend.savingsTarget')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <label className="text-sm font-medium">Period</label>
+              <label className="text-sm font-medium">{t('charts.cashFlowTrend.period')}</label>
               <Select value={newTargetPeriod} onValueChange={(val) => setNewTargetPeriod(val as TargetPeriod)}>
                 <SelectTrigger className="mt-1" data-testid="select-target-period">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                  <SelectItem value="quarterly">Quarterly</SelectItem>
-                  <SelectItem value="yearly">Yearly</SelectItem>
+                  <SelectItem value="weekly">{t('goals.repeat.weekly')}</SelectItem>
+                  <SelectItem value="monthly">{t('goals.repeat.monthly')}</SelectItem>
+                  <SelectItem value="quarterly">{t('goals.repeat.quarterly')}</SelectItem>
+                  <SelectItem value="yearly">{t('goals.repeat.yearly')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <label className="text-sm font-medium">Amount ({currency})</label>
+              <label className="text-sm font-medium">{t('charts.cashFlowTrend.amount', { currency })}</label>
               <Input
                 type="number"
                 value={newTargetAmount}
                 onChange={(e) => setNewTargetAmount(e.target.value)}
-                placeholder="Enter target amount"
+                placeholder={t('charts.cashFlowTrend.amountPlaceholder')}
                 className="mt-1"
                 data-testid="input-new-target-amount"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowTargetDialog(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setShowTargetDialog(false)}>{t('charts.cashFlowTrend.cancel')}</Button>
             <Button onClick={handleAddTarget} disabled={!isNewTargetValid} data-testid="button-save-target">
-              Save Target
+              {t('charts.cashFlowTrend.saveTarget')}
             </Button>
           </DialogFooter>
         </DialogContent>

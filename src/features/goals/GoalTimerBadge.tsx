@@ -7,6 +7,7 @@ import {
   formatGoalCountdown,
 } from '@/lib/goalTimer';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/i18n';
 
 interface GoalTimerBadgeProps {
   goal: Goal;
@@ -14,6 +15,7 @@ interface GoalTimerBadgeProps {
 }
 
 export default function GoalTimerBadge({ goal, className }: GoalTimerBadgeProps) {
+  const { t } = useI18n();
   const { target, countdown } = useGoalTimer(goal);
 
   if (!target || !countdown || goal.completed) return null;
@@ -28,8 +30,8 @@ export default function GoalTimerBadge({ goal, className }: GoalTimerBadgeProps)
       )}
       title={
         target.kind === 'milestone'
-          ? `Next milestone: ${target.label}`
-          : 'Goal deadline'
+          ? t('goals.timer.nextMilestone', { label: target.label })
+          : t('goals.timer.deadline')
       }
     >
       <Timer className="h-3 w-3" />
