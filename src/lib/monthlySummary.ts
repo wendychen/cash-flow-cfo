@@ -5,11 +5,21 @@ import type { Saving } from '@/types/saving';
 import type { FixedExpense } from '@/types/fixedExpense';
 import { getMonthlyEquivalent } from '@/types/fixedExpense';
 import { parseLocalDate } from '@/lib/date';
+import { getAccruedCollectionStatus } from '@/lib/incomeConversion';
+
+export interface MonthIncomeSplit {
+  cash: number;
+  accruedGross: number;
+  accruedOutstanding: number;
+}
 
 export interface MonthSummaryData {
   month: string;
   displayMonth: string;
   totalIncome: number;
+  cashIncome: number;
+  accruedIncome: number;
+  accruedOutstanding: number;
   totalExpenses: number;
   fixedExpensesMonthly: number;
   savingsBalance: number | null;
@@ -30,9 +40,34 @@ export interface MonthlySummaryInput {
 
 export interface HistoricalAverages {
   avgIncome: number;
+  avgCashIncome: number;
+  avgAccruedIncome: number;
+  avgAccruedOutstanding: number;
   avgExpenses: number;
   avgSavingsGrowth: number;
   latestSavings: number | null;
+}
+
+export function computeMonthIncomeSplit(
+  incomes: Income[],
+  month: string,
+  allIncomes: Income[] = incomes
+): MonthIncomeSplit {
+  let cash = 0;
+  let accruedGross = 0;
+  let accruedOutstanding = 0;
+
+  incomes.forEach((inc) => {
+    if (monthKeyFromDate(inc.date) !== month) return;
+    if (inc.incomeType === 'accrued') {
+      accruedGross += inc.amount;
+      accruedOutstanding += getAccruedCollectionStatus(inc, allIncomes).outstanding;
+    } else {
+      cash += inc.amount;
+    }
+  });
+
+  return { cash, accruedGross, accruedOutstanding };
 }
 
 const LOCALE_MAP: Record<string, string> = {
@@ -78,14 +113,24 @@ export function computeHistoricalAverages(
   const currentMonth = getCurrentMonthKey(now);
 
   const pastMonthsIncome = new Map<string, number>();
+  const pastMonthsCash = new Map<string, number>();
+  const pastMonthsAccrued = new Map<string, number>();
+  const pastMonthsOutstanding = new Map<string, number>();
   const pastMonthsExpenses = new Map<string, number>();
   const savingsBalances: { month: string; balance: number }[] = [];
 
+  const monthsWithIncome = new Set<string>();
   input.incomes.forEach((inc) => {
     const month = monthKeyFromDate(inc.date);
-    if (month < currentMonth) {
-      pastMonthsIncome.set(month, (pastMonthsIncome.get(month) || 0) + inc.amount);
-    }
+    if (month < currentMonth) monthsWithIncome.add(month);
+  });
+
+  monthsWithIncome.forEach((month) => {
+    const split = computeMonthIncomeSplit(input.incomes, month, input.incomes);
+    pastMonthsIncome.set(month, split.cash + split.accruedGross);
+    pastMonthsCash.set(month, split.cash);
+    pastMonthsAccrued.set(month, split.accruedGross);
+    pastMonthsOutstanding.set(month, split.accruedOutstanding);
   });
 
   input.expenses.forEach((exp) => {
@@ -108,12 +153,22 @@ export function computeHistoricalAverages(
   savingsBalances.sort((a, b) => a.month.localeCompare(b.month));
 
   const incomeValues = Array.from(pastMonthsIncome.values());
+  const cashValues = Array.from(pastMonthsCash.values());
+  const accruedValues = Array.from(pastMonthsAccrued.values());
+  const outstandingValues = Array.from(pastMonthsOutstanding.values());
   const expenseValues = Array.from(pastMonthsExpenses.values());
 
+  const monthCount = monthsWithIncome.size;
   const avgIncome =
     incomeValues.length > 0
       ? incomeValues.reduce((a, b) => a + b, 0) / incomeValues.length
       : 0;
+  const avgCashIncome =
+    monthCount > 0 ? cashValues.reduce((a, b) => a + b, 0) / monthCount : 0;
+  const avgAccruedIncome =
+    monthCount > 0 ? accruedValues.reduce((a, b) => a + b, 0) / monthCount : 0;
+  const avgAccruedOutstanding =
+    monthCount > 0 ? outstandingValues.reduce((a, b) => a + b, 0) / monthCount : 0;
 
   const avgExpenses =
     expenseValues.length > 0
@@ -134,7 +189,15 @@ export function computeHistoricalAverages(
       ? savingsBalances[savingsBalances.length - 1].balance
       : null;
 
-  return { avgIncome, avgExpenses, avgSavingsGrowth, latestSavings };
+  return {
+    avgIncome,
+    avgCashIncome,
+    avgAccruedIncome,
+    avgAccruedOutstanding,
+    avgExpenses,
+    avgSavingsGrowth,
+    latestSavings,
+  };
 }
 
 export function buildPredictionMonths(
@@ -147,7 +210,15 @@ export function buildPredictionMonths(
   const now = options.now ?? new Date();
   const locale = options.locale ?? 'en';
   const monthsAhead = options.monthsAhead ?? 3;
-  const { avgIncome, avgExpenses, avgSavingsGrowth, latestSavings } = averages;
+  const {
+    avgIncome,
+    avgCashIncome,
+    avgAccruedIncome,
+    avgAccruedOutstanding,
+    avgExpenses,
+    avgSavingsGrowth,
+    latestSavings,
+  } = averages;
 
   const predictions: MonthSummaryData[] = [];
 
@@ -162,6 +233,9 @@ export function buildPredictionMonths(
       month,
       displayMonth,
       totalIncome: avgIncome,
+      cashIncome: avgCashIncome,
+      accruedIncome: avgAccruedIncome,
+      accruedOutstanding: avgAccruedOutstanding,
       totalExpenses: avgExpenses,
       fixedExpensesMonthly,
       savingsBalance: predictedSavings,
@@ -201,6 +275,9 @@ export function buildMonthlySummaryData(input: MonthlySummaryInput): MonthSummar
       month,
       displayMonth: formatMonthDisplay(month, locale),
       totalIncome: 0,
+      cashIncome: 0,
+      accruedIncome: 0,
+      accruedOutstanding: 0,
       totalExpenses: 0,
       fixedExpensesMonthly,
       savingsBalance: null,
@@ -210,9 +287,12 @@ export function buildMonthlySummaryData(input: MonthlySummaryInput): MonthSummar
     });
   });
 
-  input.incomes.forEach((inc) => {
-    const data = monthMap.get(monthKeyFromDate(inc.date));
-    if (data) data.totalIncome += inc.amount;
+  monthMap.forEach((data, month) => {
+    const split = computeMonthIncomeSplit(input.incomes, month, input.incomes);
+    data.cashIncome = split.cash;
+    data.accruedIncome = split.accruedGross;
+    data.accruedOutstanding = split.accruedOutstanding;
+    data.totalIncome = split.cash + split.accruedGross;
   });
 
   input.expenses.forEach((exp) => {

@@ -111,14 +111,31 @@ const MonthlySummary = ({ expenses, incomes, savings, fixedExpenses }: MonthlySu
                       )}
                     </h4>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
-                      <div className="flex items-start gap-2">
+                      <div className="flex items-start gap-2 sm:col-span-2">
                         <TrendingUp className="h-4 w-4 text-violet-500 mt-0.5 shrink-0" />
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <p className="text-xs text-muted-foreground">{t('monthlySummary.income')}</p>
                           <p className={`font-semibold text-violet-600 text-sm truncate ${data.isPrediction ? "opacity-75" : ""}`}>
                             {data.isPrediction ? "~" : "+"}
                             {format(data.totalIncome)}
                           </p>
+                          {(data.cashIncome > 0 || data.accruedIncome > 0) && (
+                            <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-[10px] text-muted-foreground tabular-nums">
+                              <span>
+                                {t('monthlySummary.incomeCash')}: {format(data.cashIncome)}
+                              </span>
+                              {data.accruedIncome > 0 && (
+                                <span>
+                                  {t('monthlySummary.incomeAccrued')}: {format(data.accruedIncome)}
+                                </span>
+                              )}
+                              {data.accruedOutstanding > 0 && (
+                                <span className="text-amber-600 dark:text-amber-400">
+                                  {t('monthlySummary.incomeOutstanding')}: {format(data.accruedOutstanding)}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
 

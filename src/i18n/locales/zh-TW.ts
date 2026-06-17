@@ -20,6 +20,14 @@ export const zhTW: Messages = {
       accrued: '應收',
       collection: '收款',
     },
+    list: {
+      empty: '尚無收入紀錄',
+      emptyHint: '請在上方新增第一筆收入',
+      source: '來源',
+      note: '備註',
+      review: '複審',
+      duplicate: '複製項目',
+    },
     breakdown: {
       label: '收入組成',
       cash: '實收',
@@ -62,10 +70,52 @@ export const zhTW: Messages = {
     prediction: '預測',
     currentMonth: '本月',
     income: '收入',
+    incomeCash: '實收',
+    incomeAccrued: '應收',
+    incomeOutstanding: '未收',
     expenses: '支出',
     fixed: '固定支出',
     savings: '儲蓄',
     netFlow: '淨流量',
+  },
+  userGuide: {
+    title: '歡迎使用 Cash Flow CFO',
+    subtitle: '快速了解現金流、目標與備份的用法。',
+    gotIt: '知道了',
+    sections: {
+      timeNav: {
+        title: '時間導覽',
+        body: '在左側選擇年、季、月或週。摘要卡片、分頁與圖表會依期間篩選。目標不受期限影響，始終顯示。',
+      },
+      income: {
+        title: '收入、支出與儲蓄',
+        body: '在各分頁記錄現金流。收入可標為實收或應收；應收到帳時可登記收款。用複製按鈕可複製任何項目。支出可連結目標；勾選目標任務時會同步影子支出。',
+      },
+      goals: {
+        title: '目標與任務',
+        body: '設定預算、里程碑、前置／後置任務與構想。重複目標完成後會自動建立下一週期。用目標預算分配器將儲蓄分攤到各目標。可從目標分頁列印目標報告。',
+      },
+      currency: {
+        title: '幣別',
+        body: '金額預設以 USD 顯示（可在頁首切換）。若輸入 NTD 或 CAD，原始金額會以徽章顯示在項目卡片上。',
+      },
+      backup: {
+        title: '備份與匯出',
+        body: '匯出 JSON 作為可攜式備份，或匯出 CSV 供試算表使用。自動備份會在瀏覽器保留最近 5 份快照。可列印備份報告，或從底部面板還原最新快照。',
+      },
+      monthlySummary: {
+        title: '每月摘要',
+        body: '儀表板面板列出各月收入、支出、固定費、儲蓄與淨流量。開啟預測可查看依歷史平均推算的未來月份。收入會拆分為實收、應收登記與未收餘額。',
+      },
+      sankey: {
+        title: 'Sankey 圖',
+        body: '點擊收入、儲蓄、目標或支出可深入檢視。用時間軸麵包屑快速返回。分類檢視會並排顯示固定與一次性支出。',
+      },
+      fixedFreq: {
+        title: '固定支出頻率',
+        body: '雙週 = 每 2 週一次。雙月 = 每月 2 次（約 15 天），不是每 2 個月。每筆固定支出旁會顯示月化金額。',
+      },
+    },
   },
   charts: {
     visualizations: '現金流視覺化',

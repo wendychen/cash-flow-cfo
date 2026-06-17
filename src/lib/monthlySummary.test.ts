@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildMonthlySummaryData,
   computeHistoricalAverages,
+  computeMonthIncomeSplit,
   getCurrentMonthKey,
 } from './monthlySummary';
 import type { Expense } from '@/types/expense';
@@ -78,6 +79,39 @@ describe('monthlySummary', () => {
     expect(actual[0].isCurrentMonth).toBe(true);
     expect(actual[1].month).toBe('2026-05');
     expect(actual[2].month).toBe('2026-04');
+  });
+
+  it('splits monthly income into cash, accrued, and outstanding', () => {
+    const accruedIncomes: Income[] = [
+      { id: 'a1', amount: 10000, date: '2026-05-01', incomeType: 'accrued', source: 'Invoice' },
+      { id: 'c1', amount: 4000, date: '2026-05-15', incomeType: 'cash', source: 'Salary' },
+      {
+        id: 'col1',
+        amount: 3000,
+        date: '2026-05-20',
+        incomeType: 'cash',
+        source: 'Collection',
+        linkedAccruedIncomeId: 'a1',
+      },
+    ];
+
+    const split = computeMonthIncomeSplit(accruedIncomes, '2026-05', accruedIncomes);
+    expect(split.cash).toBe(7000);
+    expect(split.accruedGross).toBe(10000);
+    expect(split.accruedOutstanding).toBe(7000);
+
+    const data = buildMonthlySummaryData({
+      incomes: accruedIncomes,
+      expenses: [],
+      savings: [],
+      fixedExpenses: [],
+      now,
+    });
+    const may = data.find((m) => m.month === '2026-05');
+    expect(may?.cashIncome).toBe(7000);
+    expect(may?.accruedIncome).toBe(10000);
+    expect(may?.accruedOutstanding).toBe(7000);
+    expect(may?.totalIncome).toBe(17000);
   });
 
   it('appends prediction months when enabled', () => {

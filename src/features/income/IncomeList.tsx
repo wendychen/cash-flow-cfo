@@ -131,8 +131,8 @@ const IncomeList = ({
   if (incomes.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
-        <p className="text-lg">No income records yet</p>
-        <p className="text-sm mt-1">Add your first income above</p>
+        <p className="text-lg">{t('income.list.empty')}</p>
+        <p className="text-sm mt-1">{t('income.list.emptyHint')}</p>
       </div>
     );
   }
@@ -205,28 +205,28 @@ const IncomeList = ({
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="cash">Cash</SelectItem>
-                            <SelectItem value="accrued">Accrued</SelectItem>
+                            <SelectItem value="cash">{t('income.type.cash')}</SelectItem>
+                            <SelectItem value="accrued">{t('income.type.accrued')}</SelectItem>
                           </SelectContent>
                         </Select>
                         <Input
                           type="number"
                           value={editReviewCount}
                           onChange={(e) => setEditReviewCount(e.target.value)}
-                          placeholder="Review"
+                          placeholder={t('income.list.review')}
                           className="h-8 text-sm w-16"
                           min="0"
                         />
                         <Input
                           value={editSource}
                           onChange={(e) => setEditSource(e.target.value)}
-                          placeholder="Source"
+                          placeholder={t('income.list.source')}
                           className="h-8 text-sm flex-1 min-w-24"
                         />
                         <Input
                           value={editNote}
                           onChange={(e) => setEditNote(e.target.value)}
-                          placeholder="Note"
+                          placeholder={t('income.list.note')}
                           className="h-8 text-sm flex-1 min-w-24"
                         />
                         <div className="flex gap-1">
@@ -337,7 +337,7 @@ const IncomeList = ({
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 text-muted-foreground hover:text-violet-600 hover:bg-violet-100"
-                            title="Duplicate entry"
+                            title={t('income.list.duplicate')}
                             onClick={() => onDuplicateIncome(duplicateEntry(income))}
                           >
                             <Copy className="w-4 h-4" />

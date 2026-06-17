@@ -18,6 +18,14 @@ export const en = {
       accrued: 'Accrued',
       collection: 'Collection',
     },
+    list: {
+      empty: 'No income records yet',
+      emptyHint: 'Add your first income above',
+      source: 'Source',
+      note: 'Note',
+      review: 'Review',
+      duplicate: 'Duplicate entry',
+    },
     breakdown: {
       label: 'Income mix',
       cash: 'Cash received',
@@ -60,10 +68,52 @@ export const en = {
     prediction: 'Prediction',
     currentMonth: 'Current Month',
     income: 'Income',
+    incomeCash: 'Cash',
+    incomeAccrued: 'Accrued',
+    incomeOutstanding: 'Outstanding',
     expenses: 'Expenses',
     fixed: 'Fixed',
     savings: 'Savings',
     netFlow: 'Net Flow',
+  },
+  userGuide: {
+    title: 'Welcome to Cash Flow CFO',
+    subtitle: 'A quick guide to tracking cash flow, goals, and backups.',
+    gotIt: 'Got it',
+    sections: {
+      timeNav: {
+        title: 'Time Navigator',
+        body: 'Pick a year, quarter, month, or week on the left. Summary cards, tabs, and charts filter to that period. Goals always stay visible regardless of deadline.',
+      },
+      income: {
+        title: 'Income, Expenses & Savings',
+        body: 'Record cash flow in each tab. Mark income as cash or accrued; record collections when accrued income is paid. Duplicate any entry with the copy button. Expenses can link to goals; shadow expenses sync when you check off goal tasks.',
+      },
+      goals: {
+        title: 'Goals & Tasks',
+        body: 'Set budgets, milestones, pre/post tasks, and ideations. Repeating goals spawn the next cycle when completed. Use Goal Budget Allocator to split savings across goals. Print a goals report from the Goals tab.',
+      },
+      currency: {
+        title: 'Currency',
+        body: 'Amounts display in USD by default (switch in the header). If you enter NTD or CAD, the original amount appears as a badge on each entry card.',
+      },
+      backup: {
+        title: 'Backup & Export',
+        body: 'Export JSON for a portable backup or CSV for spreadsheet use. Auto-backup keeps the last 5 snapshots locally. Print a backup report or restore the latest snapshot from the bottom panel.',
+      },
+      monthlySummary: {
+        title: 'Monthly Summary',
+        body: 'The dashboard panel lists every month with income, expenses, fixed costs, savings, and net flow. Toggle predictions to see projected months based on your historical averages. Income splits into cash received, accrued recorded, and outstanding balance.',
+      },
+      sankey: {
+        title: 'Sankey Diagram',
+        body: 'Click Income, Savings, Goals, or Expenses to drill down. Use the timeline breadcrumb to jump back. Category views show fixed vs one-time spending side by side.',
+      },
+      fixedFreq: {
+        title: 'Fixed Expense Frequencies',
+        body: 'Bi-weekly = every 2 weeks. Bi-monthly = twice per month (~15 days), not every 2 months. Monthly equivalents are shown next to each fixed expense.',
+      },
+    },
   },
   charts: {
     visualizations: 'Cash Flow Visualizations',
