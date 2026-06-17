@@ -13,6 +13,9 @@ export interface SimulationMonth {
   expenses: number;
   net: number;
   cumulativeSavings: number;
+  baselineNet: number;
+  baselineCumulativeSavings: number;
+  savingsDelta: number;
 }
 
 export interface SimulationResult {
@@ -21,6 +24,26 @@ export interface SimulationResult {
   endingSavings: number;
   baselineEndingSavings: number;
   savingsDelta: number;
+  avgMonthlyNet: number;
+  avgMonthlyNetDelta: number;
+  annualizedSavingsGain: number;
+  savingsGrowthPercent: number | null;
+}
+
+export interface SimulationChartPoint {
+  month: number;
+  label: string;
+  scenario: number;
+  baseline: number;
+}
+
+export function buildSimulationChartData(months: SimulationMonth[]): SimulationChartPoint[] {
+  return months.map((row) => ({
+    month: row.month,
+    label: `M${row.month}`,
+    scenario: row.cumulativeSavings,
+    baseline: row.baselineCumulativeSavings,
+  }));
 }
 
 export function runCashFlowSimulation(input: SimulationInput): SimulationResult {
@@ -37,14 +60,14 @@ export function runCashFlowSimulation(input: SimulationInput): SimulationResult 
   let cumulative = currentSavings;
   let baselineCumulative = currentSavings;
 
+  const baselineNetPerMonth = monthlyIncome - monthlyExpenses;
+
   for (let m = 1; m <= months; m++) {
     const income = monthlyIncome + incomeChange;
     const expenses = Math.max(0, monthlyExpenses + expenseChange);
     const net = income - expenses;
     cumulative += net;
-
-    const baselineNet = monthlyIncome - monthlyExpenses;
-    baselineCumulative += baselineNet;
+    baselineCumulative += baselineNetPerMonth;
 
     monthsData.push({
       month: m,
@@ -52,14 +75,26 @@ export function runCashFlowSimulation(input: SimulationInput): SimulationResult 
       expenses,
       net,
       cumulativeSavings: cumulative,
+      baselineNet: baselineNetPerMonth,
+      baselineCumulativeSavings: baselineCumulative,
+      savingsDelta: cumulative - baselineCumulative,
     });
   }
 
+  const totalNet = monthsData.reduce((sum, row) => sum + row.net, 0);
+  const savingsDelta = cumulative - baselineCumulative;
+  const safeMonths = Math.max(months, 1);
+
   return {
     months: monthsData,
-    totalNet: monthsData.reduce((sum, row) => sum + row.net, 0),
+    totalNet,
     endingSavings: cumulative,
     baselineEndingSavings: baselineCumulative,
-    savingsDelta: cumulative - baselineCumulative,
+    savingsDelta,
+    avgMonthlyNet: totalNet / safeMonths,
+    avgMonthlyNetDelta: savingsDelta / safeMonths,
+    annualizedSavingsGain: (savingsDelta / safeMonths) * 12,
+    savingsGrowthPercent:
+      currentSavings > 0 ? ((cumulative - currentSavings) / currentSavings) * 100 : null,
   };
 }

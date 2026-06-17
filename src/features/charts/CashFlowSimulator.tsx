@@ -1,7 +1,18 @@
 import { useMemo, useState } from 'react';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
@@ -11,7 +22,7 @@ import {
 } from '@/components/ui/select';
 import { useCurrency } from '@/hooks/use-currency';
 import { useI18n } from '@/i18n';
-import { runCashFlowSimulation } from '@/lib/cashFlowSimulation';
+import { buildSimulationChartData, runCashFlowSimulation } from '@/lib/cashFlowSimulation';
 import { Sparkles } from 'lucide-react';
 
 interface CashFlowSimulatorProps {
@@ -27,7 +38,7 @@ export default function CashFlowSimulator({
   monthlyExpenses,
   currentSavings,
 }: CashFlowSimulatorProps) {
-  const { format } = useCurrency();
+  const { format, convert, symbol } = useCurrency();
   const { t } = useI18n();
   const [incomeChange, setIncomeChange] = useState('0');
   const [expenseChange, setExpenseChange] = useState('0');
@@ -48,9 +59,20 @@ export default function CashFlowSimulator({
     });
   }, [monthlyIncome, monthlyExpenses, currentSavings, incomeChange, expenseChange, months]);
 
+  const chartData = useMemo(
+    () =>
+      buildSimulationChartData(result.months).map((point) => ({
+        ...point,
+        label: t('simulator.monthLabel', { count: point.month }),
+      })),
+    [result.months, t]
+  );
+
   if (monthlyIncome === 0 && monthlyExpenses === 0) {
     return null;
   }
+
+  const formatDelta = (value: number) => `${value >= 0 ? '+' : ''}${format(value)}`;
 
   return (
     <Card>
@@ -100,7 +122,7 @@ export default function CashFlowSimulator({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-2 border-t">
           <div className="rounded-lg border p-4 bg-emerald-50/50 dark:bg-emerald-950/20">
             <p className="text-xs text-muted-foreground">{t('simulator.endingSavings')}</p>
             <p className="text-lg font-semibold tabular-nums text-emerald-700 dark:text-emerald-300">
@@ -116,10 +138,133 @@ export default function CashFlowSimulator({
                   : 'text-red-600 dark:text-red-400'
               }`}
             >
-              {result.savingsDelta >= 0 ? '+' : ''}
-              {format(result.savingsDelta)}
+              {formatDelta(result.savingsDelta)}
             </p>
           </div>
+          <div className="rounded-lg border p-4">
+            <p className="text-xs text-muted-foreground">{t('simulator.avgMonthlyNet')}</p>
+            <p className="text-lg font-semibold tabular-nums">{format(result.avgMonthlyNet)}</p>
+          </div>
+          <div className="rounded-lg border p-4 bg-amber-50/50 dark:bg-amber-950/20">
+            <p className="text-xs text-muted-foreground">{t('simulator.annualizedGain')}</p>
+            <p
+              className={`text-lg font-semibold tabular-nums ${
+                result.annualizedSavingsGain >= 0
+                  ? 'text-amber-700 dark:text-amber-300'
+                  : 'text-red-600 dark:text-red-400'
+              }`}
+            >
+              {formatDelta(result.annualizedSavingsGain)}
+            </p>
+            {result.savingsGrowthPercent !== null && (
+              <p className="text-[11px] text-muted-foreground mt-1">
+                {t('simulator.savingsGrowth')}: {result.savingsGrowthPercent >= 0 ? '+' : ''}
+                {result.savingsGrowthPercent.toFixed(1)}%
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="space-y-2 pt-2 border-t">
+          <p className="text-sm font-medium">{t('simulator.projectionChart')}</p>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" opacity={0.5} />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                  tickLine={false}
+                  axisLine={false}
+                  interval="preserveStartEnd"
+                />
+                <YAxis
+                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(value) =>
+                    `${symbol}${Math.round(convert(value)).toLocaleString()}`
+                  }
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                  }}
+                  formatter={(value: number, name: string) => {
+                    const labels: Record<string, string> = {
+                      scenario: t('simulator.scenarioLine'),
+                      baseline: t('simulator.baselineLine'),
+                    };
+                    return [format(value), labels[name] || name];
+                  }}
+                />
+                <Legend
+                  wrapperStyle={{ fontSize: '12px' }}
+                  formatter={(value) =>
+                    value === 'scenario'
+                      ? t('simulator.scenarioLine')
+                      : t('simulator.baselineLine')
+                  }
+                />
+                <Line
+                  type="monotone"
+                  dataKey="scenario"
+                  stroke="hsl(142, 76%, 36%)"
+                  strokeWidth={2}
+                  dot={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="baseline"
+                  stroke="hsl(var(--muted-foreground))"
+                  strokeWidth={2}
+                  strokeDasharray="6 4"
+                  dot={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="space-y-2 pt-2 border-t">
+          <p className="text-sm font-medium">{t('simulator.monthlyBreakdown')}</p>
+          <ScrollArea className="h-[220px] rounded-md border">
+            <table className="w-full text-xs">
+              <thead className="sticky top-0 bg-muted/80 backdrop-blur-sm">
+                <tr className="border-b">
+                  <th className="px-3 py-2 text-left font-medium">{t('simulator.columnMonth')}</th>
+                  <th className="px-3 py-2 text-right font-medium">{t('simulator.columnScenario')}</th>
+                  <th className="px-3 py-2 text-right font-medium">{t('simulator.columnBaseline')}</th>
+                  <th className="px-3 py-2 text-right font-medium">{t('simulator.columnDelta')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {result.months.map((row) => (
+                  <tr key={row.month} className="border-b last:border-0">
+                    <td className="px-3 py-2">{t('simulator.monthLabel', { count: row.month })}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">
+                      {format(row.cumulativeSavings)}
+                    </td>
+                    <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
+                      {format(row.baselineCumulativeSavings)}
+                    </td>
+                    <td
+                      className={`px-3 py-2 text-right tabular-nums ${
+                        row.savingsDelta >= 0
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-red-600 dark:text-red-400'
+                      }`}
+                    >
+                      {formatDelta(row.savingsDelta)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </ScrollArea>
         </div>
       </CardContent>
     </Card>
