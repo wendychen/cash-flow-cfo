@@ -6,6 +6,7 @@ export type CsvTranslateFn = (key: TranslationKey) => string;
 
 export interface CsvExportOptions {
   t?: CsvTranslateFn;
+  locale?: string;
 }
 
 function escCsv(val: string): string {
@@ -34,7 +35,7 @@ export function buildFinanceCsv(state: FinanceStateV2, options: CsvExportOptions
   } = state;
 
   const goalsWithContent = goals.filter((g) => g.title.trim());
-  let csvContent = '';
+  let csvContent = options.locale ? `# locale: ${options.locale}\n` : '';
 
   if (fixedExpenses.length > 0) {
     csvContent += '### FIXED EXPENSES ###\n';

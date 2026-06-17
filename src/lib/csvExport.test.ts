@@ -56,6 +56,11 @@ describe('csvExport', () => {
     expect(hasExportableData({ ...state, incomes: [], longTermFinGoal: { targetAmount: 1, endYear: 2046, horizonYears: 20, updatedAt: '' } })).toBe(true);
   });
 
+  it('prepends locale metadata comment when locale is set', () => {
+    const csv = buildFinanceCsv(state, { locale: 'ja' });
+    expect(csv.startsWith('# locale: ja\n')).toBe(true);
+  });
+
   it('includes localized preset label when t is provided', () => {
     const csv = buildFinanceCsv(
       {

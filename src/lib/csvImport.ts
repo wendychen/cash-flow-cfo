@@ -123,6 +123,8 @@ export function parseCsvToFinanceState(csvText: string): CsvImportResult {
     let goalsNewHasId = false;
 
     for (const line of lines) {
+      if (/^#\s*locale:/i.test(line.trim())) continue;
+
       if (line.includes('### FIXED EXPENSES ###')) {
         currentSection = 'fixedExpenses';
         continue;

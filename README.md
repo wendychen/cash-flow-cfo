@@ -84,8 +84,6 @@ src/
 
 - **State:** [Zustand](https://zustand.docs.pmnd.rs/) with `persist` → `cash-flow-cfo-storage` (schema v2)
 - **Entry:** `src/pages/Index.tsx` → `src/features/dashboard/Dashboard.tsx`
-- **Retired code:** `src/archive/` (old ExpenseTracker, duplicate components)
-
 Design notes: [`docs/refactoring/CLEAN_CODE_REFACTOR_DESIGN.md`](docs/refactoring/CLEAN_CODE_REFACTOR_DESIGN.md)
 
 ## Migrating from the old app

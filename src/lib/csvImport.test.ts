@@ -43,6 +43,17 @@ describe('parseCsvToFinanceState', () => {
     expect(result.success).toBe(false);
   });
 
+  it('ignores locale metadata comment lines', () => {
+    const csv = `# locale: zh-TW
+### INCOMES ###
+Date,Source,Amount,Note,IncomeType,ReviewCount,LinkedAccruedIncomeId
+2026-01-01,Job,100,,cash,,`;
+
+    const result = parseCsvToFinanceState(csv);
+    expect(result.success).toBe(true);
+    expect(result.data?.incomes).toHaveLength(1);
+  });
+
   it('parses long term fin goal section', () => {
     const csv = `### LONG TERM FIN GOAL ###
 TargetAmount,EndYear,HorizonYears,PresetKey,UpdatedAt
