@@ -63,6 +63,9 @@ export const zhTW: Messages = {
     form: {
       addIncome: '新增收入',
     },
+    errors: {
+      notFound: '找不到收入項目。',
+    },
   },
   summary: {
     totalIncome: '總收入',

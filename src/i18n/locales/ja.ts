@@ -64,6 +64,9 @@ export const ja: Messages = {
     form: {
       addIncome: '収入を追加',
     },
+    errors: {
+      notFound: '収入項目が見つかりません。',
+    },
   },
   summary: {
     totalIncome: '総収入',

@@ -7,9 +7,8 @@ import {
   getAccruedCollectionStatus,
   getCollectionsForAccrued,
   isAccruedCollection,
-  validateAccruedAmountUpdate,
-  validateIncomeTypeChange,
 } from "@/lib/incomeConversion";
+import type { IncomeUpdateResult } from "@/stores";
 import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,7 +42,7 @@ interface IncomeListProps {
   incomes: Income[];
   allIncomes?: Income[];
   onDeleteIncome: (id: string) => void;
-  onUpdateIncome: (id: string, updates: Partial<Omit<Income, "id">>) => void;
+  onUpdateIncome: (id: string, updates: Partial<Omit<Income, "id">>) => IncomeUpdateResult;
   onDuplicateIncome?: (income: Omit<Income, "id">) => void;
   onRecordCollection?: (
     accruedId: string,
@@ -117,27 +116,7 @@ const IncomeList = ({
       editCurrency,
       convertToNTD
     );
-    const income = incomePool.find((i) => i.id === id);
-    if (income) {
-      const typeCheck = validateIncomeTypeChange(income, editIncomeType, incomePool);
-      if (!typeCheck.valid) {
-        setEditError(t(typeCheck.errorKey));
-        return;
-      }
-    }
-    if (editIncomeType === "accrued" && income && stored.amount !== undefined) {
-      const check = validateAccruedAmountUpdate(
-        { ...income, incomeType: "accrued" },
-        stored.amount,
-        incomePool
-      );
-      if (!check.valid) {
-        setEditError(t(check.errorKey));
-        return;
-      }
-    }
-    setEditError(null);
-    onUpdateIncome(id, {
+    const result = onUpdateIncome(id, {
       source: editSource.trim(),
       ...stored,
       incomeType: editIncomeType,
@@ -145,6 +124,11 @@ const IncomeList = ({
       reviewCount: editReviewCount ? parseInt(editReviewCount) : undefined,
       date: editDate,
     });
+    if (!result.ok) {
+      setEditError(t(result.errorKey));
+      return;
+    }
+    setEditError(null);
     setEditingId(null);
   };
 

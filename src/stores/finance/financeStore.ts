@@ -38,7 +38,12 @@ import {
   validateIncomeTypeChange,
   validateCollectionAmount,
 } from '@/lib/incomeConversion';
+import type { TranslationKey } from '@/i18n';
 import { migratePersistedState } from './migration';
+
+export type IncomeUpdateResult =
+  | { ok: true }
+  | { ok: false; errorKey: TranslationKey };
 
 /**
  * Versioned storage shape for the entire application.
@@ -82,7 +87,7 @@ interface FinanceStore extends FinanceState {
 
   // Income actions
   addIncome: (income: Omit<Income, 'id'>) => void;
-  updateIncome: (id: string, updates: Partial<Omit<Income, 'id'>>) => void;
+  updateIncome: (id: string, updates: Partial<Omit<Income, 'id'>>) => IncomeUpdateResult;
   deleteIncome: (id: string) => void;
   recordAccruedCollection: (
     accruedIncomeId: string,
@@ -384,33 +389,33 @@ export const useFinanceStore = create<FinanceStore>()(
         set((state) => ({ incomes: [newIncome, ...state.incomes] }));
       },
       updateIncome: (id, updates) => {
-        set((state) => {
-          const income = state.incomes.find((i) => i.id === id);
-          if (!income) return state;
+        const state = get();
+        const income = state.incomes.find((i) => i.id === id);
+        if (!income) return { ok: false, errorKey: 'income.errors.notFound' };
 
-          if (updates.incomeType !== undefined && updates.incomeType !== income.incomeType) {
-            const typeCheck = validateIncomeTypeChange(income, updates.incomeType, state.incomes);
-            if (!typeCheck.valid) return state;
-          }
+        if (updates.incomeType !== undefined && updates.incomeType !== income.incomeType) {
+          const typeCheck = validateIncomeTypeChange(income, updates.incomeType, state.incomes);
+          if (!typeCheck.valid) return { ok: false, errorKey: typeCheck.errorKey };
+        }
 
-          const resultingType = updates.incomeType ?? income.incomeType;
-          if (
-            resultingType === 'accrued' &&
-            updates.amount !== undefined &&
-            updates.amount !== income.amount
-          ) {
-            const check = validateAccruedAmountUpdate(
-              { ...income, incomeType: 'accrued' },
-              updates.amount,
-              state.incomes
-            );
-            if (!check.valid) return state;
-          }
+        const resultingType = updates.incomeType ?? income.incomeType;
+        if (
+          resultingType === 'accrued' &&
+          updates.amount !== undefined &&
+          updates.amount !== income.amount
+        ) {
+          const check = validateAccruedAmountUpdate(
+            { ...income, incomeType: 'accrued' },
+            updates.amount,
+            state.incomes
+          );
+          if (!check.valid) return { ok: false, errorKey: check.errorKey };
+        }
 
-          return {
-            incomes: state.incomes.map((i) => (i.id === id ? { ...i, ...updates } : i)),
-          };
+        set({
+          incomes: state.incomes.map((i) => (i.id === id ? { ...i, ...updates } : i)),
         });
+        return { ok: true };
       },
       deleteIncome: (id) => {
         set((state) => ({

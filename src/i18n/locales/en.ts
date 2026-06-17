@@ -62,6 +62,9 @@ export const en = {
     form: {
       addIncome: 'Add Income',
     },
+    errors: {
+      notFound: 'Income entry not found.',
+    },
   },
   summary: {
     totalIncome: 'Total Income',

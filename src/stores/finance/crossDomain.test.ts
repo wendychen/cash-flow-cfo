@@ -328,8 +328,27 @@ describe('income update validation', () => {
       ],
     });
 
-    useFinanceStore.getState().updateIncome('a1', { amount: 300 });
+    const result = useFinanceStore.getState().updateIncome('a1', { amount: 300 });
+    expect(result).toEqual({ ok: false, errorKey: 'income.collection.errors.belowCollected' });
     expect(useFinanceStore.getState().incomes.find((i) => i.id === 'a1')?.amount).toBe(1000);
+  });
+
+  it('returns ok true for valid updates', () => {
+    useFinanceStore.setState({
+      incomes: [
+        {
+          id: 'a1',
+          date: '2026-01-01',
+          source: 'Invoice',
+          amount: 1000,
+          incomeType: 'accrued',
+        },
+      ],
+    });
+
+    const result = useFinanceStore.getState().updateIncome('a1', { amount: 1200 });
+    expect(result).toEqual({ ok: true });
+    expect(useFinanceStore.getState().incomes.find((i) => i.id === 'a1')?.amount).toBe(1200);
   });
 
   it('rejects accrued to cash when collections exist', () => {
@@ -353,7 +372,8 @@ describe('income update validation', () => {
       ],
     });
 
-    useFinanceStore.getState().updateIncome('a1', { incomeType: 'cash' });
+    const result = useFinanceStore.getState().updateIncome('a1', { incomeType: 'cash' });
+    expect(result).toEqual({ ok: false, errorKey: 'income.collection.errors.hasCollections' });
     expect(useFinanceStore.getState().incomes.find((i) => i.id === 'a1')?.incomeType).toBe('accrued');
   });
 });
