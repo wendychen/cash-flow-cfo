@@ -53,6 +53,8 @@ export const en = {
         invalidAmount: 'Collection amount must be greater than zero.',
         exceedsOutstanding: 'Collection exceeds outstanding accrued balance.',
         belowCollected: 'Accrued amount cannot be less than already collected.',
+        hasCollections: 'Cannot change to cash while collections are linked to this accrued income.',
+        collectionTypeLocked: 'Collection entries cannot change income type.',
       },
     },
     form: {

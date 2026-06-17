@@ -91,6 +91,26 @@ export function validateAccruedAmountUpdate(
   return { valid: true };
 }
 
+export function validateIncomeTypeChange(
+  income: Income,
+  newType: Income['incomeType'],
+  incomes: Income[]
+): ValidationResult {
+  if (income.incomeType === newType) return { valid: true };
+
+  if (isAccruedCollection(income)) {
+    return { valid: false, errorKey: 'income.collection.errors.collectionTypeLocked' };
+  }
+
+  if (income.incomeType === 'accrued' && newType === 'cash') {
+    if (getCollectionsForAccrued(income.id, incomes).length > 0) {
+      return { valid: false, errorKey: 'income.collection.errors.hasCollections' };
+    }
+  }
+
+  return { valid: true };
+}
+
 export function isAccruedCollection(income: Income): boolean {
   return income.incomeType === 'cash' && !!income.linkedAccruedIncomeId;
 }

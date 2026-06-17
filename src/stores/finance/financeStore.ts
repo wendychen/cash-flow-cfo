@@ -35,6 +35,7 @@ import { isRepeatingGoal, normalizeRepeatInterval } from '@/types/goalRepeat';
 import {
   buildAccruedCollectionIncome,
   validateAccruedAmountUpdate,
+  validateIncomeTypeChange,
   validateCollectionAmount,
 } from '@/lib/incomeConversion';
 import { migratePersistedState } from './migration';
@@ -387,12 +388,22 @@ export const useFinanceStore = create<FinanceStore>()(
           const income = state.incomes.find((i) => i.id === id);
           if (!income) return state;
 
+          if (updates.incomeType !== undefined && updates.incomeType !== income.incomeType) {
+            const typeCheck = validateIncomeTypeChange(income, updates.incomeType, state.incomes);
+            if (!typeCheck.valid) return state;
+          }
+
+          const resultingType = updates.incomeType ?? income.incomeType;
           if (
-            income.incomeType === 'accrued' &&
+            resultingType === 'accrued' &&
             updates.amount !== undefined &&
             updates.amount !== income.amount
           ) {
-            const check = validateAccruedAmountUpdate(income, updates.amount, state.incomes);
+            const check = validateAccruedAmountUpdate(
+              { ...income, incomeType: 'accrued' },
+              updates.amount,
+              state.incomes
+            );
             if (!check.valid) return state;
           }
 

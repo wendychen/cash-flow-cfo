@@ -55,6 +55,8 @@ export const ja: Messages = {
         invalidAmount: '入金額はゼロより大きい必要があります。',
         exceedsOutstanding: '入金額が未収残高を超えています。',
         belowCollected: '未収額は既に回収済みの金額より少なくできません。',
+        hasCollections: '入金が紐づいている未収収入は現金に変更できません。',
+        collectionTypeLocked: '入金記録の収入タイプは変更できません。',
       },
     },
     form: {

@@ -4,6 +4,7 @@ import {
   getAccruedCollectionStatus,
   validateAccruedAmountUpdate,
   validateCollectionAmount,
+  validateIncomeTypeChange,
 } from './incomeConversion';
 import type { Income } from '@/types/income';
 
@@ -72,6 +73,25 @@ describe('incomeConversion', () => {
     expect(result.valid).toBe(false);
     if (!result.valid) {
       expect(result.errorKey).toBe('income.collection.errors.belowCollected');
+    }
+  });
+
+  it('blocks accrued to cash when collections exist', () => {
+    const result = validateIncomeTypeChange(accrued, 'cash', [accrued, partialCollection]);
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.errorKey).toBe('income.collection.errors.hasCollections');
+    }
+  });
+
+  it('blocks type change on collection entries', () => {
+    const result = validateIncomeTypeChange(partialCollection, 'accrued', [
+      accrued,
+      partialCollection,
+    ]);
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.errorKey).toBe('income.collection.errors.collectionTypeLocked');
     }
   });
 });

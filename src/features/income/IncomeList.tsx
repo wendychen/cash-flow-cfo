@@ -8,6 +8,7 @@ import {
   getCollectionsForAccrued,
   isAccruedCollection,
   validateAccruedAmountUpdate,
+  validateIncomeTypeChange,
 } from "@/lib/incomeConversion";
 import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/button";
@@ -107,6 +108,13 @@ const IncomeList = ({
       convertToNTD
     );
     const income = incomePool.find((i) => i.id === id);
+    if (income) {
+      const typeCheck = validateIncomeTypeChange(income, editIncomeType, incomePool);
+      if (!typeCheck.valid) {
+        setEditError(t(typeCheck.errorKey));
+        return;
+      }
+    }
     if (editIncomeType === "accrued" && income && stored.amount !== undefined) {
       const check = validateAccruedAmountUpdate(
         { ...income, incomeType: "accrued" },
@@ -187,6 +195,8 @@ const IncomeList = ({
                 const linkedAccrued =
                   income.linkedAccruedIncomeId &&
                   incomePool.find((i) => i.id === income.linkedAccruedIncomeId);
+                const incomeTypeLocked =
+                  isAccruedCollection(income) || collectionHistory.length > 0;
 
                 return (
                 <div key={income.id} className="space-y-0">
@@ -247,8 +257,15 @@ const IncomeList = ({
                           onChange={(e) => setEditDate(e.target.value)}
                           className="h-8 text-sm w-32"
                         />
-                        <Select value={editIncomeType} onValueChange={(val) => setEditIncomeType(val as IncomeType)}>
-                          <SelectTrigger className="h-8 w-24 text-xs">
+                        <Select
+                          value={editIncomeType}
+                          disabled={incomeTypeLocked}
+                          onValueChange={(val) => {
+                            setEditIncomeType(val as IncomeType);
+                            setEditError(null);
+                          }}
+                        >
+                          <SelectTrigger className="h-8 w-24 text-xs" disabled={incomeTypeLocked}>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>

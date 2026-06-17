@@ -55,6 +55,8 @@ export const zhTW: Messages = {
         invalidAmount: '收款金額必須大於零。',
         exceedsOutstanding: '收款金額超過未收餘額。',
         belowCollected: '應收金額不能低於已收金額。',
+        hasCollections: '此應收收入已有收款記錄，無法改為現金。',
+        collectionTypeLocked: '收款記錄無法變更收入類型。',
       },
     },
     form: {
