@@ -32,6 +32,8 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { useI18n } from "@/i18n";
+import { getExpenseCategoryLabel } from "@/lib/categoryLabels";
 
 interface ExpenseListProps {
   expenses: Expense[];
@@ -52,6 +54,7 @@ const ExpenseList = ({
   onDuplicateExpense,
   goals = [],
 }: ExpenseListProps) => {
+  const { t } = useI18n();
   const { format: formatCurrency, currency, convertFromNTD, convertToNTD } = useCurrency();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDescription, setEditDescription] = useState("");
@@ -140,8 +143,8 @@ const ExpenseList = ({
   if (expenses.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
-        <p className="text-lg">No expenses yet</p>
-        <p className="text-sm mt-1">Add your first expense above</p>
+        <p className="text-lg">{t('expenses.list.empty')}</p>
+        <p className="text-sm mt-1">{t('expenses.list.emptyHint')}</p>
       </div>
     );
   }
@@ -153,20 +156,22 @@ const ExpenseList = ({
           <Filter className="h-4 w-4 text-muted-foreground" />
           <Select value={filterCategory} onValueChange={setFilterCategory}>
             <SelectTrigger className="w-[160px] h-8">
-              <SelectValue placeholder="All Categories" />
+              <SelectValue placeholder={t('expenses.list.allCategories')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {Object.entries(EXPENSE_CATEGORIES).map(([key, meta]) => (
+              <SelectItem value="all">{t('expenses.list.allCategories')}</SelectItem>
+              {Object.entries(EXPENSE_CATEGORIES).map(([key]) => (
                 <SelectItem key={key} value={key}>
-                  {meta.label}
+                  {getExpenseCategoryLabel(key as ExpenseCategory, t)}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
         <span className="text-sm text-muted-foreground">
-          {filteredExpenses.length} expense{filteredExpenses.length !== 1 ? 's' : ''}
+          {filteredExpenses.length === 1
+            ? t('expenses.list.countOne')
+            : t('expenses.list.count', { count: filteredExpenses.length })}
         </span>
       </div>
 
@@ -216,9 +221,9 @@ const ExpenseList = ({
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              {Object.entries(EXPENSE_CATEGORIES).map(([key, meta]) => (
+                              {Object.entries(EXPENSE_CATEGORIES).map(([key]) => (
                                 <SelectItem key={key} value={key}>
-                                  {meta.label}
+                                  {getExpenseCategoryLabel(key as ExpenseCategory, t)}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -227,7 +232,7 @@ const ExpenseList = ({
                             type="number"
                             value={editReviewCount}
                             onChange={(e) => setEditReviewCount(e.target.value)}
-                            placeholder="Review"
+                            placeholder={t('forms.review')}
                             className="h-8 text-sm w-16"
                             min="0"
                           />
@@ -240,7 +245,7 @@ const ExpenseList = ({
                           <Input
                             value={editTimeCost}
                             onChange={(e) => setEditTimeCost(e.target.value)}
-                            placeholder="Time"
+                            placeholder={t('forms.time')}
                             className="h-8 text-sm w-20"
                           />
                           <div className="flex gap-1">
@@ -303,7 +308,7 @@ const ExpenseList = ({
                             <Badge variant="outline" className={`${categoryMeta.color} border-current shrink-0`}>
                               <div className="flex items-center gap-1">
                                 <ExpenseCategoryIcon category={categoryKey} className="h-3 w-3" />
-                                <span className="text-xs">{categoryMeta.label}</span>
+                                <span className="text-xs">{getExpenseCategoryLabel(categoryKey, t)}</span>
                               </div>
                             </Badge>
                             <span className="text-foreground font-medium truncate">
@@ -318,7 +323,11 @@ const ExpenseList = ({
                               <>
                                 <Link
                                   className="h-3 w-3 text-blue-500 shrink-0"
-                                  title={`Linked to goal ${expense.linkedTaskType ? `(${expense.linkedTaskType})` : ''}`}
+                                  title={
+                                    expense.linkedTaskType
+                                      ? t('expenses.list.linkedGoalWithType', { type: expense.linkedTaskType })
+                                      : t('expenses.list.linkedGoal')
+                                  }
                                 />
                                 {getGoalTitle(expense.linkedGoalId) && (
                                   <Badge variant="outline" className="text-blue-500 border-blue-500 shrink-0 text-[10px] px-1 py-0 h-4">
@@ -339,7 +348,7 @@ const ExpenseList = ({
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
-                              title="Duplicate entry"
+                              title={t('forms.duplicate')}
                               onClick={() => onDuplicateExpense(duplicateEntry(expense))}
                             >
                               <Copy className="w-4 h-4" />

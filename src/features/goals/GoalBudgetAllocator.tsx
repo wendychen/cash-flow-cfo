@@ -5,6 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { Target, DollarSign } from "lucide-react";
 import { useCurrency } from "@/hooks/use-currency";
 import { useMemo } from "react";
+import { useI18n } from "@/i18n";
 
 interface GoalBudgetAllocatorProps {
   goals: Goal[];
@@ -19,6 +20,7 @@ const GoalBudgetAllocator = ({
   latestSavingsBalance,
   onUpdateGoal,
 }: GoalBudgetAllocatorProps) => {
+  const { t } = useI18n();
   const { format } = useCurrency();
 
   const activeGoals = useMemo(
@@ -50,8 +52,8 @@ const GoalBudgetAllocator = ({
     return (
       <div className="text-center py-6 text-muted-foreground">
         <Target className="h-8 w-8 mx-auto mb-2 opacity-50" />
-        <p className="text-sm">No active goals to allocate budget to</p>
-        <p className="text-xs mt-1">Create goals in the Goals tab first</p>
+        <p className="text-sm">{t('goals.budgetAllocator.empty')}</p>
+        <p className="text-xs mt-1">{t('goals.budgetAllocator.emptyHint')}</p>
       </div>
     );
   }
@@ -60,22 +62,22 @@ const GoalBudgetAllocator = ({
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <Target className="h-5 w-5 text-emerald-600" />
-        <h3 className="font-semibold text-foreground">Goal Budget Allocation</h3>
+        <h3 className="font-semibold text-foreground">{t('goals.budgetAllocator.title')}</h3>
       </div>
 
       <div className="space-y-2">
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">
-            Allocated: {format(totalAllocated)}
+            {t('goals.budgetAllocator.allocated', { amount: format(totalAllocated) })}
           </span>
           <span className="text-muted-foreground">
-            Savings Balance: {format(latestSavingsBalance)}
+            {t('goals.budgetAllocator.savingsBalance', { amount: format(latestSavingsBalance) })}
           </span>
         </div>
         <Progress value={progressPercent} className="h-2" />
         {totalAllocated > latestSavingsBalance && (
           <p className="text-xs text-red-500">
-            Over-allocated by {format(totalAllocated - latestSavingsBalance)}
+            {t('goals.budgetAllocator.overAllocated', { amount: format(totalAllocated - latestSavingsBalance) })}
           </p>
         )}
       </div>

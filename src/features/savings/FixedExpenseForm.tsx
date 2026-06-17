@@ -15,6 +15,8 @@ import { FixedExpense, Frequency } from "@/types/fixedExpense";
 import { useCurrency, Currency } from "@/hooks/use-currency";
 import { FixedExpenseCategory, FIXED_EXPENSE_CATEGORIES, FIXED_EXPENSE_CATEGORY_GROUPS } from "@/types/expenseCategory";
 import { FrequencySelectField } from "@/components/shared";
+import { useI18n } from "@/i18n";
+import { getFixedExpenseCategoryLabel } from "@/lib/categoryLabels";
 
 interface FixedExpenseFormProps {
   onAddFixedExpense: (expense: Omit<FixedExpense, "id" | "createdAt">) => void;
@@ -34,6 +36,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 };
 
 const FixedExpenseForm = ({ onAddFixedExpense }: FixedExpenseFormProps) => {
+  const { t } = useI18n();
   const { convertToNTD } = useCurrency();
   const [category, setCategory] = useState<FixedExpenseCategory>("housing");
   const [description, setDescription] = useState("");
@@ -87,7 +90,7 @@ const FixedExpenseForm = ({ onAddFixedExpense }: FixedExpenseFormProps) => {
                   <SelectItem key={key} value={key}>
                     <div className="flex items-center gap-2">
                       <Icon className="h-4 w-4" />
-                      <span>{meta.label}</span>
+                      <span>{getFixedExpenseCategoryLabel(key as FixedExpenseCategory, t)}</span>
                     </div>
                   </SelectItem>
                 );
@@ -97,7 +100,7 @@ const FixedExpenseForm = ({ onAddFixedExpense }: FixedExpenseFormProps) => {
         </SelectContent>
       </Select>
       <Input
-        placeholder="Description (e.g., Health Insurance)"
+        placeholder={t('forms.fixedDescriptionPlaceholder')}
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         className="flex-1 min-w-[150px]"

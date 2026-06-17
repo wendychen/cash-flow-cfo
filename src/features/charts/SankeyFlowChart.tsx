@@ -17,7 +17,8 @@ import { FixedExpense } from "@/types/fixedExpense";
 import { useCurrency } from "@/hooks/use-currency";
 import { useI18n } from "@/i18n";
 import { type TimePeriod } from "@/components/shared";
-import { EXPENSE_CATEGORIES, FIXED_EXPENSE_CATEGORIES, ExpenseCategory, FixedExpenseCategory, migrateFixedExpenseCategory } from "@/types/expenseCategory";
+import { ExpenseCategory, FixedExpenseCategory, migrateFixedExpenseCategory } from "@/types/expenseCategory";
+import { getExpenseCategoryLabel, getFixedExpenseCategoryLabel } from "@/lib/categoryLabels";
 import { computeSankeyIncomeSplit } from "@/lib/incomeBreakdown";
 
 interface SankeyNode {
@@ -278,11 +279,10 @@ const SankeyFlowChart = ({
       Object.entries(fixedCategoryTotals).forEach(([category, total]) => {
         if (total > 0) {
           const cat = category as FixedExpenseCategory;
-          const meta = FIXED_EXPENSE_CATEGORIES[cat];
           const color = fixedColorMap[category] ?? "#6b7280";
           nodes.push({
             id: `fixed-cat-${category}`,
-            name: meta?.label ?? category,
+            name: getFixedExpenseCategoryLabel(cat, t),
             color,
             value: total,
           });
@@ -306,7 +306,6 @@ const SankeyFlowChart = ({
       Object.entries(onetimeCategoryTotals).forEach(([category, total]) => {
         if (total > 0) {
           const cat = category as ExpenseCategory;
-          const meta = EXPENSE_CATEGORIES[cat];
           const colorMap: Record<ExpenseCategory, string> = {
             food: "#10b981",
             necessities: "#14b8a6",
@@ -319,7 +318,7 @@ const SankeyFlowChart = ({
           };
           nodes.push({
             id: `onetime-cat-${category}`,
-            name: meta.label,
+            name: getExpenseCategoryLabel(cat, t),
             color: colorMap[cat],
             value: total,
           });
@@ -364,12 +363,11 @@ const SankeyFlowChart = ({
       Object.entries(categoryTotals).forEach(([category, total]) => {
         if (total > 0) {
           const cat = category as FixedExpenseCategory;
-          const meta = FIXED_EXPENSE_CATEGORIES[cat];
           const color = colorMap[category] ?? "#6b7280";
 
           nodes.push({
             id: `fixed-cat-${category}`,
-            name: meta?.label ?? category,
+            name: getFixedExpenseCategoryLabel(cat, t),
             color,
             value: total,
           });
@@ -397,7 +395,6 @@ const SankeyFlowChart = ({
       Object.entries(categoryTotals).forEach(([category, total]) => {
         if (total > 0) {
           const cat = category as ExpenseCategory;
-          const meta = EXPENSE_CATEGORIES[cat];
           const colorMap: Record<ExpenseCategory, string> = {
             food: "#10b981",
             necessities: "#14b8a6",
@@ -411,7 +408,7 @@ const SankeyFlowChart = ({
 
           nodes.push({
             id: `onetime-cat-${category}`,
-            name: meta.label,
+            name: getExpenseCategoryLabel(cat, t),
             color: colorMap[cat],
             value: total,
           });

@@ -12,12 +12,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useI18n } from "@/i18n";
 
 interface IncomeFormProps {
   onAddIncome: (income: Omit<Income, "id">) => void;
 }
 
 const IncomeForm = ({ onAddIncome }: IncomeFormProps) => {
+  const { t } = useI18n();
   const { convertToNTD } = useCurrency();
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [source, setSource] = useState("");
@@ -53,7 +55,7 @@ const IncomeForm = ({ onAddIncome }: IncomeFormProps) => {
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <div className="flex-1 min-w-0">
-          <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Date</label>
+          <label className="text-sm font-medium text-muted-foreground mb-1.5 block">{t('forms.date')}</label>
           <Input
             type="date"
             value={date}
@@ -62,22 +64,22 @@ const IncomeForm = ({ onAddIncome }: IncomeFormProps) => {
           />
         </div>
         <div className="flex-1 min-w-0">
-          <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Type</label>
+          <label className="text-sm font-medium text-muted-foreground mb-1.5 block">{t('forms.type')}</label>
           <Select value={incomeType} onValueChange={(val) => setIncomeType(val as IncomeType)}>
             <SelectTrigger className="bg-card" data-testid="select-income-type">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="cash">Cash</SelectItem>
-              <SelectItem value="accrued">Accrued</SelectItem>
+              <SelectItem value="cash">{t('income.type.cash')}</SelectItem>
+              <SelectItem value="accrued">{t('income.type.accrued')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <div className="flex-[2] min-w-0">
-          <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Source</label>
+          <label className="text-sm font-medium text-muted-foreground mb-1.5 block">{t('forms.source')}</label>
           <Input
             type="text"
-            placeholder="Salary, Freelance, Dividend..."
+            placeholder={t('forms.sourcePlaceholder')}
             value={source}
             onChange={(e) => setSource(e.target.value)}
             className="bg-card"
@@ -85,7 +87,7 @@ const IncomeForm = ({ onAddIncome }: IncomeFormProps) => {
           />
         </div>
         <div className="flex-[1.5] min-w-0">
-          <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Amount</label>
+          <label className="text-sm font-medium text-muted-foreground mb-1.5 block">{t('forms.amount')}</label>
           <div className="flex gap-2">
             <Input
               type="number"
@@ -112,10 +114,10 @@ const IncomeForm = ({ onAddIncome }: IncomeFormProps) => {
       </div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <div className="flex-1 min-w-0">
-          <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Note (optional)</label>
+          <label className="text-sm font-medium text-muted-foreground mb-1.5 block">{t('forms.noteOptional')}</label>
           <Input
             type="text"
-            placeholder="Is this income bringing you closer to living in Canada?"
+            placeholder={t('forms.incomeNotePlaceholder')}
             value={note}
             onChange={(e) => setNote(e.target.value)}
             className="bg-card"
@@ -123,7 +125,7 @@ const IncomeForm = ({ onAddIncome }: IncomeFormProps) => {
         </div>
         <Button type="submit" className="shrink-0 bg-violet-600 hover:bg-violet-700">
           <Wallet className="w-4 h-4 mr-1.5" />
-          Add Income
+          {t('income.form.addIncome')}
         </Button>
       </div>
     </form>

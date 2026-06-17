@@ -18,6 +18,8 @@ import { useCurrency, Currency } from "@/hooks/use-currency";
 import { FixedExpenseCategory, FIXED_EXPENSE_CATEGORIES, FIXED_EXPENSE_CATEGORY_GROUPS, migrateFixedExpenseCategory } from "@/types/expenseCategory";
 import { FrequencySelectField } from "@/components/shared";
 import { FREQUENCY_META } from "@/lib/frequencyLabels";
+import { useI18n } from "@/i18n";
+import { getFixedExpenseCategoryLabel } from "@/lib/categoryLabels";
 import {
   Tooltip,
   TooltipContent,
@@ -46,6 +48,7 @@ const FixedExpenseList = ({
   onUpdateFixedExpense,
   onDeleteFixedExpense,
 }: FixedExpenseListProps) => {
+  const { t } = useI18n();
   const { format, convertToNTD } = useCurrency();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDescription, setEditDescription] = useState("");
@@ -126,16 +129,16 @@ const FixedExpenseList = ({
           <Filter className="h-4 w-4 text-muted-foreground" />
           <Select value={filterCategory} onValueChange={setFilterCategory}>
             <SelectTrigger className="w-[180px] h-8">
-              <SelectValue placeholder="All Categories" />
+              <SelectValue placeholder={t('categories.all')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
+              <SelectItem value="all">{t('categories.all')}</SelectItem>
               {FIXED_EXPENSE_CATEGORY_GROUPS.map((group) => (
                 <SelectGroup key={group.parentKey ?? group.categories[0]?.key}>
                   {group.parentLabel && <SelectLabel className="pl-2">{group.parentLabel}</SelectLabel>}
-                  {group.categories.map(({ key, meta }) => (
+                  {group.categories.map(({ key }) => (
                     <SelectItem key={key} value={key}>
-                      {meta.label}
+                      {getFixedExpenseCategoryLabel(key as FixedExpenseCategory, t)}
                     </SelectItem>
                   ))}
                 </SelectGroup>
@@ -168,9 +171,9 @@ const FixedExpenseList = ({
                   {FIXED_EXPENSE_CATEGORY_GROUPS.map((group) => (
                     <SelectGroup key={group.parentKey ?? group.categories[0]?.key}>
                       {group.parentLabel && <SelectLabel className="pl-2">{group.parentLabel}</SelectLabel>}
-                      {group.categories.map(({ key, meta }) => (
+                      {group.categories.map(({ key }) => (
                         <SelectItem key={key} value={key}>
-                          {meta.label}
+                          {getFixedExpenseCategoryLabel(key as FixedExpenseCategory, t)}
                         </SelectItem>
                       ))}
                     </SelectGroup>
@@ -233,7 +236,7 @@ const FixedExpenseList = ({
                   <Badge variant="outline" className={`text-${FIXED_EXPENSE_CATEGORIES[migrateFixedExpenseCategory(expense.category)].color} border-current`}>
                     <div className="flex items-center gap-1">
                       {getCategoryIcon(migrateFixedExpenseCategory(expense.category) as FixedExpenseCategory)}
-                      <span className="text-xs">{FIXED_EXPENSE_CATEGORIES[migrateFixedExpenseCategory(expense.category)].label}</span>
+                      <span className="text-xs">{getFixedExpenseCategoryLabel(migrateFixedExpenseCategory(expense.category), t)}</span>
                     </div>
                   </Badge>
                 </div>

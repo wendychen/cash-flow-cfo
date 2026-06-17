@@ -28,6 +28,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { useI18n } from "@/i18n";
 
 interface SavingListProps {
   savings: Saving[];
@@ -44,6 +45,7 @@ const SavingList = ({
   onUpdateSaving,
   onDuplicateSaving,
 }: SavingListProps) => {
+  const { t } = useI18n();
   const { format: formatCurrency, currency, convertFromNTD, convertToNTD } = useCurrency();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editAmount, setEditAmount] = useState("");
@@ -102,8 +104,8 @@ const SavingList = ({
   if (savings.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
-        <p className="text-lg">No savings records yet</p>
-        <p className="text-sm mt-1">Add your first savings balance above</p>
+        <p className="text-lg">{t('savings.list.empty')}</p>
+        <p className="text-sm mt-1">{t('savings.list.emptyHint')}</p>
       </div>
     );
   }
@@ -134,8 +136,8 @@ const SavingList = ({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="balance">Balance</SelectItem>
-                    <SelectItem value="goal">Goal</SelectItem>
+                    <SelectItem value="balance">{t('savings.type.balance')}</SelectItem>
+                    <SelectItem value="goal">{t('savings.type.goal')}</SelectItem>
                   </SelectContent>
                 </Select>
                 <Input
@@ -148,14 +150,14 @@ const SavingList = ({
                   type="number"
                   value={editReviewCount}
                   onChange={(e) => setEditReviewCount(e.target.value)}
-                  placeholder="Review"
+                  placeholder={t('forms.review')}
                   className="h-8 text-sm w-16"
                   min="0"
                 />
                 <Input
                   value={editNote}
                   onChange={(e) => setEditNote(e.target.value)}
-                  placeholder="Note"
+                  placeholder={t('forms.note')}
                   className="h-8 text-sm flex-1 min-w-24"
                 />
                 <div className="flex gap-1">
@@ -211,9 +213,9 @@ const SavingList = ({
                   }`}
                 >
                   {saving.savingType === "goal" ? (
-                    <><Target className="w-3 h-3 mr-1" />Goal</>
+                    <><Target className="w-3 h-3 mr-1" />{t('savings.type.goal')}</>
                   ) : (
-                    <><PiggyBank className="w-3 h-3 mr-1" />Balance</>
+                    <><PiggyBank className="w-3 h-3 mr-1" />{t('savings.type.balance')}</>
                   )}
                 </Badge>
                 <Input
@@ -244,7 +246,7 @@ const SavingList = ({
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8 text-muted-foreground hover:text-emerald-600 hover:bg-emerald-100"
-                    title="Duplicate entry"
+                    title={t('forms.duplicate')}
                     onClick={() => onDuplicateSaving(duplicateEntry(saving))}
                   >
                     <Copy className="w-4 h-4" />

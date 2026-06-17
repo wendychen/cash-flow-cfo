@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/hover-card";
 import { ExpenseCategoryIcon } from "./ExpenseCategoryIcon";
 import { buildStoredAmountFields, DEFAULT_DISPLAY_CURRENCY } from "@/lib/currencyEntry";
+import { useI18n } from "@/i18n";
+import { getExpenseCategoryLabel } from "@/lib/categoryLabels";
 
 interface ExpenseFormProps {
   onAddExpense: (expense: Omit<Expense, "id">) => void;
@@ -27,6 +29,7 @@ interface ExpenseFormProps {
 const DEFAULT_CATEGORY: ExpenseCategory = "food";
 
 const ExpenseForm = ({ onAddExpense }: ExpenseFormProps) => {
+  const { t } = useI18n();
   const { convertToNTD } = useCurrency();
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [category, setCategory] = useState<ExpenseCategory>(DEFAULT_CATEGORY);
@@ -63,7 +66,7 @@ const ExpenseForm = ({ onAddExpense }: ExpenseFormProps) => {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-end">
       <div className="flex-1 min-w-0">
-        <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Date</label>
+        <label className="text-sm font-medium text-muted-foreground mb-1.5 block">{t('forms.date')}</label>
         <Input
           type="date"
           value={date}
@@ -73,7 +76,7 @@ const ExpenseForm = ({ onAddExpense }: ExpenseFormProps) => {
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 mb-1.5">
-          <label className="text-sm font-medium text-muted-foreground">Category</label>
+          <label className="text-sm font-medium text-muted-foreground">{t('forms.category')}</label>
           <HoverCard>
             <HoverCardTrigger asChild>
               <button type="button" className="text-muted-foreground hover:text-foreground transition-colors">
@@ -119,11 +122,11 @@ const ExpenseForm = ({ onAddExpense }: ExpenseFormProps) => {
             </div>
           </SelectTrigger>
           <SelectContent>
-            {Object.entries(EXPENSE_CATEGORIES).map(([key, meta]) => (
+            {Object.entries(EXPENSE_CATEGORIES).map(([key]) => (
               <SelectItem key={key} value={key}>
                 <div className="flex items-center gap-2">
                   <ExpenseCategoryIcon category={key as ExpenseCategory} className="h-4 w-4" />
-                  <span>{meta.label}</span>
+                  <span>{getExpenseCategoryLabel(key as ExpenseCategory, t)}</span>
                 </div>
               </SelectItem>
             ))}
@@ -131,17 +134,17 @@ const ExpenseForm = ({ onAddExpense }: ExpenseFormProps) => {
         </Select>
       </div>
       <div className="flex-[2] min-w-0">
-        <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Description</label>
+        <label className="text-sm font-medium text-muted-foreground mb-1.5 block">{t('forms.description')}</label>
         <Input
           type="text"
-          placeholder="Does it drive you away from Canada?"
+          placeholder={t('forms.expenseDescriptionPlaceholder')}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           className="bg-card"
         />
       </div>
       <div className="flex-1 min-w-0">
-        <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Time</label>
+        <label className="text-sm font-medium text-muted-foreground mb-1.5 block">{t('forms.time')}</label>
         <Input
           type="text"
           placeholder="2h 30m"
@@ -151,7 +154,7 @@ const ExpenseForm = ({ onAddExpense }: ExpenseFormProps) => {
         />
       </div>
       <div className="flex-[1.5] min-w-0">
-        <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Amount</label>
+        <label className="text-sm font-medium text-muted-foreground mb-1.5 block">{t('forms.amount')}</label>
         <div className="flex gap-2">
           <Input
             type="number"
@@ -176,7 +179,7 @@ const ExpenseForm = ({ onAddExpense }: ExpenseFormProps) => {
       </div>
       <Button type="submit" className="shrink-0">
         <Plus className="w-4 h-4 mr-1.5" />
-        Add
+        {t('forms.addExpense')}
       </Button>
     </form>
   );

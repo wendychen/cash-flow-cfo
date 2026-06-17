@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCurrency } from "@/hooks/use-currency";
+import { useI18n } from "@/i18n";
 import { EXPENSE_CATEGORIES, ExpenseCategory } from "@/types/expenseCategory";
 import {
   Plus,
@@ -285,6 +286,7 @@ const SortableGoalItem = ({
   onExportGoal,
   onSpawnNextCycle,
 }: SortableGoalItemProps) => {
+  const { t } = useI18n();
   const { format } = useCurrency();
   const [newIdeation, setNewIdeation] = useState("");
   const [newUrl, setNewUrl] = useState("");
@@ -438,7 +440,7 @@ const SortableGoalItem = ({
             size="icon"
             className="h-8 w-8 text-muted-foreground hover:text-primary"
             onClick={() => onExportGoal(goal.id)}
-            title="Export goal"
+            title={t('goals.export')}
           >
             <Download className="h-4 w-4" />
           </Button>
