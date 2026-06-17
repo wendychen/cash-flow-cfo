@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useFinanceStore, reimportOldData } from "@/stores";
-import { useFinance } from "@/stores";
+import { useFinance, useFinanceHydrated } from "@/stores";
 import { useCurrency } from "@/hooks/use-currency";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -64,6 +64,8 @@ export default function Dashboard() {
   }, [backfillMissingShadowExpenses]);
 
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod | null>(null);
+  const [activeTab, setActiveTab] = useState("income");
+  const isStoreHydrated = useFinanceHydrated();
 
   // Ref for hidden file input (import)
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -320,7 +322,7 @@ export default function Dashboard() {
         </div>
 
         {/* Tabs Section - Original UI Style with Time Period Filtering */}
-        <Tabs defaultValue="income" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="income">Income</TabsTrigger>
             <TabsTrigger value="expenses">Expenses</TabsTrigger>
@@ -356,7 +358,8 @@ export default function Dashboard() {
               <CardContent className="space-y-6">
                 <ExpenseForm onAddExpense={addExpense} />
                 <ExpenseList
-                  expenses={filteredExpenses}
+                  key={selectedPeriod ? `expenses-${selectedPeriod.label}` : "expenses-all"}
+                  expenses={isStoreHydrated ? filteredExpenses : []}
                   onDeleteExpense={deleteExpense}
                   onToggleNeedsCheck={handleToggleNeedsCheck}
                   onUpdateExpense={updateExpense}

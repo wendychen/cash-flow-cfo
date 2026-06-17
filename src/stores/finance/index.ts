@@ -7,3 +7,4 @@ export { useFinance,
          useLatestSavingsBalance, 
          useDashboardSummary, 
          useFilteredExpenses } from './useFinance';
+export { useFinanceHydrated } from './useFinanceHydrated';

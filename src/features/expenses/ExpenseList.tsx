@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format, parseISO } from "date-fns";
 import { Trash2, Pencil, Check, X, UtensilsCrossed, Sparkles, Users, Package, Filter, Link } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -53,6 +53,10 @@ const ExpenseList = ({
   const [editCategory, setEditCategory] = useState<ExpenseCategory>("misc");
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [expenses, filterCategory]);
 
   const getCategoryIcon = (cat: ExpenseCategory) => {
     const category = EXPENSE_CATEGORIES[cat];
