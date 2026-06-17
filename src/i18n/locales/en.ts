@@ -6,13 +6,24 @@ export const en = {
   nav: {
     guide: 'Guide',
     exportJson: 'Export JSON',
+    exportCsv: 'Export CSV',
     importData: 'Import JSON/CSV',
     reload: 'Reload',
     reset: 'Reset All Data',
     displayCurrency: 'Display currency',
   },
+  income: {
+    breakdown: {
+      label: 'Income mix',
+      cash: 'Cash received',
+      accrued: 'Accrued',
+      total: 'Total',
+    },
+  },
   summary: {
     totalIncome: 'Total Income',
+    cashReceived: 'Cash received',
+    accruedIncome: 'Accrued',
     totalExpenses: 'Total Expenses',
     savings: 'Savings',
     activeGoals: 'Active Goals',

@@ -4,6 +4,7 @@ export type SankeyDrillLevel =
   | 'savings-detail'
   | 'goal-detail'
   | 'expense-detail'
+  | 'expense-categories-split'
   | 'fixed-expense-categories'
   | 'onetime-expense-categories';
 
@@ -17,6 +18,7 @@ const PARENT: Partial<Record<SankeyDrillLevel, SankeyDrillLevel>> = {
   'savings-detail': 'overview',
   'goal-detail': 'overview',
   'expense-detail': 'overview',
+  'expense-categories-split': 'expense-detail',
   'fixed-expense-categories': 'expense-detail',
   'onetime-expense-categories': 'expense-detail',
 };
@@ -27,6 +29,7 @@ const LABELS: Record<SankeyDrillLevel, string> = {
   'savings-detail': 'Savings',
   'goal-detail': 'Goals',
   'expense-detail': 'Expenses',
+  'expense-categories-split': 'Categories',
   'fixed-expense-categories': 'Fixed Categories',
   'onetime-expense-categories': 'One-Time Categories',
 };
@@ -40,8 +43,8 @@ export const SANKEY_OVERVIEW_DRILL: Partial<Record<string, SankeyDrillLevel>> = 
 };
 
 export const SANKEY_EXPENSE_DETAIL_DRILL: Partial<Record<string, SankeyDrillLevel>> = {
-  fixed: 'fixed-expense-categories',
-  onetime: 'onetime-expense-categories',
+  fixed: 'expense-categories-split',
+  onetime: 'expense-categories-split',
 };
 
 export function getSankeyBreadcrumb(level: SankeyDrillLevel): SankeyBreadcrumbStep[] {

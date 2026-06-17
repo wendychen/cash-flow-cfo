@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Target, Receipt, TrendingUp, PiggyBank, Target as GoalIcon, Download, Upload, Printer, CircleHelp } from "lucide-react";
 import { saveFinanceExport, parseImportJSON } from "@/lib/exportImport";
+import { saveFinanceCsvExport } from "@/lib/csvExport";
+import { computeIncomeBreakdown } from "@/lib/incomeBreakdown";
 import { getLatestAutoBackup, listAutoBackups } from "@/lib/autoBackup";
 import { printBackupReport, printGoalsReport } from "@/lib/printReport";
 import { useAutoBackup } from "@/hooks/use-auto-backup";
@@ -31,7 +33,7 @@ import {
   downloadGoalExport,
   parseGoalImportJSON,
 } from "@/lib/goalExport";
-import { IncomeForm, IncomeList } from "@/features/income";
+import { IncomeForm, IncomeList, IncomeBreakdownBar } from "@/features/income";
 import type { TaskType } from "@/types/task";
 
 /**
@@ -127,6 +129,33 @@ export default function Dashboard() {
     alert(`✅ Exported ${result.filename} (${methodNote})`);
   };
 
+  const handleCsvExport = async () => {
+    const stateSnapshot = {
+      version: 2 as const,
+      expenses,
+      incomes,
+      savings,
+      fixedExpenses,
+      targets,
+      goals,
+      tasks,
+    };
+    const result = await saveFinanceCsvExport(stateSnapshot);
+    if (!result.success) {
+      if (result.error) {
+        alert(`❌ ${result.error}`);
+      } else if (result.method !== 'cancelled') {
+        alert('❌ CSV export failed. Please try again.');
+      }
+      return;
+    }
+    const methodNote =
+      result.method === 'picker'
+        ? 'saved to your chosen location'
+        : 'downloaded to your browser default folder';
+    alert(`✅ Exported ${result.filename} (${methodNote})`);
+  };
+
   const handleImportClick = () => {
     fileInputRef.current?.click();
   };
@@ -190,6 +219,7 @@ export default function Dashboard() {
   );
 
   const { totalIncome, totalExpenses, totalSavings } = dashboardSummary;
+  const incomeBreakdown = computeIncomeBreakdown(filteredIncomes);
 
   const periodDays = selectedPeriod
     ? Math.max(
@@ -380,6 +410,10 @@ export default function Dashboard() {
               <Download className="mr-2 h-4 w-4" />
               {t('nav.exportJson')}
             </Button>
+            <Button variant="outline" onClick={handleCsvExport}>
+              <Download className="mr-2 h-4 w-4" />
+              {t('nav.exportCsv')}
+            </Button>
             <Button variant="outline" onClick={handleImportClick}>
               <Upload className="mr-2 h-4 w-4" />
               {t('nav.importData')}
@@ -428,8 +462,22 @@ export default function Dashboard() {
           <div className="flex-1 min-w-0 space-y-6">
             {/* Summary Cards — auto-fit avoids clipping long currency values beside the sidebar */}
         <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,10.5rem),1fr))] gap-4">
+          <Card className="min-w-0 overflow-hidden">
+            <CardHeader className="px-5 pt-5 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t('summary.totalIncome')}</CardTitle>
+            </CardHeader>
+            <CardContent className="px-5 pb-5 pt-0 space-y-1">
+              <div className="text-sm font-semibold tabular-nums leading-snug break-all text-emerald-600">
+                {format(totalIncome)}
+              </div>
+              {incomeBreakdown.total > 0 && (
+                <div className="text-[11px] text-muted-foreground tabular-nums leading-snug">
+                  {t('summary.cashReceived')}: {format(incomeBreakdown.cash)} · {t('summary.accruedIncome')}: {format(incomeBreakdown.accrued)}
+                </div>
+              )}
+            </CardContent>
+          </Card>
           {[
-            { label: t('summary.totalIncome'), value: format(totalIncome), className: 'text-emerald-600' },
             { label: t('summary.totalExpenses'), value: format(totalExpenses), className: 'text-red-600' },
             { label: t('summary.savings'), value: format(totalSavings), className: 'text-blue-600' },
           ].map((stat) => (
@@ -485,6 +533,7 @@ export default function Dashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
+                <IncomeBreakdownBar incomes={filteredIncomes} />
                 <IncomeForm onAddIncome={addIncome} />
                 <IncomeList
                   incomes={filteredIncomes}

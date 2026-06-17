@@ -8,13 +8,24 @@ export const ja: Messages = {
   nav: {
     guide: 'ガイド',
     exportJson: 'JSONエクスポート',
+    exportCsv: 'CSVエクスポート',
     importData: 'JSON/CSVインポート',
     reload: '再読み込み',
     reset: '全データをリセット',
     displayCurrency: '表示通貨',
   },
+  income: {
+    breakdown: {
+      label: '収入内訳',
+      cash: '実収',
+      accrued: '未収（発生）',
+      total: '合計',
+    },
+  },
   summary: {
     totalIncome: '総収入',
+    cashReceived: '実収',
+    accruedIncome: '未収',
     totalExpenses: '総支出',
     savings: '貯蓄',
     activeGoals: '進行中の目標',

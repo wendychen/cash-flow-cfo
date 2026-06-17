@@ -209,6 +209,97 @@ const SankeyFlowChart = ({
       if (oneTimeExpenseTotal > 0) {
         links.push({ source: "expenses", target: "onetime", value: oneTimeExpenseTotal, color: "#f8717180" });
       }
+    } else if (drillDownLevel === "expense-categories-split") {
+      const splitOneTimeTotal = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+
+      nodes.push(
+        { id: "fixed-expenses", name: "Fixed Expenses", color: "#dc2626", value: fixedExpenseTotal },
+        { id: "onetime-expenses", name: "One-Time Expenses", color: "#f87171", value: splitOneTimeTotal }
+      );
+
+      const fixedCategoryKeys: FixedExpenseCategory[] = [
+        "housing", "utilities-water-electric", "utilities-gas", "utilities-telecom",
+        "transport", "health", "liabilities-debt", "liabilities-loans", "liabilities-installments", "taxes",
+      ];
+      const fixedCategoryTotals: Record<string, number> = Object.fromEntries(fixedCategoryKeys.map((k) => [k, 0]));
+      const fixedColorMap: Record<string, string> = {
+        housing: "#dc2626",
+        "utilities-water-electric": "#eab308",
+        "utilities-gas": "#f59e0b",
+        "utilities-telecom": "#84cc16",
+        transport: "#2563eb",
+        health: "#16a34a",
+        "liabilities-debt": "#f97316",
+        "liabilities-loans": "#ea580c",
+        "liabilities-installments": "#c2410c",
+        taxes: "#6b7280",
+      };
+
+      fixedExpenses.filter((f) => f.isActive).forEach((expense) => {
+        const category = migrateFixedExpenseCategory(expense.category);
+        if (fixedCategoryTotals[category] !== undefined) {
+          fixedCategoryTotals[category] += expense.amount;
+        } else {
+          fixedCategoryTotals.housing += expense.amount;
+        }
+      });
+
+      Object.entries(fixedCategoryTotals).forEach(([category, total]) => {
+        if (total > 0) {
+          const cat = category as FixedExpenseCategory;
+          const meta = FIXED_EXPENSE_CATEGORIES[cat];
+          const color = fixedColorMap[category] ?? "#6b7280";
+          nodes.push({
+            id: `fixed-cat-${category}`,
+            name: meta?.label ?? category,
+            color,
+            value: total,
+          });
+          links.push({
+            source: "fixed-expenses",
+            target: `fixed-cat-${category}`,
+            value: total,
+            color: color + "80",
+          });
+        }
+      });
+
+      const expenseCategoryKeys: ExpenseCategory[] = ["food", "necessities", "lifestyle", "family", "misc", "opex", "capex", "gna"];
+      const onetimeCategoryTotals: Record<string, number> = Object.fromEntries(expenseCategoryKeys.map((k) => [k, 0]));
+
+      expenses.forEach((expense) => {
+        const category = (expenseCategoryKeys.includes(expense.category as ExpenseCategory) ? expense.category : "misc") as ExpenseCategory;
+        onetimeCategoryTotals[category] += expense.amount;
+      });
+
+      Object.entries(onetimeCategoryTotals).forEach(([category, total]) => {
+        if (total > 0) {
+          const cat = category as ExpenseCategory;
+          const meta = EXPENSE_CATEGORIES[cat];
+          const colorMap: Record<ExpenseCategory, string> = {
+            food: "#10b981",
+            necessities: "#14b8a6",
+            lifestyle: "#ec4899",
+            family: "#06b6d4",
+            misc: "#64748b",
+            opex: "#3b82f6",
+            capex: "#8b5cf6",
+            gna: "#f97316",
+          };
+          nodes.push({
+            id: `onetime-cat-${category}`,
+            name: meta.label,
+            color: colorMap[cat],
+            value: total,
+          });
+          links.push({
+            source: "onetime-expenses",
+            target: `onetime-cat-${category}`,
+            value: total,
+            color: colorMap[cat] + "80",
+          });
+        }
+      });
     } else if (drillDownLevel === "fixed-expense-categories") {
       nodes.push({ id: "fixed-expenses", name: "Fixed Expenses", color: "#dc2626", value: fixedExpenseTotal });
 
@@ -344,7 +435,8 @@ const SankeyFlowChart = ({
               {drillDownLevel === "income-detail" && "Cash vs accrued income sources"}
               {drillDownLevel === "savings-detail" && "Balance snapshots vs goal savings entries"}
               {drillDownLevel === "goal-detail" && "Savings allocated to active goal budgets"}
-              {drillDownLevel === "expense-detail" && "Fixed vs one-time expenses — click to view categories"}
+              {drillDownLevel === "expense-detail" && "Fixed vs one-time expenses — click either to view categories side by side"}
+              {drillDownLevel === "expense-categories-split" && "Fixed and one-time categories shown in parallel columns"}
               {drillDownLevel === "fixed-expense-categories" && "Fixed expenses by category (vertical breakdown)"}
               {drillDownLevel === "onetime-expense-categories" && "One-time expenses by category (vertical breakdown)"}
             </CardDescription>
@@ -448,7 +540,7 @@ const SankeyVisualization = ({
   drillDownLevel 
 }: SankeyVisualizationProps) => {
   const svgWidth = 800;
-  const svgHeight = 400;
+  const svgHeight = drillDownLevel === "expense-categories-split" ? 520 : 400;
   const nodeWidth = 20;
   const nodePadding = 30;
 
@@ -475,17 +567,33 @@ const SankeyVisualization = ({
   const columnCount = Math.max(...Object.keys(columns).map(Number), 0) + 1;
   const columnWidth = svgWidth / (columnCount + 1);
 
+  const isSplitCategoryView = drillDownLevel === "expense-categories-split";
   const isCategoryView =
     drillDownLevel === "fixed-expense-categories" ||
     drillDownLevel === "onetime-expense-categories";
   const isDetailView = drillDownLevel !== "overview";
+
+  const splitLane = (nodeId: string): 1 | 2 =>
+    nodeId.startsWith("onetime") ? 2 : 1;
 
   const positionedNodes = nodes.map((node, idx) => {
     let col: number;
     let rowIdx: number;
     let totalInCol: number;
 
-    if (isDetailView) {
+    if (isSplitCategoryView) {
+      const lane = splitLane(node.id);
+      const lanePrefix = lane === 2 ? "onetime" : "fixed";
+      const laneNodes = nodes.filter((n) => n.id.startsWith(lanePrefix));
+      const laneCategories = laneNodes.filter(
+        (n) => n.id !== `${lanePrefix}-expenses`
+      );
+      const isLaneSource = node.id === `${lanePrefix}-expenses`;
+
+      col = lane;
+      totalInCol = laneCategories.length + 1;
+      rowIdx = isLaneSource ? 0 : laneCategories.indexOf(node) + 1;
+    } else if (isDetailView) {
       const isSource = links.some((link) => link.source === node.id);
       const targetNodes = nodes.filter((n) =>
         links.some((link) => link.target === n.id)

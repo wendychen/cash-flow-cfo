@@ -8,13 +8,24 @@ export const zhTW: Messages = {
   nav: {
     guide: '使用說明',
     exportJson: '匯出 JSON',
+    exportCsv: '匯出 CSV',
     importData: '匯入 JSON/CSV',
     reload: '重新載入',
     reset: '重置所有資料',
     displayCurrency: '顯示幣別',
   },
+  income: {
+    breakdown: {
+      label: '收入組成',
+      cash: '實收',
+      accrued: '應收',
+      total: '合計',
+    },
+  },
   summary: {
     totalIncome: '總收入',
+    cashReceived: '實收',
+    accruedIncome: '應收',
     totalExpenses: '總支出',
     savings: '儲蓄',
     activeGoals: '進行中目標',

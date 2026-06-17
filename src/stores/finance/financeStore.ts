@@ -25,8 +25,8 @@ import { Goal } from '@/types/goal';
 import { TaskNode } from '@/types/task';
 import { FinancialTarget } from '@/types/target';
 import { sortTasksForImport } from '@/lib/goalExport';
-import { buildNextCycleGoalFields } from '@/lib/goalRepeat';
-import { isRepeatingGoal } from '@/types/goalRepeat';
+import { buildDuplicatedTasksForCycle, buildNextCycleGoalFields } from '@/lib/goalRepeat';
+import { isRepeatingGoal, normalizeRepeatInterval } from '@/types/goalRepeat';
 import { migratePersistedState } from './migration';
 
 /**
@@ -242,6 +242,55 @@ function createNextCycleGoalFromSource(
   };
 
   return { goal, expense };
+}
+
+interface SpawnedCycleBundle {
+  goal: Goal;
+  goalExpense: Expense;
+  tasks: TaskNode[];
+  taskExpenses: Expense[];
+}
+
+function spawnRepeatingCycleBundle(
+  source: Goal,
+  sourceTasks: TaskNode[],
+  overrides?: Partial<Goal>
+): SpawnedCycleBundle | null {
+  const spawned = createNextCycleGoalFromSource(source, overrides);
+  if (!spawned) return null;
+
+  const interval = normalizeRepeatInterval(source.repeatInterval);
+  const duplicated = buildDuplicatedTasksForCycle(
+    sourceTasks,
+    source.id,
+    spawned.goal.id,
+    interval
+  );
+
+  const taskExpenses: Expense[] = [];
+  const tasks = duplicated.map((task) => {
+    const { expense, expenseId } = createTaskShadowExpense(
+      spawned.goal.id,
+      task.id,
+      task.taskType,
+      {
+        title: task.title,
+        cost: task.cost,
+        timeCost: task.timeCost,
+        deadline: task.deadline,
+      },
+      spawned.goal.category
+    );
+    taskExpenses.push(expense);
+    return { ...task, linkedExpenseId: expenseId };
+  });
+
+  return {
+    goal: spawned.goal,
+    goalExpense: spawned.expense,
+    tasks,
+    taskExpenses,
+  };
 }
 
 export const useFinanceStore = create<FinanceStore>()(
@@ -482,18 +531,21 @@ export const useFinanceStore = create<FinanceStore>()(
           const isCompleting = updates.completed === true && !goal.completed;
           let spawnedGoals: Goal[] = [];
           let spawnedExpenses: Expense[] = [];
+          let spawnedTasks: TaskNode[] = [];
 
           if (isCompleting && isRepeatingGoal(goal.repeatInterval)) {
-            const spawned = createNextCycleGoalFromSource(goal, updates);
-            if (spawned) {
-              spawnedGoals = [spawned.goal];
-              spawnedExpenses = [spawned.expense];
+            const bundle = spawnRepeatingCycleBundle(goal, state.tasks, updates);
+            if (bundle) {
+              spawnedGoals = [bundle.goal];
+              spawnedExpenses = [bundle.goalExpense, ...bundle.taskExpenses];
+              spawnedTasks = bundle.tasks;
             }
           }
 
           return {
             goals: [...nextGoals, ...spawnedGoals],
             expenses: [...nextExpenses, ...spawnedExpenses],
+            tasks: [...state.tasks, ...spawnedTasks],
           };
         });
       },
@@ -582,18 +634,20 @@ export const useFinanceStore = create<FinanceStore>()(
         return goalId;
       },
       spawnRepeatingGoalCycle: (goalId) => {
-        const source = get().goals.find((g) => g.id === goalId);
+        const state = get();
+        const source = state.goals.find((g) => g.id === goalId);
         if (!source) return null;
 
-        const spawned = createNextCycleGoalFromSource(source);
-        if (!spawned) return null;
+        const bundle = spawnRepeatingCycleBundle(source, state.tasks);
+        if (!bundle) return null;
 
-        set((state) => ({
-          goals: [...state.goals, spawned.goal],
-          expenses: [...state.expenses, spawned.expense],
+        set((current) => ({
+          goals: [...current.goals, bundle.goal],
+          expenses: [...current.expenses, bundle.goalExpense, ...bundle.taskExpenses],
+          tasks: [...current.tasks, ...bundle.tasks],
         }));
 
-        return spawned.goal.id;
+        return bundle.goal.id;
       },
 
       // ==================== TASKS (Normalized - Single Source of Truth) ====================

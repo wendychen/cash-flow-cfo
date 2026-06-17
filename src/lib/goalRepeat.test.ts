@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { advanceDateByInterval, buildNextCycleGoalFields } from './goalRepeat';
+import {
+  advanceDateByInterval,
+  buildDuplicatedTasksForCycle,
+  buildNextCycleGoalFields,
+} from './goalRepeat';
 import type { Goal } from '@/types/goal';
+import type { TaskNode } from '@/types/task';
 
 const goal: Goal = {
   id: 'g1',
@@ -41,5 +46,30 @@ describe('goalRepeat', () => {
 
   it('returns null when not repeating', () => {
     expect(buildNextCycleGoalFields({ ...goal, repeatInterval: 'none' })).toBeNull();
+  });
+
+  it('duplicates tasks for next cycle with advanced deadlines', () => {
+    const tasks: TaskNode[] = [
+      {
+        id: 't1',
+        goalId: 'g1',
+        parentId: null,
+        taskType: 'pre',
+        sortOrder: 0,
+        title: 'Research',
+        cost: 100,
+        timeCost: '2h',
+        deadline: '2026-03-15',
+        isMagicWand: false,
+        completed: true,
+        createdAt: '2026-01-01',
+      },
+    ];
+    const next = buildDuplicatedTasksForCycle(tasks, 'g1', 'g2', 'monthly');
+    expect(next).toHaveLength(1);
+    expect(next[0].goalId).toBe('g2');
+    expect(next[0].completed).toBe(false);
+    expect(next[0].deadline).toBe('2026-04-15');
+    expect(next[0].id).not.toBe('t1');
   });
 });

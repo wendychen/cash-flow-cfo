@@ -25,8 +25,16 @@ describe('sankeyNavigation', () => {
     expect(resolveSankeyDrill('overview', 'unknown')).toBeNull();
   });
 
-  it('resolves expense detail node clicks', () => {
-    expect(resolveSankeyDrill('expense-detail', 'fixed')).toBe('fixed-expense-categories');
-    expect(resolveSankeyDrill('expense-detail', 'onetime')).toBe('onetime-expense-categories');
+  it('resolves expense detail node clicks to split category view', () => {
+    expect(resolveSankeyDrill('expense-detail', 'fixed')).toBe('expense-categories-split');
+    expect(resolveSankeyDrill('expense-detail', 'onetime')).toBe('expense-categories-split');
+  });
+
+  it('builds breadcrumb for split category view', () => {
+    expect(getSankeyBreadcrumb('expense-categories-split')).toEqual([
+      { level: 'overview', label: 'Overview' },
+      { level: 'expense-detail', label: 'Expenses' },
+      { level: 'expense-categories-split', label: 'Categories' },
+    ]);
   });
 });

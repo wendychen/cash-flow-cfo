@@ -10,6 +10,7 @@ import { MAX_MILESTONES_PER_GOAL } from '@/types/goalMilestone';
 import {
   getMilestoneProgress,
   getMilestoneTimelinePoints,
+  getNextMilestone,
   normalizeGoalMilestones,
   sortMilestonesByDate,
   toggleMilestoneCompletion,
@@ -39,6 +40,7 @@ export default function GoalMilestoneSection({
   const milestones = normalizeGoalMilestones(goal.milestones);
   const sorted = sortMilestonesByDate(milestones);
   const progress = getMilestoneProgress(milestones);
+  const nextMilestone = getNextMilestone(milestones);
   const timelineStart = goal.createdAt.split('T')[0];
   const timelineEnd = goal.deadline || timelineStart;
   const timelinePoints = getMilestoneTimelinePoints(sorted, timelineStart, timelineEnd);
@@ -99,17 +101,25 @@ export default function GoalMilestoneSection({
               className="absolute inset-y-0 left-0 rounded-full bg-indigo-500/30"
               style={{ width: `${progress.percent}%` }}
             />
-            {timelinePoints.map(({ milestone, positionPercent }) => (
-              <div
-                key={milestone.id}
-                className={cn(
-                  'absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full border-2 border-background',
-                  milestone.completed ? 'bg-indigo-600' : 'bg-indigo-300 dark:bg-indigo-700'
-                )}
-                style={{ left: `${positionPercent}%` }}
-                title={`${milestone.title} — ${formatMilestoneDate(milestone.targetDate)}`}
-              />
-            ))}
+            {timelinePoints.map(({ milestone, positionPercent }) => {
+              const isNext = nextMilestone?.id === milestone.id;
+              return (
+                <div
+                  key={milestone.id}
+                  className={cn(
+                    'absolute top-1/2 -translate-y-1/2 -translate-x-1/2 rounded-full border-2 border-background',
+                    isNext ? 'w-3.5 h-3.5 ring-2 ring-amber-400 ring-offset-1' : 'w-2.5 h-2.5',
+                    milestone.completed
+                      ? 'bg-indigo-600'
+                      : isNext
+                      ? 'bg-amber-500'
+                      : 'bg-indigo-300 dark:bg-indigo-700'
+                  )}
+                  style={{ left: `${positionPercent}%` }}
+                  title={`${milestone.title} — ${formatMilestoneDate(milestone.targetDate)}${isNext ? ' (next)' : ''}`}
+                />
+              );
+            })}
           </div>
           <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
             <span>{formatMilestoneDate(timelineStart)}</span>
@@ -119,12 +129,15 @@ export default function GoalMilestoneSection({
       )}
 
       <div className="space-y-1.5">
-        {sorted.map((milestone) => (
+        {sorted.map((milestone) => {
+          const isNext = nextMilestone?.id === milestone.id;
+          return (
           <div
             key={milestone.id}
             className={cn(
               'flex items-center gap-2 p-2 rounded-md border bg-muted/30',
-              milestone.completed && 'opacity-70'
+              milestone.completed && 'opacity-70',
+              isNext && 'border-amber-400/60 bg-amber-50/40 dark:bg-amber-950/20'
             )}
           >
             <Checkbox
@@ -157,7 +170,8 @@ export default function GoalMilestoneSection({
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
           </div>
-        ))}
+        );
+        })}
       </div>
 
       {milestones.length < MAX_MILESTONES_PER_GOAL && (
