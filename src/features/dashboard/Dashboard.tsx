@@ -26,7 +26,8 @@ import type { Currency } from "@/hooks/use-currency";
 import { TimeNavigator, UserGuide } from "@/features/shared";
 import type { TimePeriod } from "@/types/timePeriod";
 import { hasSeenUserGuide } from "@/lib/onboarding";
-import { GoalList, GoalBudgetAllocator } from "@/features/goals";
+import { GoalList, GoalBudgetAllocator, GoalReachPlannerCard } from "@/features/goals";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { ExpenseForm, ExpenseList } from "@/features/expenses";
 import { SavingForm, SavingList, FixedExpenseForm, FixedExpenseList } from "@/features/savings";
 import { SankeyFlowChart, CombinedChart, CashFlowSimulator, MonthlySummary } from "@/features/charts";
@@ -97,6 +98,7 @@ export default function Dashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod | null>(null);
   const [activeTab, setActiveTab] = useState("income");
   const [userGuideOpen, setUserGuideOpen] = useState(false);
+  const [goalsView, setGoalsView] = useState<'list' | 'planner'>('list');
   const isStoreHydrated = useFinanceHydrated();
 
   useEffect(() => {
@@ -253,6 +255,7 @@ export default function Dashboard() {
     : 30;
   const monthlyIncome = (totalIncome / periodDays) * 30;
   const monthlyExpenses = (totalExpenses / periodDays) * 30;
+  const monthlySurplus = monthlyIncome - monthlyExpenses;
 
   const handleExportGoal = (goalId: string) => {
     const goal = goals.find((g) => g.id === goalId);
@@ -680,47 +683,88 @@ export default function Dashboard() {
 
           {/* Goals & Tasks Tab */}
           <TabsContent value="goals" className="space-y-6 mt-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
-                <CardTitle className="flex items-center gap-2">
-                  <GoalIcon className="h-5 w-5" />
-                  {t('tabs.goals')}
-                </CardTitle>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <ToggleGroup
+                type="single"
+                value={goalsView}
+                onValueChange={(value) => {
+                  if (value === 'list' || value === 'planner') setGoalsView(value);
+                }}
+                variant="outline"
+                size="sm"
+              >
+                <ToggleGroupItem value="list" aria-label={t('goalReach.view.list')}>
+                  {t('goalReach.view.list')}
+                </ToggleGroupItem>
+                <ToggleGroupItem value="planner" aria-label={t('goalReach.view.planner')}>
+                  {t('goalReach.view.planner')}
+                </ToggleGroupItem>
+              </ToggleGroup>
+              {goalsView === 'list' && (
                 <Button variant="outline" size="sm" onClick={handlePrintGoals}>
                   <Printer className="mr-2 h-4 w-4" />
                   {t('dashboard.printGoals')}
                 </Button>
-              </CardHeader>
-              <CardContent>
-                <input
-                  type="file"
-                  ref={goalImportRef}
-                  className="hidden"
-                  accept="application/json,.json"
-                  onChange={handleGoalImportFile}
-                />
-                <GoalList
-                  goals={goalsForManagement}
-                  allGoals={goalsForManagement}
-                  tasks={tasksForManagement}
-                  onUpdateGoal={updateGoal}
-                  onAddGoal={handleAddGoalFromList}
-                  onDeleteGoal={deleteGoal}
-                  onExportGoal={handleExportGoal}
-                  onImportGoal={() => goalImportRef.current?.click()}
-                  onReorderGoals={(newGoals) => {
-                    const orderedIds = newGoals.map(g => g.id);
-                    reorderGoals(orderedIds);
-                  }}
-                  onAddTask={handleAddTask}
-                  onUpdateTask={handleUpdateTask}
-                  onDeleteTask={handleDeleteTask}
-                  onReorderTasks={handleReorderTasks}
-                  onMoveTask={moveTask}
-                  onSpawnNextCycle={spawnRepeatingGoalCycle}
-                />
-              </CardContent>
-            </Card>
+              )}
+            </div>
+
+            {goalsView === 'planner' ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <GoalIcon className="h-5 w-5" />
+                    {t('goalReach.title')}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <GoalReachPlannerCard
+                    goals={goalsForManagement}
+                    tasks={tasksForManagement}
+                    latestSavingsBalance={latestSavingsBalance}
+                    monthlySurplus={monthlySurplus}
+                    longTermFinGoal={longTermFinGoal}
+                  />
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
+                  <CardTitle className="flex items-center gap-2">
+                    <GoalIcon className="h-5 w-5" />
+                    {t('tabs.goals')}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <input
+                    type="file"
+                    ref={goalImportRef}
+                    className="hidden"
+                    accept="application/json,.json"
+                    onChange={handleGoalImportFile}
+                  />
+                  <GoalList
+                    goals={goalsForManagement}
+                    allGoals={goalsForManagement}
+                    tasks={tasksForManagement}
+                    onUpdateGoal={updateGoal}
+                    onAddGoal={handleAddGoalFromList}
+                    onDeleteGoal={deleteGoal}
+                    onExportGoal={handleExportGoal}
+                    onImportGoal={() => goalImportRef.current?.click()}
+                    onReorderGoals={(newGoals) => {
+                      const orderedIds = newGoals.map(g => g.id);
+                      reorderGoals(orderedIds);
+                    }}
+                    onAddTask={handleAddTask}
+                    onUpdateTask={handleUpdateTask}
+                    onDeleteTask={handleDeleteTask}
+                    onReorderTasks={handleReorderTasks}
+                    onMoveTask={moveTask}
+                    onSpawnNextCycle={spawnRepeatingGoalCycle}
+                  />
+                </CardContent>
+              </Card>
+            )}
 
             <Card>
               <CardHeader>
