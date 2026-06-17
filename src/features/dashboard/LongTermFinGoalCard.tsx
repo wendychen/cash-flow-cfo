@@ -57,7 +57,7 @@ export default function LongTermFinGoalCard({
 
   return (
     <div
-      className="bg-card rounded-xl shadow-card p-4 w-full space-y-3"
+      className="bg-card rounded-xl shadow-card p-4 w-full space-y-3 scroll-mt-24"
       data-testid="long-term-fin-goal-card"
     >
       <div className="flex items-center justify-between gap-2 pb-2 border-b">

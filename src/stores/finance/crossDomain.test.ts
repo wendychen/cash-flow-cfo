@@ -301,3 +301,59 @@ describe('cross-domain orchestration (Direction 2 spec)', () => {
     expect(expenses.every((e) => e.linkedGoalId === 'goal-1' ? e.category === 'business' : true)).toBe(true);
   });
 });
+
+describe('income update validation', () => {
+  beforeEach(() => {
+    resetFinanceStore(useFinanceStore);
+  });
+
+  it('rejects accrued amount below collected total', () => {
+    useFinanceStore.setState({
+      incomes: [
+        {
+          id: 'a1',
+          date: '2026-01-01',
+          source: 'Invoice',
+          amount: 1000,
+          incomeType: 'accrued',
+        },
+        {
+          id: 'c1',
+          date: '2026-01-15',
+          source: 'Invoice',
+          amount: 400,
+          incomeType: 'cash',
+          linkedAccruedIncomeId: 'a1',
+        },
+      ],
+    });
+
+    useFinanceStore.getState().updateIncome('a1', { amount: 300 });
+    expect(useFinanceStore.getState().incomes.find((i) => i.id === 'a1')?.amount).toBe(1000);
+  });
+
+  it('rejects accrued to cash when collections exist', () => {
+    useFinanceStore.setState({
+      incomes: [
+        {
+          id: 'a1',
+          date: '2026-01-01',
+          source: 'Invoice',
+          amount: 1000,
+          incomeType: 'accrued',
+        },
+        {
+          id: 'c1',
+          date: '2026-01-15',
+          source: 'Invoice',
+          amount: 400,
+          incomeType: 'cash',
+          linkedAccruedIncomeId: 'a1',
+        },
+      ],
+    });
+
+    useFinanceStore.getState().updateIncome('a1', { incomeType: 'cash' });
+    expect(useFinanceStore.getState().incomes.find((i) => i.id === 'a1')?.incomeType).toBe('accrued');
+  });
+});

@@ -63,7 +63,11 @@ export default function CashFlowSimulator({
   const { t } = useI18n();
   const [incomeChange, setIncomeChange] = useState('0');
   const [expenseChange, setExpenseChange] = useState('0');
-  const [months, setMonths] = useState<string>('12');
+  const [months, setMonths] = useState<string>(
+    finGoalTargetAmount != null && finGoalTargetAmount > 0
+      ? String(LONG_TERM_SIMULATOR_MONTHS)
+      : '12'
+  );
 
   const horizon = parseInt(months, 10) || 12;
   const showFinGoal = finGoalTargetAmount != null && finGoalTargetAmount > 0;
