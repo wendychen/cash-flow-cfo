@@ -22,6 +22,7 @@ export function buildFinanceCsv(state: FinanceStateV2): string {
     goals,
     tasks,
     targets,
+    longTermFinGoal,
   } = state;
 
   const goalsWithContent = goals.filter((g) => g.title.trim());
@@ -130,6 +131,13 @@ export function buildFinanceCsv(state: FinanceStateV2): string {
     });
   }
 
+  if (longTermFinGoal) {
+    if (csvContent) csvContent += '\n';
+    csvContent += '### LONG TERM FIN GOAL ###\n';
+    csvContent += 'TargetAmount,EndYear,HorizonYears,PresetKey,UpdatedAt\n';
+    csvContent += `${longTermFinGoal.targetAmount},${longTermFinGoal.endYear},${longTermFinGoal.horizonYears},${longTermFinGoal.presetKey ?? ''},${longTermFinGoal.updatedAt}\n`;
+  }
+
   return csvContent;
 }
 
@@ -142,7 +150,8 @@ export function hasExportableData(state: FinanceStateV2): boolean {
     goalsWithContent.length > 0 ||
     state.fixedExpenses.length > 0 ||
     state.targets.length > 0 ||
-    state.tasks.length > 0
+    state.tasks.length > 0 ||
+    !!state.longTermFinGoal
   );
 }
 

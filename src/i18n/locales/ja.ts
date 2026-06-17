@@ -68,6 +68,7 @@ export const ja: Messages = {
     savings: '貯蓄',
     activeGoals: '進行中の目標',
     totalTasks: 'タスク {count} 件',
+    finGoalChip: '20年目標 {progress}%',
   },
   tabs: {
     income: '収入',

@@ -66,6 +66,7 @@ export const en = {
     savings: 'Savings',
     activeGoals: 'Active Goals',
     totalTasks: '{count} total tasks',
+    finGoalChip: '{progress}% to 20-yr goal',
   },
   tabs: {
     income: 'Income',

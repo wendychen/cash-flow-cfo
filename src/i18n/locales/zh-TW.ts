@@ -68,6 +68,7 @@ export const zhTW: Messages = {
     savings: '儲蓄',
     activeGoals: '進行中目標',
     totalTasks: '共 {count} 個任務',
+    finGoalChip: '20 年目標 {progress}%',
   },
   tabs: {
     income: '收入',

@@ -109,6 +109,7 @@ describe('printReport', () => {
           savings: [],
           fixedExpenses: [],
           targets: [],
+          longTermFinGoal: null,
           goals: [],
           tasks: [],
         },
@@ -148,6 +149,7 @@ describe('printReport', () => {
             savings: [],
             fixedExpenses: [],
             targets: [],
+            longTermFinGoal: null,
             goals: [{ id: 'g1' } as never, { id: 'g2' } as never],
             tasks: [],
           },
@@ -160,6 +162,7 @@ describe('printReport', () => {
         savings: [],
         fixedExpenses: [],
         targets: [],
+        longTermFinGoal: null,
         goals: [sampleGoal],
         tasks: [sampleTask],
       },
@@ -171,6 +174,44 @@ describe('printReport', () => {
     expect(html).toContain('Current Data');
     expect(html).toContain('Latest');
     expect(html).toContain('Export JSON');
+  });
+
+  it('buildBackupPrintHtml includes 20-year fin goal when set', () => {
+    const html = buildBackupPrintHtml(
+      {
+        backups: [],
+        currentState: {
+          version: 2,
+          expenses: [],
+          incomes: [],
+          savings: [
+            {
+              id: 's1',
+              date: '2026-06-01',
+              amount: 250000,
+              savingType: 'balance',
+              note: '',
+            },
+          ],
+          fixedExpenses: [],
+          targets: [],
+          longTermFinGoal: {
+            targetAmount: 1e6,
+            endYear: 2046,
+            horizonYears: 20,
+            presetKey: '1M',
+            updatedAt: '2026-06-01T00:00:00.000Z',
+          },
+          goals: [],
+          tasks: [],
+        },
+      },
+      { formatAmount }
+    );
+
+    expect(html).toContain('20-Year Fin Goal');
+    expect(html).toContain('1M');
+    expect(html).toContain('25%');
   });
 
   it('wrapPrintDocument produces valid HTML shell', () => {

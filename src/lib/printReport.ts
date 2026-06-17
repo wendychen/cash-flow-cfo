@@ -9,6 +9,14 @@ import { EXPENSE_CATEGORIES, migrateExpenseCategory } from '@/types/expenseCateg
 import { buildTree, flattenTree } from '@/features/goals/hooks/use-task-tree';
 import { computeSankeyIncomeSplit } from '@/lib/incomeBreakdown';
 import { getAccruedCollectionStatus, isAccruedCollection } from '@/lib/incomeConversion';
+import type { LongTermFinGoal } from '@/types/longTermFinGoal';
+import {
+  computeFinGoalProgress,
+  getFinGoalPresetByAmount,
+  getFinGoalPresetByKey,
+  getFinGoalYearsRemaining,
+} from '@/lib/finGoalPresets';
+import type { Saving } from '@/types/saving';
 
 export type AmountFormatter = (amountInNTD: number) => string;
 
@@ -168,6 +176,50 @@ export interface BackupPrintInput {
   printedAt?: Date;
 }
 
+function getLatestSavingsBalanceFromState(savings: Saving[] = []): number {
+  const balanceSavings = savings.filter((s) => s.savingType === 'balance');
+  if (balanceSavings.length === 0) return 0;
+  return balanceSavings.sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  )[0].amount;
+}
+
+function formatFinGoalTargetLabel(goal: LongTermFinGoal, formatAmount: AmountFormatter): string {
+  const preset =
+    (goal.presetKey && getFinGoalPresetByKey(goal.presetKey)) ||
+    getFinGoalPresetByAmount(goal.targetAmount);
+  if (preset) return preset.key;
+  return formatAmount(goal.targetAmount);
+}
+
+function renderFinGoalPrintSection(
+  goal: LongTermFinGoal | null | undefined,
+  currentSavings: number,
+  formatAmount: AmountFormatter
+): string {
+  if (!goal || goal.targetAmount <= 0) return '';
+
+  const progress = computeFinGoalProgress(currentSavings, goal.targetAmount);
+  const yearsLeft = getFinGoalYearsRemaining(goal.endYear);
+  const targetLabel = formatFinGoalTargetLabel(goal, formatAmount);
+
+  return `
+    <section class="section">
+      <h2>20-Year Fin Goal</h2>
+      <table class="counts-table fin-goal-table">
+        <tbody>
+          <tr><td>Target</td><td class="num">${escapeHtml(targetLabel)} (${formatAmount(goal.targetAmount)})</td></tr>
+          <tr><td>End year</td><td class="num">${goal.endYear}</td></tr>
+          <tr><td>Years remaining</td><td class="num">${yearsLeft}</td></tr>
+          <tr><td>Current savings</td><td class="num">${formatAmount(currentSavings)}</td></tr>
+          <tr><td>Progress</td><td class="num">${progress}%</td></tr>
+          <tr><td>Preset</td><td>${goal.presetKey ? escapeHtml(goal.presetKey) : 'Custom'}</td></tr>
+        </tbody>
+      </table>
+    </section>
+  `;
+}
+
 function countState(state: FinanceStateV2) {
   const incomes = state.incomes ?? [];
   return {
@@ -177,6 +229,7 @@ function countState(state: FinanceStateV2) {
     savings: state.savings?.length ?? 0,
     fixedExpenses: state.fixedExpenses?.length ?? 0,
     targets: state.targets?.length ?? 0,
+    longTermFinGoal: state.longTermFinGoal ? 1 : 0,
     goals: state.goals?.length ?? 0,
     tasks: state.tasks?.length ?? 0,
   };
@@ -307,6 +360,12 @@ export function buildBackupPrintHtml(
 ): string {
   const currentCounts = countState(currentState);
   const formatAmount = options.formatAmount ?? ((n: number) => String(n));
+  const currentSavings = getLatestSavingsBalanceFromState(currentState.savings ?? []);
+  const finGoalSection = renderFinGoalPrintSection(
+    currentState.longTermFinGoal,
+    currentSavings,
+    formatAmount
+  );
   const incomeSection = renderIncomePrintSection(currentState.incomes ?? [], formatAmount);
 
   const backupRows =
@@ -351,6 +410,8 @@ export function buildBackupPrintHtml(
         </tbody>
       </table>
     </section>
+
+    ${finGoalSection}
 
     ${incomeSection}
 

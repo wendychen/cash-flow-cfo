@@ -3,7 +3,9 @@ import { useFinanceStore, reimportOldData } from "@/stores";
 import { useFinance, useFinanceHydrated } from "@/stores";
 import { useCurrency } from "@/hooks/use-currency";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { computeFinGoalProgress } from "@/lib/finGoalPresets";
 import { Target, Receipt, TrendingUp, PiggyBank, Target as GoalIcon, Download, Upload, Printer, CircleHelp } from "lucide-react";
 import { saveFinanceExport, parseImportJSON } from "@/lib/exportImport";
 import { saveFinanceCsvExport } from "@/lib/csvExport";
@@ -235,6 +237,10 @@ export default function Dashboard() {
 
   const { totalIncome, totalExpenses, totalSavings } = dashboardSummary;
   const incomeBreakdown = computeIncomeBreakdown(filteredIncomes);
+  const finGoalProgress =
+    longTermFinGoal && longTermFinGoal.targetAmount > 0
+      ? computeFinGoalProgress(latestSavingsBalance, longTermFinGoal.targetAmount)
+      : null;
 
   const periodDays = selectedPeriod
     ? Math.max(
@@ -504,23 +510,42 @@ export default function Dashboard() {
               )}
             </CardContent>
           </Card>
-          {[
-            { label: t('summary.totalExpenses'), value: format(totalExpenses), className: 'text-red-600' },
-            { label: t('summary.savings'), value: format(totalSavings), className: 'text-blue-600' },
-          ].map((stat) => (
-            <Card key={stat.label} className="min-w-0 overflow-hidden">
-              <CardHeader className="px-5 pt-5 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{stat.label}</CardTitle>
-              </CardHeader>
-              <CardContent className="px-5 pb-5 pt-0">
-                <div
-                  className={`text-sm font-semibold tabular-nums leading-snug break-all ${stat.className}`}
+          <Card className="min-w-0 overflow-hidden">
+            <CardHeader className="px-5 pt-5 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {t('summary.totalExpenses')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-5 pb-5 pt-0">
+              <div className="text-sm font-semibold tabular-nums leading-snug break-all text-red-600">
+                {format(totalExpenses)}
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="min-w-0 overflow-hidden">
+            <CardHeader className="px-5 pt-5 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {t('summary.savings')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-5 pb-5 pt-0 space-y-1.5">
+              <div className="text-sm font-semibold tabular-nums leading-snug break-all text-blue-600">
+                {format(totalSavings)}
+              </div>
+              {finGoalProgress != null && (
+                <Badge
+                  variant="outline"
+                  className={`text-[10px] tabular-nums font-medium ${
+                    finGoalProgress >= 100
+                      ? 'border-emerald-400 text-emerald-700 dark:text-emerald-300'
+                      : 'border-violet-400 text-violet-700 dark:text-violet-300'
+                  }`}
                 >
-                  {stat.value}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  {t('summary.finGoalChip', { progress: finGoalProgress })}
+                </Badge>
+              )}
+            </CardContent>
+          </Card>
           <Card className="min-w-0 overflow-hidden">
             <CardHeader className="px-5 pt-5 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">{t('summary.activeGoals')}</CardTitle>
