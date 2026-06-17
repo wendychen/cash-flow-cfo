@@ -722,82 +722,59 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Status + Migration Controls */}
         <Card>
           <CardHeader>
             <CardTitle>{t('dashboard.dataPortability')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
-            <div className="space-y-1 text-muted-foreground">
-              <p>✅ Full rich <strong>GoalList</strong> + task management</p>
-              <p>✅ Full <strong>ExpenseForm</strong> + <strong>ExpenseList</strong></p>
-              <p>✅ <strong>Savings</strong> + <strong>Fixed Expenses</strong> sections</p>
-              <p>✅ <strong>GoalBudgetAllocator</strong> integrated</p>
-              <p>✅ <strong>Charts</strong> (Sankey + Combined)</p>
-              <p>✅ TimeNavigator + period filtering</p>
-              <p>✅ All data through clean Zustand store (normalized v2 + rich selectors)</p>
-              <p>✅ Custom `useFinance` hook + individual selectors available</p>
-              <p>✅ Feature-based folder structure (Phase D in progress)</p>
-              <p>✅ Shared components moved to `components/shared/`</p>
-              <p>✅ Barrel export created for `components/shared/`</p>
-              <p>✅ Archive moved to top-level `src/archive/`</p>
-              <p>✅ README.md documentation added to all feature folders</p>
-              <p>✅ Domain hook (use-task-tree) moved into features/goals/hooks/</p>
-              <p>✅ <strong>New: Export / Import full data as JSON</strong> (backup, transfer, restore)</p>
-            </div>
-
-            <div className="pt-2 border-t space-y-3">
-              {latestAutoBackup && (
-                <div className="text-xs text-muted-foreground">
-                  {t('dashboard.lastAutoBackup', {
-                    date: new Date(latestAutoBackup.savedAt).toLocaleString(),
-                  })}
-                </div>
-              )}
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" onClick={handlePrintBackup}>
-                  <Printer className="mr-2 h-4 w-4" />
-                  {t('dashboard.printBackup')}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={!latestAutoBackup}
-                  onClick={() => {
-                    if (!latestAutoBackup) return;
-                    if (
-                      confirm(
-                        t('dashboard.restoreConfirm', {
-                          date: new Date(latestAutoBackup.savedAt).toLocaleString(),
-                        })
-                      )
-                    ) {
-                      replaceAllData(latestAutoBackup.data);
-                      backfillMissingShadowExpenses();
-                      alert(`✅ ${t('dashboard.restoreSuccess')}`);
-                    }
-                  }}
-                >
-                  {t('dashboard.restoreBackup')}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const result = reimportOldData();
-                    alert(result.message);
-                    if (result.success) {
-                      window.location.reload();
-                    }
-                  }}
-                >
-                  {t('dashboard.reimportOld')}
-                </Button>
-              </div>
+            {latestAutoBackup && (
               <p className="text-xs text-muted-foreground">
-                {t('dashboard.backupHint')}
+                {t('dashboard.lastAutoBackup', {
+                  date: new Date(latestAutoBackup.savedAt).toLocaleString(),
+                })}
               </p>
+            )}
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={handlePrintBackup}>
+                <Printer className="mr-2 h-4 w-4" />
+                {t('dashboard.printBackup')}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!latestAutoBackup}
+                onClick={() => {
+                  if (!latestAutoBackup) return;
+                  if (
+                    confirm(
+                      t('dashboard.restoreConfirm', {
+                        date: new Date(latestAutoBackup.savedAt).toLocaleString(),
+                      })
+                    )
+                  ) {
+                    replaceAllData(latestAutoBackup.data);
+                    backfillMissingShadowExpenses();
+                    alert(`✅ ${t('dashboard.restoreSuccess')}`);
+                  }
+                }}
+              >
+                {t('dashboard.restoreBackup')}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const result = reimportOldData();
+                  alert(result.message);
+                  if (result.success) {
+                    window.location.reload();
+                  }
+                }}
+              >
+                {t('dashboard.reimportOld')}
+              </Button>
             </div>
+            <p className="text-xs text-muted-foreground">{t('dashboard.backupHint')}</p>
           </CardContent>
         </Card>
       </div>
