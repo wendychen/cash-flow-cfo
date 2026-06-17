@@ -1,4 +1,12 @@
+import type { TranslationKey } from '@/i18n';
+import { getFinGoalPresetByKey } from '@/lib/finGoalPresets';
 import type { FinanceStateV2 } from '@/stores/finance/financeStore';
+
+export type CsvTranslateFn = (key: TranslationKey) => string;
+
+export interface CsvExportOptions {
+  t?: CsvTranslateFn;
+}
 
 function escCsv(val: string): string {
   return `"${val.replace(/"/g, '""')}"`;
@@ -13,7 +21,7 @@ export function buildCsvExportFilename(date = new Date()): string {
   return `cashflow-${dateStr}.csv`;
 }
 
-export function buildFinanceCsv(state: FinanceStateV2): string {
+export function buildFinanceCsv(state: FinanceStateV2, options: CsvExportOptions = {}): string {
   const {
     fixedExpenses,
     expenses,
@@ -132,10 +140,15 @@ export function buildFinanceCsv(state: FinanceStateV2): string {
   }
 
   if (longTermFinGoal) {
+    const presetLabel = (() => {
+      if (!options.t || !longTermFinGoal.presetKey) return '';
+      const preset = getFinGoalPresetByKey(longTermFinGoal.presetKey);
+      return preset ? options.t(preset.labelKey) : '';
+    })();
     if (csvContent) csvContent += '\n';
     csvContent += '### LONG TERM FIN GOAL ###\n';
-    csvContent += 'TargetAmount,EndYear,HorizonYears,PresetKey,UpdatedAt\n';
-    csvContent += `${longTermFinGoal.targetAmount},${longTermFinGoal.endYear},${longTermFinGoal.horizonYears},${longTermFinGoal.presetKey ?? ''},${longTermFinGoal.updatedAt}\n`;
+    csvContent += 'TargetAmount,EndYear,HorizonYears,PresetKey,PresetLabel,UpdatedAt\n';
+    csvContent += `${longTermFinGoal.targetAmount},${longTermFinGoal.endYear},${longTermFinGoal.horizonYears},${longTermFinGoal.presetKey ?? ''},${escCsv(presetLabel)},${longTermFinGoal.updatedAt}\n`;
   }
 
   return csvContent;
@@ -176,18 +189,21 @@ export interface CsvExportResult {
   error?: string;
 }
 
-export async function saveFinanceCsvExport(state: FinanceStateV2): Promise<CsvExportResult> {
+export async function saveFinanceCsvExport(
+  state: FinanceStateV2,
+  options: CsvExportOptions = {}
+): Promise<CsvExportResult> {
   if (!hasExportableData(state)) {
     return {
       filename: buildCsvExportFilename(),
       success: false,
       method: 'cancelled',
-      error: 'No data to export',
+      error: options.t ? options.t('csvExport.noData') : 'No data to export',
     };
   }
 
   const filename = buildCsvExportFilename();
-  const csv = buildFinanceCsv(state);
+  const csv = buildFinanceCsv(state, options);
 
   if (typeof window.showSaveFilePicker === 'function') {
     try {

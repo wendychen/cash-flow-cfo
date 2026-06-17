@@ -398,7 +398,8 @@ export function parseCsvToFinanceState(csvText: string): CsvImportResult {
         const targetAmount = parseFloat(f[0]);
         const endYear = parseInt(f[1], 10);
         const presetKey = f[3]?.trim() || undefined;
-        const updatedAt = f[4] || new Date().toISOString();
+        const updatedAt =
+          f.length >= 6 ? f[5] || new Date().toISOString() : f[4] || new Date().toISOString();
 
         if (!isNaN(targetAmount) && targetAmount > 0 && !isNaN(endYear)) {
           importedLongTermFinGoal = {

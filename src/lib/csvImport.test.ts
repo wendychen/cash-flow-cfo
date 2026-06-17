@@ -55,6 +55,17 @@ TargetAmount,EndYear,HorizonYears,PresetKey,UpdatedAt
     expect(result.data?.longTermFinGoal?.endYear).toBe(2046);
   });
 
+  it('parses long term fin goal with preset label column', () => {
+    const csv = `### LONG TERM FIN GOAL ###
+TargetAmount,EndYear,HorizonYears,PresetKey,PresetLabel,UpdatedAt
+1000000,2046,20,1M,"1 Million",2026-06-01T00:00:00.000Z`;
+
+    const result = parseCsvToFinanceState(csv);
+    expect(result.success).toBe(true);
+    expect(result.data?.longTermFinGoal?.presetKey).toBe('1M');
+    expect(result.data?.longTermFinGoal?.targetAmount).toBe(1e6);
+  });
+
   it('round-trips long term fin goal through CSV export and import', () => {
     const state: FinanceStateV2 = {
       version: 2,
@@ -74,7 +85,7 @@ TargetAmount,EndYear,HorizonYears,PresetKey,UpdatedAt
       tasks: [],
     };
 
-    const imported = parseCsvToFinanceState(buildFinanceCsv(state));
+    const imported = parseCsvToFinanceState(buildFinanceCsv(state, { t: (key) => key }));
     expect(imported.success).toBe(true);
     expect(imported.data?.longTermFinGoal?.presetKey).toBe('25T');
     expect(imported.data?.longTermFinGoal?.targetAmount).toBe(25e12);

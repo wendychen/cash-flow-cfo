@@ -264,6 +264,9 @@ export const zhTW: Messages = {
     restoreConfirm: '還原 {date} 的自動備份？\n\n這將取代所有現有資料。',
     restoreSuccess: '已從最新自動備份還原。',
   },
+  csvExport: {
+    noData: '沒有可匯出的資料。',
+  },
   simulator: {
     incomeChange: '月收入變化',
     expenseChange: '月支出變化',

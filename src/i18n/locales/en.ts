@@ -263,6 +263,9 @@ export const en = {
     restoreConfirm: 'Restore auto-backup from {date}?\n\nThis replaces all current data.',
     restoreSuccess: 'Restored from latest auto-backup.',
   },
+  csvExport: {
+    noData: 'No data to export.',
+  },
   simulator: {
     incomeChange: 'Monthly income change',
     expenseChange: 'Monthly expense change',

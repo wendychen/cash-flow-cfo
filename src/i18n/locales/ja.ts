@@ -265,6 +265,9 @@ export const ja: Messages = {
     restoreConfirm: '{date} の自動バックアップを復元しますか？\n\n現在のデータがすべて置き換わります。',
     restoreSuccess: '最新の自動バックアップから復元しました。',
   },
+  csvExport: {
+    noData: 'エクスポートするデータがありません。',
+  },
   simulator: {
     incomeChange: '月収入の変化',
     expenseChange: '月支出の変化',

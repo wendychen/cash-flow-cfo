@@ -150,7 +150,7 @@ export default function Dashboard() {
       goals,
       tasks,
     };
-    const result = await saveFinanceCsvExport(stateSnapshot);
+    const result = await saveFinanceCsvExport(stateSnapshot, { t });
     if (!result.success) {
       if (result.error) {
         alert(`❌ ${result.error}`);
