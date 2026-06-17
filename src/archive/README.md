@@ -1,9 +1,20 @@
-# Archived Components
+# Archived code (reference only)
 
-Components in this folder are kept for reference but are not used in the application.
+Legacy ExpenseTracker and pre-v2 components kept for historical reference. **Not imported by the app** — active code lives under `src/features/`.
 
-## SankeyFlowChart.archived.tsx
+## Layout
 
-An earlier/different version of the Sankey flow chart. The active implementation is `../SankeyFlowChart.tsx`.
+| Path | Description |
+|------|-------------|
+| `ExpenseTracker.old.tsx` / `ExpenseTracker.retired.tsx` | Monolithic pre-Zustand app shells |
+| `SankeyFlowChart.archived.tsx` | Earlier Sankey chart |
+| `components/` | Duplicate feature components superseded by `src/features/` |
 
-Archived: 2026-02-11
+## Active replacements
+
+- Dashboard: `src/features/dashboard/Dashboard.tsx`
+- Charts: `src/features/charts/`
+- Shared UI: `src/features/shared/`
+- Store: `src/stores/finance/`
+
+Excluded from `tsconfig.app.json` so stale types do not affect builds.

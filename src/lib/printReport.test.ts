@@ -148,7 +148,7 @@ describe('printReport', () => {
     });
 
     expect(html).toContain('20-Year Fin Goal');
-    expect(html).toContain('1M');
+    expect(html).toContain('1 Million');
     expect(html).toContain('25%');
   });
 
@@ -162,6 +162,7 @@ describe('printReport', () => {
     });
 
     expect(html).toContain('Duplicate tasks:');
+    expect(html).toContain('Monthly');
     expect(html).toContain('No');
   });
 
@@ -240,7 +241,7 @@ describe('printReport', () => {
     );
 
     expect(html).toContain('20-Year Fin Goal');
-    expect(html).toContain('1M');
+    expect(html).toContain('1 Million');
     expect(html).toContain('25%');
   });
 

@@ -9,6 +9,7 @@ import type { FinanceStateV2 } from '@/stores/finance/financeStore';
 import type { AutoBackupEntry } from '@/lib/autoBackup';
 import { migrateExpenseCategory } from '@/types/expenseCategory';
 import { getExpenseCategoryLabel } from '@/lib/categoryLabels';
+import { getGoalRepeatLabel } from '@/lib/goalRepeatLabels';
 import { buildTree, flattenTree } from '@/features/goals/hooks/use-task-tree';
 import { computeSankeyIncomeSplit } from '@/lib/incomeBreakdown';
 import { getAccruedCollectionStatus, isAccruedCollection } from '@/lib/incomeConversion';
@@ -136,7 +137,7 @@ function renderGoalCard(
 
   const repeatInterval = normalizeRepeatInterval(goal.repeatInterval);
   const repeatMeta = isRepeatingGoal(repeatInterval)
-    ? `<span><strong>${t('printReport.goal.repeat')}</strong> ${escapeHtml(repeatInterval)}${goal.repeatCycle && goal.repeatCycle > 1 ? ` ${t('printReport.goal.cycle', { n: goal.repeatCycle })}` : ''}</span>
+    ? `<span><strong>${t('printReport.goal.repeat')}</strong> ${escapeHtml(getGoalRepeatLabel(repeatInterval, t))}${goal.repeatCycle && goal.repeatCycle > 1 ? ` ${t('printReport.goal.cycle', { n: goal.repeatCycle })}` : ''}</span>
         <span><strong>${t('printReport.goal.duplicateTasks')}</strong> ${goal.repeatDuplicateTasks === false ? t('printReport.goal.no') : t('printReport.goal.yes')}</span>`
     : '';
 
@@ -237,11 +238,15 @@ function getLatestSavingsBalanceFromState(savings: Saving[] = []): number {
   )[0].amount;
 }
 
-function formatFinGoalTargetLabel(goal: LongTermFinGoal, formatAmount: AmountFormatter): string {
+function formatFinGoalTargetLabel(
+  goal: LongTermFinGoal,
+  formatAmount: AmountFormatter,
+  t: PrintTranslateFn
+): string {
   const preset =
     (goal.presetKey && getFinGoalPresetByKey(goal.presetKey)) ||
     getFinGoalPresetByAmount(goal.targetAmount);
-  if (preset) return preset.key;
+  if (preset) return t(preset.labelKey);
   return formatAmount(goal.targetAmount);
 }
 
@@ -255,7 +260,10 @@ function renderFinGoalPrintSection(
 
   const progress = computeFinGoalProgress(currentSavings, goal.targetAmount);
   const yearsLeft = getFinGoalYearsRemaining(goal.endYear);
-  const targetLabel = formatFinGoalTargetLabel(goal, formatAmount);
+  const targetLabel = formatFinGoalTargetLabel(goal, formatAmount, t);
+  const presetLabel = goal.presetKey
+    ? formatFinGoalTargetLabel(goal, formatAmount, t)
+    : t('printReport.finGoal.custom');
 
   return `
     <section class="section">
@@ -267,7 +275,7 @@ function renderFinGoalPrintSection(
           <tr><td>${t('printReport.finGoal.yearsRemaining')}</td><td class="num">${yearsLeft}</td></tr>
           <tr><td>${t('printReport.finGoal.currentSavings')}</td><td class="num">${formatAmount(currentSavings)}</td></tr>
           <tr><td>${t('printReport.finGoal.progress')}</td><td class="num">${progress}%</td></tr>
-          <tr><td>${t('printReport.finGoal.preset')}</td><td>${goal.presetKey ? escapeHtml(goal.presetKey) : t('printReport.finGoal.custom')}</td></tr>
+          <tr><td>${t('printReport.finGoal.preset')}</td><td>${escapeHtml(presetLabel)}</td></tr>
         </tbody>
       </table>
     </section>
