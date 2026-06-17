@@ -60,6 +60,9 @@ export function migrateFromV1(oldState: any): FinanceStateV2 {
       constraint: oldGoal.constraint || '',
       urlPack: oldGoal.urlPack || [],
       milestones: oldGoal.milestones || [],
+      repeatInterval: oldGoal.repeatInterval,
+      repeatSeriesId: oldGoal.repeatSeriesId,
+      repeatCycle: oldGoal.repeatCycle,
       // Intentionally do NOT copy preTasks / postTasks / postDreams
     };
 

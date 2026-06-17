@@ -43,7 +43,6 @@ import {
   Users,
   Package,
 } from "lucide-react";
-import { differenceInDays, parseISO, isValid } from "date-fns";
 import {
   DndContext,
   closestCenter,
@@ -63,6 +62,8 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import TaskTreeSection from "./TaskTreeSection";
 import GoalMilestoneSection from "./GoalMilestoneSection";
+import GoalTimerBadge from "./GoalTimerBadge";
+import GoalRepeatSection from "./GoalRepeatSection";
 import { getMilestoneProgress, normalizeGoalMilestones } from "@/lib/goalMilestones";
 
 const getCategoryIcon = (iconName: string) => {
@@ -95,6 +96,7 @@ interface GoalListProps {
   onMoveTask: (taskId: string, newParentId: string | null) => void;
   onExportGoal?: (goalId: string) => void;
   onImportGoal?: () => void;
+  onSpawnNextCycle?: (goalId: string) => void;
 }
 
 interface SortableIdeationItemProps {
@@ -244,7 +246,6 @@ interface SortableGoalItemProps {
   isExpanded: boolean;
   displayTitle: string;
   displayDeadline: string;
-  countdown: { days: number; label: string; color: string } | null;
   onUpdateGoal: (id: string, updates: Partial<Omit<Goal, "id">>) => void;
   onDeleteGoal: (id: string) => void;
   onFieldChange: (
@@ -261,6 +262,7 @@ interface SortableGoalItemProps {
   onReorderTasks: GoalListProps["onReorderTasks"];
   onMoveTask: GoalListProps["onMoveTask"];
   onExportGoal?: GoalListProps["onExportGoal"];
+  onSpawnNextCycle?: GoalListProps["onSpawnNextCycle"];
 }
 
 const SortableGoalItem = ({
@@ -269,7 +271,6 @@ const SortableGoalItem = ({
   isExpanded,
   displayTitle,
   displayDeadline,
-  countdown,
   onUpdateGoal,
   onDeleteGoal,
   onFieldChange,
@@ -282,6 +283,7 @@ const SortableGoalItem = ({
   onReorderTasks,
   onMoveTask,
   onExportGoal,
+  onSpawnNextCycle,
 }: SortableGoalItemProps) => {
   const { format } = useCurrency();
   const [newIdeation, setNewIdeation] = useState("");
@@ -462,15 +464,7 @@ const SortableGoalItem = ({
           className="h-7 text-xs border-dashed bg-transparent w-32"
           placeholder="Set deadline"
         />
-        {countdown && !goal.completed && (
-          <span className={`text-xs font-medium ${countdown.color}`}>
-            {countdown.label === "today"
-              ? "Due today!"
-              : countdown.label === "overdue"
-              ? `${countdown.days}d overdue`
-              : `${countdown.days}d left`}
-          </span>
-        )}
+        <GoalTimerBadge goal={goal} />
         <Select
           value={goal.category}
           onValueChange={(value) =>
@@ -550,6 +544,11 @@ const SortableGoalItem = ({
       {isExpanded && (
         <div className="ml-14 mt-2 space-y-4">
           <GoalMilestoneSection goal={goal} onUpdateGoal={onUpdateGoal} />
+          <GoalRepeatSection
+            goal={goal}
+            onUpdateGoal={onUpdateGoal}
+            onSpawnNextCycle={onSpawnNextCycle}
+          />
 
           <TaskTreeSection
             goalId={goal.id}
@@ -761,6 +760,7 @@ const GoalList = ({
   onMoveTask,
   onExportGoal,
   onImportGoal,
+  onSpawnNextCycle,
 }: GoalListProps) => {
   const [newGoalTitle, setNewGoalTitle] = useState("");
   const [newGoalDeadline, setNewGoalDeadline] = useState("");
@@ -789,34 +789,6 @@ const GoalList = ({
       else next.add(id);
       return next;
     });
-  };
-
-  const getCountdown = (
-    deadline: string
-  ): { days: number; label: string; color: string } | null => {
-    if (!deadline) return null;
-    const deadlineDate = parseISO(deadline);
-    if (!isValid(deadlineDate)) return null;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const days = differenceInDays(deadlineDate, today);
-
-    if (days < 0) {
-      return {
-        days: Math.abs(days),
-        label: "overdue",
-        color: "text-red-500",
-      };
-    } else if (days === 0) {
-      return { days: 0, label: "today", color: "text-orange-500" };
-    } else if (days <= 7) {
-      return { days, label: "days left", color: "text-orange-500" };
-    } else if (days <= 30) {
-      return { days, label: "days left", color: "text-yellow-500" };
-    } else {
-      return { days, label: "days left", color: "text-muted-foreground" };
-    }
   };
 
   const handleAddGoal = () => {
@@ -959,8 +931,6 @@ const GoalList = ({
                 const displayDeadline = isEditing
                   ? editingGoals[goal.id].deadline
                   : goal.deadline;
-                const countdown = getCountdown(goal.deadline);
-
                 return (
                   <SortableGoalItem
                     key={goal.id}
@@ -969,7 +939,6 @@ const GoalList = ({
                     isExpanded={expandedGoals.has(goal.id)}
                     displayTitle={displayTitle}
                     displayDeadline={displayDeadline}
-                    countdown={countdown}
                     onUpdateGoal={onUpdateGoal}
                     onDeleteGoal={onDeleteGoal}
                     onFieldChange={handleFieldChange}
@@ -982,6 +951,7 @@ const GoalList = ({
                     onReorderTasks={onReorderTasks}
                     onMoveTask={onMoveTask}
                     onExportGoal={onExportGoal}
+                    onSpawnNextCycle={onSpawnNextCycle}
                   />
                 );
               })}

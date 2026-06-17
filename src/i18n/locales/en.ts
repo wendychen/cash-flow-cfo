@@ -53,6 +53,16 @@ export const en = {
     importFailed: 'Import failed: {error}',
     milestones: 'Milestones',
     addMilestone: 'Add milestone',
+    repeat: {
+      label: 'Repeat',
+      none: 'None',
+      weekly: 'Weekly',
+      monthly: 'Monthly',
+      quarterly: 'Quarterly',
+      yearly: 'Yearly',
+      cycle: 'Cycle {count}',
+      spawnNow: 'Spawn next cycle',
+    },
   },
   language: {
     label: 'Language',

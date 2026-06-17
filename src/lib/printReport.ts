@@ -1,5 +1,6 @@
 import { format, parseISO, isValid } from 'date-fns';
 import type { Goal } from '@/types/goal';
+import { isRepeatingGoal, normalizeRepeatInterval } from '@/types/goalRepeat';
 import type { TaskNode, TaskType } from '@/types/task';
 import type { FinanceStateV2 } from '@/stores/finance/financeStore';
 import type { AutoBackupEntry } from '@/lib/autoBackup';
@@ -89,6 +90,11 @@ function renderGoalCard(goal: Goal, tasks: TaskNode[], formatAmount: AmountForma
           .join('')}</ul></div>`
       : '';
 
+  const repeatInterval = normalizeRepeatInterval(goal.repeatInterval);
+  const repeatMeta = isRepeatingGoal(repeatInterval)
+    ? `<span><strong>Repeat:</strong> ${escapeHtml(repeatInterval)}${goal.repeatCycle && goal.repeatCycle > 1 ? ` (cycle ${goal.repeatCycle})` : ''}</span>`
+    : '';
+
   return `
     <article class="goal-card ${goal.completed ? 'completed' : ''}">
       <h3>${escapeHtml(goal.title)}${goal.isMagicWand ? ' ★' : ''}${goal.completed ? ' (Completed)' : ''}</h3>
@@ -97,6 +103,7 @@ function renderGoalCard(goal: Goal, tasks: TaskNode[], formatAmount: AmountForma
         <span><strong>Budget:</strong> ${budget}</span>
         <span><strong>Category:</strong> ${escapeHtml(categoryLabel)}</span>
         ${goal.timeCost ? `<span><strong>Time:</strong> ${escapeHtml(goal.timeCost)}</span>` : ''}
+        ${repeatMeta}
       </p>
       ${constraint}
       ${urls}

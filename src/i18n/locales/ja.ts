@@ -55,6 +55,16 @@ export const ja: Messages = {
     importFailed: 'インポート失敗：{error}',
     milestones: 'マイルストーン',
     addMilestone: 'マイルストーンを追加',
+    repeat: {
+      label: '繰り返し',
+      none: 'なし',
+      weekly: '毎週',
+      monthly: '毎月',
+      quarterly: '四半期',
+      yearly: '毎年',
+      cycle: 'サイクル {count}',
+      spawnNow: '次のサイクルを作成',
+    },
   },
   language: {
     label: '言語',

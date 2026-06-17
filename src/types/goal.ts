@@ -1,5 +1,6 @@
 import { ExpenseCategory } from './expenseCategory';
 import type { GoalMilestone } from './goalMilestone';
+import type { GoalRepeatInterval } from './goalRepeat';
 
 export interface TaskItem {
   id: string;
@@ -43,6 +44,9 @@ export interface Goal {
   constraint: string;
   urlPack: string[];
   milestones?: GoalMilestone[];
+  repeatInterval?: GoalRepeatInterval;
+  repeatSeriesId?: string;
+  repeatCycle?: number;
   preTasks?: TaskItem[];
   postTasks?: TaskItem[];
   postDreams?: PostDream[];

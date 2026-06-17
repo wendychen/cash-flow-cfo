@@ -55,6 +55,16 @@ export const zhTW: Messages = {
     importFailed: '匯入失敗：{error}',
     milestones: '里程碑',
     addMilestone: '新增里程碑',
+    repeat: {
+      label: '重複',
+      none: '不重複',
+      weekly: '每週',
+      monthly: '每月',
+      quarterly: '每季',
+      yearly: '每年',
+      cycle: '第 {count} 週期',
+      spawnNow: '建立下一週期',
+    },
   },
   language: {
     label: '語言',

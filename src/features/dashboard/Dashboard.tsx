@@ -74,6 +74,7 @@ export default function Dashboard() {
     replaceAllData,
     backfillMissingShadowExpenses,
     importGoalBundle,
+    spawnRepeatingGoalCycle,
   } = useFinanceStore();
 
   const { format, currency, setCurrency } = useCurrency();
@@ -587,6 +588,7 @@ export default function Dashboard() {
                   onDeleteTask={handleDeleteTask}
                   onReorderTasks={handleReorderTasks}
                   onMoveTask={moveTask}
+                  onSpawnNextCycle={spawnRepeatingGoalCycle}
                 />
               </CardContent>
             </Card>

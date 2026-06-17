@@ -25,6 +25,8 @@ import { Goal } from '@/types/goal';
 import { TaskNode } from '@/types/task';
 import { FinancialTarget } from '@/types/target';
 import { sortTasksForImport } from '@/lib/goalExport';
+import { buildNextCycleGoalFields } from '@/lib/goalRepeat';
+import { isRepeatingGoal } from '@/types/goalRepeat';
 import { migratePersistedState } from './migration';
 
 /**
@@ -87,6 +89,7 @@ interface FinanceStore extends FinanceState {
   deleteGoal: (id: string) => void;
   reorderGoals: (orderedIds: string[]) => void;
   importGoalBundle: (bundle: { goal: Goal; tasks: TaskNode[] }) => string;
+  spawnRepeatingGoalCycle: (goalId: string) => string | null;
 
   // Task actions (normalized - single source of truth)
   addTask: (task: Omit<TaskNode, 'id' | 'createdAt'>) => void;
@@ -214,6 +217,32 @@ function importOldDataIfNeeded() {
 
 // Run on module load
 importOldDataIfNeeded();
+
+function createNextCycleGoalFromSource(
+  source: Goal,
+  overrides?: Partial<Goal>
+): { goal: Goal; expense: Expense } | null {
+  const fields = buildNextCycleGoalFields({ ...source, ...overrides });
+  if (!fields) return null;
+
+  const goalId = crypto.randomUUID();
+  const { expense, expenseId } = createGoalShadowExpense(goalId, {
+    title: fields.title,
+    deadline: fields.deadline,
+    category: fields.category || 'misc',
+    budget: fields.budget ?? 0,
+    timeCost: fields.timeCost ?? '',
+  });
+
+  const goal: Goal = {
+    ...fields,
+    id: goalId,
+    createdAt: new Date().toISOString(),
+    linkedExpenseId: expenseId,
+  };
+
+  return { goal, expense };
+}
 
 export const useFinanceStore = create<FinanceStore>()(
   persist(
@@ -450,7 +479,22 @@ export const useFinanceStore = create<FinanceStore>()(
             );
           }
 
-          return { goals: nextGoals, expenses: nextExpenses };
+          const isCompleting = updates.completed === true && !goal.completed;
+          let spawnedGoals: Goal[] = [];
+          let spawnedExpenses: Expense[] = [];
+
+          if (isCompleting && isRepeatingGoal(goal.repeatInterval)) {
+            const spawned = createNextCycleGoalFromSource(goal, updates);
+            if (spawned) {
+              spawnedGoals = [spawned.goal];
+              spawnedExpenses = [spawned.expense];
+            }
+          }
+
+          return {
+            goals: [...nextGoals, ...spawnedGoals],
+            expenses: [...nextExpenses, ...spawnedExpenses],
+          };
         });
       },
       deleteGoal: (id) => {
@@ -536,6 +580,20 @@ export const useFinanceStore = create<FinanceStore>()(
         }));
 
         return goalId;
+      },
+      spawnRepeatingGoalCycle: (goalId) => {
+        const source = get().goals.find((g) => g.id === goalId);
+        if (!source) return null;
+
+        const spawned = createNextCycleGoalFromSource(source);
+        if (!spawned) return null;
+
+        set((state) => ({
+          goals: [...state.goals, spawned.goal],
+          expenses: [...state.expenses, spawned.expense],
+        }));
+
+        return spawned.goal.id;
       },
 
       // ==================== TASKS (Normalized - Single Source of Truth) ====================
