@@ -89,6 +89,16 @@ const IncomeList = ({
     setEditDate(income.date);
   };
 
+  const handleDeleteIncome = (income: Income) => {
+    if (income.incomeType === "accrued") {
+      const linkedCount = getCollectionsForAccrued(income.id, incomePool).length;
+      if (linkedCount > 0 && !confirm(t("income.list.deleteAccruedConfirm", { count: linkedCount }))) {
+        return;
+      }
+    }
+    onDeleteIncome(income.id);
+  };
+
   const cancelEdit = () => {
     setEditingId(null);
     setEditError(null);
@@ -425,7 +435,7 @@ const IncomeList = ({
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => onDeleteIncome(income.id)}
+                          onClick={() => handleDeleteIncome(income)}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>

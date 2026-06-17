@@ -27,6 +27,8 @@ export const en = {
       note: 'Note',
       review: 'Review',
       duplicate: 'Duplicate entry',
+      deleteAccruedConfirm:
+        'Delete this accrued income and {count} linked collection(s)? This cannot be undone.',
     },
     breakdown: {
       label: 'Income mix',
@@ -107,11 +109,11 @@ export const en = {
       },
       income: {
         title: 'Income, Expenses & Savings',
-        body: 'Record cash flow in each tab. Mark income as cash or accrued; record collections when accrued income is paid. Duplicate any entry with the copy button. Expenses can link to goals; shadow expenses sync when you check off goal tasks.',
+        body: 'Record cash flow in each tab. Mark income as cash or accrued; record collections when accrued income is paid. Once collections are linked, income type is locked and accrued amount cannot drop below collected. Duplicate any entry with the copy button. Expenses can link to goals; shadow expenses sync when you check off goal tasks.',
       },
       goals: {
         title: 'Goals & Tasks',
-        body: 'Set budgets, milestones, pre/post tasks, and ideations. Repeating goals spawn the next cycle when completed. Use Goal Budget Allocator to split savings across goals. Print a goals report from the Goals tab.',
+        body: 'Set budgets, milestones, pre/post tasks, and ideations. Repeating goals spawn the next cycle when completed. Use Goal Budget Allocator to split savings across goals. Print a goals report from the Goals tab — it includes your 20-year fin goal progress when set.',
       },
       currency: {
         title: 'Currency',

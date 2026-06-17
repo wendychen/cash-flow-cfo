@@ -539,6 +539,7 @@ export default function Dashboard() {
                 <button
                   type="button"
                   className="inline-flex"
+                  data-testid="fin-goal-summary-chip"
                   aria-label={t('summary.finGoalChipAria')}
                   onClick={() =>
                     document
