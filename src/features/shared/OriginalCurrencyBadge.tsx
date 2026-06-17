@@ -3,6 +3,7 @@ import {
   formatOriginalAmount,
   shouldShowOriginalCurrencyBadge,
 } from '@/lib/currencyEntry';
+import { useI18n } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 interface OriginalCurrencyBadgeProps {
@@ -19,6 +20,8 @@ export function OriginalCurrencyBadge({
   originalCurrency,
   className,
 }: OriginalCurrencyBadgeProps) {
+  const { t } = useI18n();
+
   if (
     !shouldShowOriginalCurrencyBadge(originalCurrency) ||
     originalAmount === undefined
@@ -34,7 +37,7 @@ export function OriginalCurrencyBadge({
         'tabular-nums pointer-events-none',
         className
       )}
-      title={`Originally entered as ${originalCurrency}`}
+      title={t('nav.originalCurrencyTitle', { currency: originalCurrency })}
     >
       {formatOriginalAmount(originalAmount, originalCurrency)}
     </div>

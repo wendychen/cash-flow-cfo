@@ -16,6 +16,7 @@ interface UserGuideProps {
 
 const SECTION_KEYS: { title: TranslationKey; body: TranslationKey }[] = [
   { title: 'userGuide.sections.timeNav.title', body: 'userGuide.sections.timeNav.body' },
+  { title: 'userGuide.sections.finGoal.title', body: 'userGuide.sections.finGoal.body' },
   { title: 'userGuide.sections.income.title', body: 'userGuide.sections.income.body' },
   { title: 'userGuide.sections.goals.title', body: 'userGuide.sections.goals.body' },
   { title: 'userGuide.sections.currency.title', body: 'userGuide.sections.currency.body' },

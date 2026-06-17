@@ -11,6 +11,7 @@ export const en = {
     reload: 'Reload',
     reset: 'Reset All Data',
     displayCurrency: 'Display currency',
+    originalCurrencyTitle: 'Originally entered as {currency}',
   },
   income: {
     type: {
@@ -93,7 +94,11 @@ export const en = {
     sections: {
       timeNav: {
         title: 'Time Navigator',
-        body: 'Pick a year, quarter, month, or week on the left. Summary cards, tabs, and charts filter to that period. Goals always stay visible regardless of deadline.',
+        body: 'Pick a year, quarter, month, or week on the left — including future years marked “Future”. Summary cards, tabs, and charts filter to that period (future periods show empty data until you have entries). Goals always stay visible regardless of deadline.',
+      },
+      finGoal: {
+        title: '20-Year Fin Goal',
+        body: 'Set a long-term savings target under the Time Navigator — choose a preset (100K to 500T) or enter a custom amount. Track progress against your latest savings balance. In Cash Flow Simulator, pick “20 years (240 months)” to see a goal reference line on the projection chart.',
       },
       income: {
         title: 'Income, Expenses & Savings',

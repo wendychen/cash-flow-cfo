@@ -13,6 +13,7 @@ export const zhTW: Messages = {
     reload: '重新載入',
     reset: '重置所有資料',
     displayCurrency: '顯示幣別',
+    originalCurrencyTitle: '原始輸入為 {currency}',
   },
   income: {
     type: {
@@ -95,7 +96,11 @@ export const zhTW: Messages = {
     sections: {
       timeNav: {
         title: '時間導覽',
-        body: '在左側選擇年、季、月或週。摘要卡片、分頁與圖表會依期間篩選。目標不受期限影響，始終顯示。',
+        body: '在左側選擇年、季、月或週，包含標示「未來」的未來年份。摘要卡片、分頁與圖表會依期間篩選（未來期間在尚無資料時為空）。目標不受期限影響，始終顯示。',
+      },
+      finGoal: {
+        title: '20 年財務目標',
+        body: '在時間導覽下方設定長期儲蓄目標——可選預設金額（10 萬至 500 兆）或自訂金額，並對照最新儲蓄餘額追蹤進度。在現金流模擬器選擇「20 年（240 個月）」可在預測圖上看到目標參考線。',
       },
       income: {
         title: '收入、支出與儲蓄',
