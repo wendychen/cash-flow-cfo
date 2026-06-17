@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { buildSimulationChartData, runCashFlowSimulation } from './cashFlowSimulation';
+import {
+  buildSimulationChartData,
+  LONG_TERM_SIMULATOR_MONTHS,
+  runCashFlowSimulation,
+} from './cashFlowSimulation';
 
 describe('runCashFlowSimulation', () => {
   it('projects savings with expense reduction', () => {
@@ -60,6 +64,20 @@ describe('runCashFlowSimulation', () => {
     expect(result.avgMonthlyNetDelta).toBe(10000);
     expect(result.annualizedSavingsGain).toBe(120000);
     expect(result.savingsGrowthPercent).toBeCloseTo(120, 5);
+  });
+
+  it('supports 20-year (240 month) horizon', () => {
+    const result = runCashFlowSimulation({
+      monthlyIncome: 10000,
+      monthlyExpenses: 8000,
+      currentSavings: 0,
+      incomeChange: 0,
+      expenseChange: 0,
+      months: LONG_TERM_SIMULATOR_MONTHS,
+    });
+
+    expect(result.months).toHaveLength(240);
+    expect(result.endingSavings).toBe(240 * 2000);
   });
 
   it('builds chart data from simulation months', () => {

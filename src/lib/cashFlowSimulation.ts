@@ -37,6 +37,9 @@ export interface SimulationChartPoint {
   baseline: number;
 }
 
+/** 20-year projection horizon (months), aligned with long-term fin goal. */
+export const LONG_TERM_SIMULATOR_MONTHS = 240;
+
 export function buildSimulationChartData(months: SimulationMonth[]): SimulationChartPoint[] {
   return months.map((row) => ({
     month: row.month,

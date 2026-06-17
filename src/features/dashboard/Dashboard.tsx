@@ -715,6 +715,7 @@ export default function Dashboard() {
               monthlyIncome={monthlyIncome}
               monthlyExpenses={monthlyExpenses}
               currentSavings={latestSavingsBalance}
+              finGoalTargetAmount={longTermFinGoal?.targetAmount}
             />
 
             <Card>
