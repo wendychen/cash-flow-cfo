@@ -498,6 +498,12 @@ export const zhTW: Messages = {
       nextMilestone: '下一個里程碑：{label}',
       deadline: '目標期限',
     },
+    planner: {
+      title: '達成規劃',
+      priority: '規劃優先順序（1 = 最高）',
+      plannedStart: '計劃開始日',
+      notesPlaceholder: '此目標的規劃備註…',
+    },
     export: '匯出目標',
     import: '匯入目標',
     importSuccess: '目標匯入成功。',

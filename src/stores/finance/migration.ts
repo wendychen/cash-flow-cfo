@@ -65,6 +65,9 @@ export function migrateFromV1(oldState: any): FinanceStateV2 {
       repeatInterval: oldGoal.repeatInterval,
       repeatSeriesId: oldGoal.repeatSeriesId,
       repeatCycle: oldGoal.repeatCycle,
+      plannerPriority: oldGoal.plannerPriority,
+      plannerNotes: oldGoal.plannerNotes,
+      plannedStartDate: oldGoal.plannedStartDate,
       // Intentionally do NOT copy preTasks / postTasks / postDreams
     };
 

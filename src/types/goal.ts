@@ -52,4 +52,10 @@ export interface Goal {
   preTasks?: TaskItem[];
   postTasks?: TaskItem[];
   postDreams?: PostDream[];
+  /** Reach planner: 1 = highest (user or AI). */
+  plannerPriority?: number;
+  /** Reach planner coach notes, user-editable. */
+  plannerNotes?: string;
+  /** Reach planner assigned start YYYY-MM-DD. */
+  plannedStartDate?: string;
 }

@@ -499,6 +499,12 @@ export const en = {
       nextMilestone: 'Next milestone: {label}',
       deadline: 'Goal deadline',
     },
+    planner: {
+      title: 'Reach Planner',
+      priority: 'Planner priority (1 = first)',
+      plannedStart: 'Planned start',
+      notesPlaceholder: 'Planner notes for this goal…',
+    },
     export: 'Export goal',
     import: 'Import goal',
     importSuccess: 'Goal imported successfully.',

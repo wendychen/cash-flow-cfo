@@ -499,6 +499,12 @@ export const ja: Messages = {
       nextMilestone: '次のマイルストーン：{label}',
       deadline: '目標期限',
     },
+    planner: {
+      title: '達成プランナー',
+      priority: 'プランナー優先度（1 = 最優先）',
+      plannedStart: '計画開始日',
+      notesPlaceholder: 'この目標のプランナーメモ…',
+    },
     export: '目標をエクスポート',
     import: '目標をインポート',
     importSuccess: '目標をインポートしました。',

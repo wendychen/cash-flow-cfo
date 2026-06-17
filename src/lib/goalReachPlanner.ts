@@ -67,6 +67,9 @@ export interface GoalPlanRow {
   timelineStartPercent: number;
   timelineEndPercent: number;
   isMagicWand: boolean;
+  plannerPriority?: number;
+  plannerNotes?: string;
+  plannedStartDate?: string;
 }
 
 export interface FeasibilityBreakdown {
@@ -141,6 +144,17 @@ function monthsNeededForGap(fundingGap: number, monthlySurplus: number): number 
 
 function formatMonthKey(date: Date): string {
   return format(startOfMonth(date), 'yyyy-MM');
+}
+
+function compareGoalPlanRows(a: GoalPlanRow, b: GoalPlanRow): number {
+  const pa = a.plannerPriority;
+  const pb = b.plannerPriority;
+  if (pa != null && pb != null && pa !== pb) return pa - pb;
+  if (pa != null && pb == null) return -1;
+  if (pa == null && pb != null) return 1;
+  const da = a.effectiveDeadline ?? '9999-12-31';
+  const db = b.effectiveDeadline ?? '9999-12-31';
+  return da.localeCompare(db);
 }
 
 function computeTimelinePercents(
@@ -405,13 +419,12 @@ export function computeGoalReachPlan(
         timelineStartPercent: timeline.start,
         timelineEndPercent: timeline.end,
         isMagicWand: goal.isMagicWand,
+        plannerPriority: goal.plannerPriority,
+        plannerNotes: goal.plannerNotes,
+        plannedStartDate: goal.plannedStartDate,
       };
     })
-    .sort((a, b) => {
-      const da = a.effectiveDeadline ?? '9999-12-31';
-      const db = b.effectiveDeadline ?? '9999-12-31';
-      return da.localeCompare(db);
-    });
+    .sort(compareGoalPlanRows);
 
   const totalFundingGap = Math.max(0, totalFundingNeed - latestSavingsBalance);
   const savingsGap = Math.max(0, totalBudgetAllocated - latestSavingsBalance);

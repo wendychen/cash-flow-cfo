@@ -41,6 +41,7 @@ import {
   DollarSign,
   Sparkles,
   Flag,
+  Route,
   UtensilsCrossed,
   Users,
   Package,
@@ -655,6 +656,61 @@ const SortableGoalItem = ({
                 </Button>
               </div>
             )}
+          </div>
+
+          <div className="space-y-2 rounded-lg border border-violet-200/60 dark:border-violet-800/40 p-3 bg-violet-50/20 dark:bg-violet-950/10">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Route className="h-4 w-4 text-violet-600" />
+              <span>{t('goals.planner.title')}</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground" htmlFor={`planner-priority-${goal.id}`}>
+                  {t('goals.planner.priority')}
+                </label>
+                <Input
+                  id={`planner-priority-${goal.id}`}
+                  type="number"
+                  min={1}
+                  max={99}
+                  placeholder="1"
+                  value={goal.plannerPriority ?? ''}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    onUpdateGoal(goal.id, {
+                      plannerPriority: raw === '' ? undefined : Math.max(1, parseInt(raw, 10) || 1),
+                    });
+                  }}
+                  className="h-8 text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground" htmlFor={`planned-start-${goal.id}`}>
+                  {t('goals.planner.plannedStart')}
+                </label>
+                <Input
+                  id={`planned-start-${goal.id}`}
+                  type="date"
+                  value={goal.plannedStartDate ?? ''}
+                  onChange={(e) =>
+                    onUpdateGoal(goal.id, {
+                      plannedStartDate: e.target.value || undefined,
+                    })
+                  }
+                  className="h-8 text-sm"
+                />
+              </div>
+            </div>
+            <Textarea
+              placeholder={t('goals.planner.notesPlaceholder')}
+              value={goal.plannerNotes ?? ''}
+              onChange={(e) =>
+                onUpdateGoal(goal.id, {
+                  plannerNotes: e.target.value || undefined,
+                })
+              }
+              className="min-h-[48px] text-sm resize-none"
+            />
           </div>
 
           <div className="space-y-2">

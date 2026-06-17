@@ -43,8 +43,9 @@ The write-up must include: summary, commits, architecture, test count, user how-
 | ✅ | PR-1 Engine + tests | — |
 | ✅ | PR-2 Planner UI | — |
 | ✅ | PR-3 Conflicts + weekly focus | — |
-| ⏳ | **PR-4** Simulator bridge | **← next** |
-| | PR-5 Planner fields on Goal | |
+| ✅ | PR-4 Simulator bridge | — |
+| ✅ | PR-5 Planner fields on Goal | — |
+| ⏳ | **PR-6** Print/CSV plan section | **← next** |
 | | PR-6 Print/CSV plan section | |
 | | PR-7 i18n polish | |
 | | PR-8–10 AI coach | |

@@ -288,6 +288,27 @@ describe('goalReachPlanner', () => {
     expect(plan.weeklyFocus[2].title).toBe('Urgent normal');
   });
 
+  it('sorts goal rows by planner priority before deadline', () => {
+    const goals = [
+      makeGoal({ id: 'g1', title: 'Soon', budget: 1000, deadline: '2026-07-01', plannerPriority: 2 }),
+      makeGoal({ id: 'g2', title: 'Later but priority', budget: 500, deadline: '2026-12-01', plannerPriority: 1 }),
+    ];
+
+    const plan = computeGoalReachPlan(
+      {
+        goals,
+        tasks: [],
+        latestSavingsBalance: 0,
+        monthlySurplus: 500,
+        horizonMonths: 6,
+      },
+      NOW
+    );
+
+    expect(plan.goalRows[0].goalId).toBe('g2');
+    expect(plan.goalRows[1].goalId).toBe('g1');
+  });
+
   it('assigns monthly surplus greedily by deadline order', () => {
     const goals = [
       makeGoal({ id: 'g1', title: 'Soon', budget: 1000, deadline: '2026-08-01' }),
