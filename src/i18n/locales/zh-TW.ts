@@ -155,6 +155,7 @@ export const zhTW: Messages = {
       yearly: '每年',
       cycle: '第 {count} 週期',
       spawnNow: '建立下一週期',
+      duplicateTasks: '建立週期時複製任務',
     },
   },
   language: {

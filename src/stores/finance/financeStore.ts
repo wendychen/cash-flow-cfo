@@ -269,12 +269,10 @@ function spawnRepeatingCycleBundle(
   if (!spawned) return null;
 
   const interval = normalizeRepeatInterval(source.repeatInterval);
-  const duplicated = buildDuplicatedTasksForCycle(
-    sourceTasks,
-    source.id,
-    spawned.goal.id,
-    interval
-  );
+  const duplicated =
+    source.repeatDuplicateTasks === false
+      ? []
+      : buildDuplicatedTasksForCycle(sourceTasks, source.id, spawned.goal.id, interval);
 
   const taskExpenses: Expense[] = [];
   const tasks = duplicated.map((task) => {

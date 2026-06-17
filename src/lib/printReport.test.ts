@@ -75,6 +75,67 @@ describe('printReport', () => {
     expect(html).toContain('(Completed)');
   });
 
+  it('buildBackupPrintHtml includes income breakdown and collections', () => {
+    const html = buildBackupPrintHtml(
+      {
+        backups: [],
+        currentState: {
+          version: 2,
+          expenses: [],
+          incomes: [
+            {
+              id: 'a1',
+              date: '2026-05-01',
+              source: 'Invoice A',
+              amount: 1000,
+              incomeType: 'accrued',
+            },
+            {
+              id: 'c1',
+              date: '2026-05-15',
+              source: 'Invoice A',
+              amount: 400,
+              incomeType: 'cash',
+              linkedAccruedIncomeId: 'a1',
+            },
+            {
+              id: 'c2',
+              date: '2026-05-20',
+              source: 'Salary',
+              amount: 200,
+              incomeType: 'cash',
+            },
+          ],
+          savings: [],
+          fixedExpenses: [],
+          targets: [],
+          goals: [],
+          tasks: [],
+        },
+      },
+      { formatAmount }
+    );
+
+    expect(html).toContain('Income &amp; Collections');
+    expect(html).toContain('Direct cash');
+    expect(html).toContain('Outstanding accrued');
+    expect(html).toContain('Invoice A');
+    expect(html).toContain('Cash Collections');
+    expect(html).toContain('incomeCollections');
+  });
+
+  it('buildGoalsPrintHtml shows duplicate tasks preference for repeating goals', () => {
+    const html = buildGoalsPrintHtml({
+      goals: [{ ...sampleGoal, repeatInterval: 'monthly', repeatDuplicateTasks: false }],
+      tasks: [],
+      formatAmount,
+      displayCurrency: 'USD',
+    });
+
+    expect(html).toContain('Duplicate tasks:');
+    expect(html).toContain('No');
+  });
+
   it('buildBackupPrintHtml lists backup snapshots and current counts', () => {
     const html = buildBackupPrintHtml({
       backups: [

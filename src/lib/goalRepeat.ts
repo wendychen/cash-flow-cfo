@@ -68,6 +68,7 @@ export interface NextCycleGoalFields {
   repeatInterval: GoalRepeatInterval;
   repeatSeriesId: string;
   repeatCycle: number;
+  repeatDuplicateTasks: boolean;
 }
 
 export function buildDuplicatedTasksForCycle(
@@ -114,5 +115,6 @@ export function buildNextCycleGoalFields(source: Goal): NextCycleGoalFields | nu
     repeatInterval: interval,
     repeatSeriesId: seriesId,
     repeatCycle: nextCycle,
+    repeatDuplicateTasks: source.repeatDuplicateTasks !== false,
   };
 }

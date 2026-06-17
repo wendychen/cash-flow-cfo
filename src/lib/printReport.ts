@@ -2,10 +2,13 @@ import { format, parseISO, isValid } from 'date-fns';
 import type { Goal } from '@/types/goal';
 import { isRepeatingGoal, normalizeRepeatInterval } from '@/types/goalRepeat';
 import type { TaskNode, TaskType } from '@/types/task';
+import type { Income } from '@/types/income';
 import type { FinanceStateV2 } from '@/stores/finance/financeStore';
 import type { AutoBackupEntry } from '@/lib/autoBackup';
 import { EXPENSE_CATEGORIES, migrateExpenseCategory } from '@/types/expenseCategory';
 import { buildTree, flattenTree } from '@/features/goals/hooks/use-task-tree';
+import { computeSankeyIncomeSplit } from '@/lib/incomeBreakdown';
+import { getAccruedCollectionStatus, isAccruedCollection } from '@/lib/incomeConversion';
 
 export type AmountFormatter = (amountInNTD: number) => string;
 
@@ -92,7 +95,8 @@ function renderGoalCard(goal: Goal, tasks: TaskNode[], formatAmount: AmountForma
 
   const repeatInterval = normalizeRepeatInterval(goal.repeatInterval);
   const repeatMeta = isRepeatingGoal(repeatInterval)
-    ? `<span><strong>Repeat:</strong> ${escapeHtml(repeatInterval)}${goal.repeatCycle && goal.repeatCycle > 1 ? ` (cycle ${goal.repeatCycle})` : ''}</span>`
+    ? `<span><strong>Repeat:</strong> ${escapeHtml(repeatInterval)}${goal.repeatCycle && goal.repeatCycle > 1 ? ` (cycle ${goal.repeatCycle})` : ''}</span>
+        <span><strong>Duplicate tasks:</strong> ${goal.repeatDuplicateTasks === false ? 'No' : 'Yes'}</span>`
     : '';
 
   return `
@@ -165,9 +169,11 @@ export interface BackupPrintInput {
 }
 
 function countState(state: FinanceStateV2) {
+  const incomes = state.incomes ?? [];
   return {
     expenses: state.expenses?.length ?? 0,
-    incomes: state.incomes?.length ?? 0,
+    incomes: incomes.length,
+    incomeCollections: incomes.filter((inc) => isAccruedCollection(inc)).length,
     savings: state.savings?.length ?? 0,
     fixedExpenses: state.fixedExpenses?.length ?? 0,
     targets: state.targets?.length ?? 0,
@@ -176,12 +182,132 @@ function countState(state: FinanceStateV2) {
   };
 }
 
-export function buildBackupPrintHtml({
-  backups,
-  currentState,
-  printedAt = new Date(),
-}: BackupPrintInput): string {
+function formatIncomeDate(dateStr: string): string {
+  try {
+    const parsed = parseISO(dateStr);
+    return isValid(parsed) ? format(parsed, 'MMM d, yyyy') : dateStr;
+  } catch {
+    return dateStr;
+  }
+}
+
+function renderIncomePrintSection(incomes: Income[], formatAmount: AmountFormatter): string {
+  if (incomes.length === 0) return '';
+
+  const split = computeSankeyIncomeSplit(incomes);
+  const accruedEntries = incomes
+    .filter((inc) => inc.incomeType === 'accrued')
+    .sort((a, b) => b.date.localeCompare(a.date));
+  const collectionEntries = incomes
+    .filter((inc) => isAccruedCollection(inc))
+    .sort((a, b) => b.date.localeCompare(a.date));
+
+  const summaryRows = [
+    ['Direct cash', split.directCash],
+    ['Collections', split.collections],
+    ['Outstanding accrued', split.accruedOutstanding],
+    ['Total (cash + outstanding)', split.total],
+  ]
+    .map(
+      ([label, amount]) =>
+        `<tr><td>${escapeHtml(label)}</td><td class="num">${formatAmount(amount as number)}</td></tr>`
+    )
+    .join('');
+
+  const accruedRows =
+    accruedEntries.length > 0
+      ? accruedEntries
+          .map((accrued) => {
+            const status = getAccruedCollectionStatus(accrued, incomes);
+            const statusLabel = status.isFullyCollected
+              ? 'Fully collected'
+              : `${status.percentCollected}% collected`;
+            return `<tr>
+              <td>${formatIncomeDate(accrued.date)}</td>
+              <td>${escapeHtml(accrued.source)}</td>
+              <td class="num">${formatAmount(accrued.amount)}</td>
+              <td class="num">${formatAmount(status.collected)}</td>
+              <td class="num">${formatAmount(status.outstanding)}</td>
+              <td>${statusLabel}</td>
+            </tr>`;
+          })
+          .join('')
+      : '<tr><td colspan="6" class="empty">No accrued income records.</td></tr>';
+
+  const collectionRows =
+    collectionEntries.length > 0
+      ? collectionEntries
+          .map((collection) => {
+            const linked = collection.linkedAccruedIncomeId
+              ? incomes.find((inc) => inc.id === collection.linkedAccruedIncomeId)
+              : undefined;
+            const linkedLabel = linked ? escapeHtml(linked.source) : '—';
+            return `<tr>
+              <td>${formatIncomeDate(collection.date)}</td>
+              <td>${escapeHtml(collection.source)}</td>
+              <td>${linkedLabel}</td>
+              <td class="num">${formatAmount(collection.amount)}</td>
+              <td>${escapeHtml(collection.note ?? '')}</td>
+            </tr>`;
+          })
+          .join('')
+      : '<tr><td colspan="5" class="empty">No collection entries recorded.</td></tr>';
+
+  return `
+    <section class="section">
+      <h2>Income &amp; Collections</h2>
+      <table class="counts-table income-summary-table">
+        <thead><tr><th>Category</th><th>Amount</th></tr></thead>
+        <tbody>${summaryRows}</tbody>
+      </table>
+
+      <h3>Accrued Income</h3>
+      <table class="income-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Source</th>
+            <th>Accrued</th>
+            <th>Collected</th>
+            <th>Outstanding</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>${accruedRows}</tbody>
+      </table>
+
+      <h3>Cash Collections</h3>
+      <table class="income-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Source</th>
+            <th>From accrued</th>
+            <th>Amount</th>
+            <th>Note</th>
+          </tr>
+        </thead>
+        <tbody>${collectionRows}</tbody>
+      </table>
+    </section>
+  `;
+}
+
+export interface BackupPrintOptions {
+  formatAmount?: AmountFormatter;
+}
+
+export function buildBackupPrintHtml(
+  {
+    backups,
+    currentState,
+    printedAt = new Date(),
+  }: BackupPrintInput,
+  options: BackupPrintOptions = {}
+): string {
   const currentCounts = countState(currentState);
+  const formatAmount = options.formatAmount ?? ((n: number) => String(n));
+  const incomeSection = renderIncomePrintSection(currentState.incomes ?? [], formatAmount);
 
   const backupRows =
     backups.length > 0
@@ -226,6 +352,8 @@ export function buildBackupPrintHtml({
       </table>
     </section>
 
+    ${incomeSection}
+
     <section class="section">
       <h2>Auto-Backup History</h2>
       <table class="backup-table">
@@ -269,6 +397,7 @@ const PRINT_STYLES = `
   h1 { font-size: 20pt; margin: 0 0 8px; }
   h2 { font-size: 14pt; margin: 24px 0 12px; border-bottom: 1px solid #ccc; padding-bottom: 4px; }
   h3 { font-size: 13pt; margin: 0 0 8px; }
+  h3 { font-size: 12pt; margin: 16px 0 8px; color: #222; }
   h4 { font-size: 11pt; margin: 12px 0 6px; color: #333; }
   .subtitle { color: #555; margin: 4px 0; font-size: 10pt; }
   .section { margin-bottom: 20px; }
@@ -286,6 +415,8 @@ const PRINT_STYLES = `
   .task-section li, .ideations li { margin: 2px 0; font-size: 10pt; }
   .empty { color: #666; font-style: italic; }
   table { width: 100%; border-collapse: collapse; font-size: 10pt; }
+  .income-table { margin-bottom: 12px; }
+  .income-summary-table { margin-bottom: 16px; }
   th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
   th { background: #f5f5f5; }
   td.num { text-align: right; font-variant-numeric: tabular-nums; }
@@ -334,8 +465,11 @@ export function printGoalsReport(input: GoalsPrintInput): void {
   openPrintDocument('Cash Flow CFO — Goals Report', body);
 }
 
-export function printBackupReport(input: BackupPrintInput): void {
-  const body = buildBackupPrintHtml(input);
+export function printBackupReport(
+  input: BackupPrintInput,
+  options: BackupPrintOptions = {}
+): void {
+  const body = buildBackupPrintHtml(input, options);
   openPrintDocument('Cash Flow CFO — Backup Report', body);
 }
 

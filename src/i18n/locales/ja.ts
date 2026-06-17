@@ -155,6 +155,7 @@ export const ja: Messages = {
       yearly: '毎年',
       cycle: 'サイクル {count}',
       spawnNow: '次のサイクルを作成',
+      duplicateTasks: 'サイクル作成時にタスクを複製',
     },
   },
   language: {

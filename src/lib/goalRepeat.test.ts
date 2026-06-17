@@ -48,6 +48,14 @@ describe('goalRepeat', () => {
     expect(buildNextCycleGoalFields({ ...goal, repeatInterval: 'none' })).toBeNull();
   });
 
+  it('carries repeatDuplicateTasks preference into next cycle', () => {
+    const withDup = buildNextCycleGoalFields({ ...goal, repeatDuplicateTasks: false });
+    expect(withDup?.repeatDuplicateTasks).toBe(false);
+
+    const defaultDup = buildNextCycleGoalFields(goal);
+    expect(defaultDup?.repeatDuplicateTasks).toBe(true);
+  });
+
   it('duplicates tasks for next cycle with advanced deadlines', () => {
     const tasks: TaskNode[] = [
       {

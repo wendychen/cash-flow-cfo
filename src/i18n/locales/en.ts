@@ -153,6 +153,7 @@ export const en = {
       yearly: 'Yearly',
       cycle: 'Cycle {count}',
       spawnNow: 'Spawn next cycle',
+      duplicateTasks: 'Duplicate tasks on spawn',
     },
   },
   language: {

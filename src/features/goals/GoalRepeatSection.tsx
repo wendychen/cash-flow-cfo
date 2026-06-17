@@ -1,6 +1,8 @@
 import { RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -47,10 +49,14 @@ export default function GoalRepeatSection({
     if (value !== 'none' && !goal.repeatSeriesId) {
       updates.repeatSeriesId = goal.id;
       updates.repeatCycle = 1;
+      if (goal.repeatDuplicateTasks === undefined) {
+        updates.repeatDuplicateTasks = true;
+      }
     }
     if (value === 'none') {
       updates.repeatSeriesId = undefined;
       updates.repeatCycle = undefined;
+      updates.repeatDuplicateTasks = undefined;
     }
     onUpdateGoal(goal.id, updates);
   };
@@ -76,6 +82,20 @@ export default function GoalRepeatSection({
           ))}
         </SelectContent>
       </Select>
+      {isRepeatingGoal(interval) && (
+        <div className="flex items-center gap-2">
+          <Switch
+            id={`repeat-dup-${goal.id}`}
+            checked={goal.repeatDuplicateTasks !== false}
+            onCheckedChange={(checked) =>
+              onUpdateGoal(goal.id, { repeatDuplicateTasks: checked })
+            }
+          />
+          <Label htmlFor={`repeat-dup-${goal.id}`} className="text-xs text-muted-foreground">
+            {t('goals.repeat.duplicateTasks')}
+          </Label>
+        </div>
+      )}
       {isRepeatingGoal(interval) && onSpawnNextCycle && !goal.completed && (
         <Button
           variant="outline"

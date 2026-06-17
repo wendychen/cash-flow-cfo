@@ -342,19 +342,22 @@ export default function Dashboard() {
   };
 
   const handlePrintBackup = () => {
-    printBackupReport({
-      backups: listAutoBackups(),
-      currentState: {
-        version: 2,
-        expenses,
-        incomes,
-        savings,
-        fixedExpenses,
-        targets,
-        goals,
-        tasks,
+    printBackupReport(
+      {
+        backups: listAutoBackups(),
+        currentState: {
+          version: 2,
+          expenses,
+          incomes,
+          savings,
+          fixedExpenses,
+          targets,
+          goals,
+          tasks,
+        },
       },
-    });
+      { formatAmount: format }
+    );
   };
 
   const handleUpdateTarget = (

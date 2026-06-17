@@ -47,6 +47,8 @@ export interface Goal {
   repeatInterval?: GoalRepeatInterval;
   repeatSeriesId?: string;
   repeatCycle?: number;
+  /** When true (default), spawn next cycle with duplicated tasks. */
+  repeatDuplicateTasks?: boolean;
   preTasks?: TaskItem[];
   postTasks?: TaskItem[];
   postDreams?: PostDream[];
