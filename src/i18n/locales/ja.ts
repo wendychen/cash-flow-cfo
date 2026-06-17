@@ -70,6 +70,7 @@ export const ja: Messages = {
     activeGoals: '進行中の目標',
     totalTasks: 'タスク {count} 件',
     finGoalChip: '20年目標 {progress}%',
+    finGoalChipAria: '20年財務目標を表示',
   },
   tabs: {
     income: '収入',

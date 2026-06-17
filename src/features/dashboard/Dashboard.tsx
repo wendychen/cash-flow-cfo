@@ -533,16 +533,27 @@ export default function Dashboard() {
                 {format(totalSavings)}
               </div>
               {finGoalProgress != null && (
-                <Badge
-                  variant="outline"
-                  className={`text-[10px] tabular-nums font-medium ${
-                    finGoalProgress >= 100
-                      ? 'border-emerald-400 text-emerald-700 dark:text-emerald-300'
-                      : 'border-violet-400 text-violet-700 dark:text-violet-300'
-                  }`}
+                <button
+                  type="button"
+                  className="inline-flex"
+                  aria-label={t('summary.finGoalChipAria')}
+                  onClick={() =>
+                    document
+                      .querySelector('[data-testid="long-term-fin-goal-card"]')
+                      ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+                  }
                 >
-                  {t('summary.finGoalChip', { progress: finGoalProgress })}
-                </Badge>
+                  <Badge
+                    variant="outline"
+                    className={`text-[10px] tabular-nums font-medium cursor-pointer hover-elevate ${
+                      finGoalProgress >= 100
+                        ? 'border-emerald-400 text-emerald-700 dark:text-emerald-300'
+                        : 'border-violet-400 text-violet-700 dark:text-violet-300'
+                    }`}
+                  >
+                    {t('summary.finGoalChip', { progress: finGoalProgress })}
+                  </Badge>
+                </button>
               )}
             </CardContent>
           </Card>

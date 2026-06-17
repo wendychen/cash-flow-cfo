@@ -7,6 +7,7 @@ import {
   getAccruedCollectionStatus,
   getCollectionsForAccrued,
   isAccruedCollection,
+  validateAccruedAmountUpdate,
 } from "@/lib/incomeConversion";
 import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/button";
@@ -71,10 +72,12 @@ const IncomeList = ({
   const [editNote, setEditNote] = useState("");
   const [editReviewCount, setEditReviewCount] = useState("");
   const [editDate, setEditDate] = useState("");
+  const [editError, setEditError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
   const startEdit = (income: Income) => {
     setEditingId(income.id);
+    setEditError(null);
     setEditSource(income.source);
     const editValues = getEditAmountAndCurrency(income, currency, convertFromNTD);
     setEditAmount(editValues.amount);
@@ -87,6 +90,7 @@ const IncomeList = ({
 
   const cancelEdit = () => {
     setEditingId(null);
+    setEditError(null);
     setEditSource("");
     setEditAmount("");
     setEditIncomeType("cash");
@@ -102,6 +106,19 @@ const IncomeList = ({
       editCurrency,
       convertToNTD
     );
+    const income = incomePool.find((i) => i.id === id);
+    if (editIncomeType === "accrued" && income && stored.amount !== undefined) {
+      const check = validateAccruedAmountUpdate(
+        { ...income, incomeType: "accrued" },
+        stored.amount,
+        incomePool
+      );
+      if (!check.valid) {
+        setEditError(t(check.errorKey));
+        return;
+      }
+    }
+    setEditError(null);
     onUpdateIncome(id, {
       source: editSource.trim(),
       ...stored,
@@ -263,7 +280,10 @@ const IncomeList = ({
                           <Input
                             type="number"
                             value={editAmount}
-                            onChange={(e) => setEditAmount(e.target.value)}
+                            onChange={(e) => {
+                              setEditAmount(e.target.value);
+                              setEditError(null);
+                            }}
                             className="h-8 text-sm w-24"
                             step="0.01"
                             min="0"
@@ -299,6 +319,9 @@ const IncomeList = ({
                           <X className="w-4 h-4" />
                         </Button>
                       </div>
+                      {editError && (
+                        <p className="text-xs text-destructive w-full">{editError}</p>
+                      )}
                     </>
                   ) : (
                     <>
