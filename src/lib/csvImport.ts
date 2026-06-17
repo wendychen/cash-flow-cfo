@@ -430,6 +430,7 @@ export function parseCsvToFinanceState(csvText: string): CsvImportResult {
           incomeType: f[4] === 'accrued' ? 'accrued' : 'cash',
           note: f[3] || undefined,
           reviewCount: f[5] && !isNaN(parseInt(f[5])) ? parseInt(f[5]) : undefined,
+          linkedAccruedIncomeId: f[6]?.trim() || undefined,
         });
       } else if (currentSection === 'savings') {
         if (f.length < 3) continue;

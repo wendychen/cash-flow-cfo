@@ -13,11 +13,30 @@ export const en = {
     displayCurrency: 'Display currency',
   },
   income: {
+    type: {
+      cash: 'Cash',
+      accrued: 'Accrued',
+      collection: 'Collection',
+    },
     breakdown: {
       label: 'Income mix',
       cash: 'Cash received',
-      accrued: 'Accrued',
-      total: 'Total',
+      accrued: 'Outstanding accrued',
+      collected: 'Collected',
+      total: 'Cash + outstanding',
+    },
+    collection: {
+      record: 'Record collection',
+      collected: 'Collected',
+      outstanding: 'Outstanding',
+      date: 'Collection date',
+      amount: 'Amount',
+      note: 'Note',
+      notePlaceholder: 'Optional note',
+      submit: 'Record cash',
+      cancel: 'Cancel',
+      invalidAmount: 'Invalid collection amount',
+      fromAccrued: 'From accrued: {source}',
     },
   },
   summary: {

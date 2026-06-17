@@ -1,6 +1,13 @@
 import { useState } from "react";
 import { format, parseISO } from "date-fns";
-import { Trash2, Pencil, Check, X, Banknote, Clock, Copy } from "lucide-react";
+import { Trash2, Pencil, Check, X, Banknote, Clock, Copy, ArrowDownToLine } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import IncomeCollectForm from "./IncomeCollectForm";
+import {
+  getAccruedCollectionStatus,
+  isAccruedCollection,
+} from "@/lib/incomeConversion";
+import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -31,20 +38,30 @@ import {
 
 interface IncomeListProps {
   incomes: Income[];
+  allIncomes?: Income[];
   onDeleteIncome: (id: string) => void;
   onUpdateIncome: (id: string, updates: Partial<Omit<Income, "id">>) => void;
   onDuplicateIncome?: (income: Omit<Income, "id">) => void;
+  onRecordCollection?: (
+    accruedId: string,
+    collection: { date: string; amount: number; note?: string }
+  ) => void;
 }
 
 const ITEMS_PER_PAGE = 10;
 
 const IncomeList = ({
   incomes,
+  allIncomes,
   onDeleteIncome,
   onUpdateIncome,
   onDuplicateIncome,
+  onRecordCollection,
 }: IncomeListProps) => {
+  const { t } = useI18n();
+  const incomePool = allIncomes ?? incomes;
   const { format: formatCurrency, currency, convertFromNTD, convertToNTD } = useCurrency();
+  const [collectingId, setCollectingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editSource, setEditSource] = useState("");
   const [editAmount, setEditAmount] = useState("");
@@ -138,10 +155,19 @@ const IncomeList = ({
             </div>
 
             <div className="space-y-2">
-              {dayIncomes.map((income, index) => (
+              {dayIncomes.map((income, index) => {
+                const collectionStatus =
+                  income.incomeType === "accrued"
+                    ? getAccruedCollectionStatus(income, incomePool)
+                    : null;
+                const linkedAccrued =
+                  income.linkedAccruedIncomeId &&
+                  incomePool.find((i) => i.id === income.linkedAccruedIncomeId);
+
+                return (
+                <div key={income.id} className="space-y-0">
                 <div
-                  key={income.id}
-                  className={`relative flex items-center justify-between p-3 bg-card rounded-lg shadow-card hover:shadow-card-hover transition-shadow duration-200 ring-1 ring-violet-200 dark:ring-violet-900 ${
+                  className={`relative flex flex-col gap-2 p-3 bg-card rounded-lg shadow-card hover:shadow-card-hover transition-shadow duration-200 ring-1 ring-violet-200 dark:ring-violet-900 ${
                     shouldShowOriginalCurrencyBadge(income.originalCurrency) ? "pt-6" : ""
                   }`}
                   style={{ animationDelay: `${index * 50}ms` }}
@@ -152,9 +178,22 @@ const IncomeList = ({
                       originalCurrency={income.originalCurrency}
                     />
                   )}
+                  {collectionStatus && !collectionStatus.isFullyCollected && (
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[11px] text-muted-foreground tabular-nums">
+                        <span>
+                          {t('income.collection.collected')}: {formatCurrency(collectionStatus.collected)}
+                        </span>
+                        <span>
+                          {t('income.collection.outstanding')}: {formatCurrency(collectionStatus.outstanding)}
+                        </span>
+                      </div>
+                      <Progress value={collectionStatus.percentCollected} className="h-1.5" />
+                    </div>
+                  )}
                   {editingId === income.id ? (
                     <>
-                      <div className="flex-1 flex items-center gap-2 mr-2 flex-wrap">
+                      <div className="flex flex-1 items-center gap-2 mr-2 flex-wrap">
                         <Input
                           type="date"
                           value={editDate}
@@ -233,6 +272,7 @@ const IncomeList = ({
                     </>
                   ) : (
                     <>
+                      <div className="flex items-center justify-between gap-2 w-full">
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         <Input
                           type="number"
@@ -247,15 +287,24 @@ const IncomeList = ({
                           className={`shrink-0 text-xs ${
                             income.incomeType === "accrued" 
                               ? "border-amber-500 text-amber-600 dark:text-amber-400" 
+                              : isAccruedCollection(income)
+                              ? "border-teal-500 text-teal-600 dark:text-teal-400"
                               : "border-emerald-500 text-emerald-600 dark:text-emerald-400"
                           }`}
                         >
                           {income.incomeType === "accrued" ? (
-                            <><Clock className="w-3 h-3 mr-1" />Accrued</>
+                            <><Clock className="w-3 h-3 mr-1" />{t('income.type.accrued')}</>
+                          ) : isAccruedCollection(income) ? (
+                            <><ArrowDownToLine className="w-3 h-3 mr-1" />{t('income.type.collection')}</>
                           ) : (
-                            <><Banknote className="w-3 h-3 mr-1" />Cash</>
+                            <><Banknote className="w-3 h-3 mr-1" />{t('income.type.cash')}</>
                           )}
                         </Badge>
+                        {linkedAccrued && (
+                          <span className="text-[11px] text-muted-foreground truncate">
+                            {t('income.collection.fromAccrued', { source: linkedAccrued.source })}
+                          </span>
+                        )}
                         <span className="font-medium text-foreground">{income.source}</span>
                         {income.note && (
                           <span className="text-sm text-muted-foreground truncate">
@@ -263,7 +312,23 @@ const IncomeList = ({
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 shrink-0">
+                        {income.incomeType === "accrued" &&
+                          onRecordCollection &&
+                          collectionStatus &&
+                          !collectionStatus.isFullyCollected && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 text-xs border-amber-400 text-amber-700 hover:bg-amber-50"
+                              onClick={() =>
+                                setCollectingId(collectingId === income.id ? null : income.id)
+                              }
+                            >
+                              <ArrowDownToLine className="w-3.5 h-3.5 mr-1" />
+                              {t('income.collection.record')}
+                            </Button>
+                          )}
                         <span className="text-violet-600 dark:text-violet-400 font-semibold tabular-nums whitespace-nowrap min-w-[90px] text-right">
                           +{formatCurrency(income.amount)}
                         </span>
@@ -295,10 +360,21 @@ const IncomeList = ({
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
+                      </div>
                     </>
                   )}
                 </div>
-              ))}
+                {collectingId === income.id && onRecordCollection && (
+                  <IncomeCollectForm
+                    accrued={income}
+                    allIncomes={incomePool}
+                    onCollect={onRecordCollection}
+                    onCancel={() => setCollectingId(null)}
+                  />
+                )}
+                </div>
+              );
+              })}
             </div>
           </div>
         );

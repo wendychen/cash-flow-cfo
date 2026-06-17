@@ -47,9 +47,9 @@ export function buildFinanceCsv(state: FinanceStateV2): string {
   if (incomes.length > 0) {
     if (csvContent) csvContent += '\n';
     csvContent += '### INCOMES ###\n';
-    csvContent += 'Date,Source,Amount,Note,IncomeType,ReviewCount\n';
+    csvContent += 'Date,Source,Amount,Note,IncomeType,ReviewCount,LinkedAccruedIncomeId\n';
     incomes.forEach((inc) => {
-      csvContent += `${inc.date},${escCsv(inc.source)},${inc.amount.toFixed(2)},${escCsv(inc.note || '')},${inc.incomeType || 'cash'},${inc.reviewCount ?? ''}\n`;
+      csvContent += `${inc.date},${escCsv(inc.source)},${inc.amount.toFixed(2)},${escCsv(inc.note || '')},${inc.incomeType || 'cash'},${inc.reviewCount ?? ''},${inc.linkedAccruedIncomeId || ''}\n`;
     });
   }
 

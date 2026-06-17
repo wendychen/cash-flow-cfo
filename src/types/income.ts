@@ -10,6 +10,8 @@ export interface Income {
   originalAmount?: number;
   originalCurrency?: Currency;
   incomeType: IncomeType;
+  /** Cash entry collected against a parent accrued income record. */
+  linkedAccruedIncomeId?: string;
   note?: string;
   reviewCount?: number;
 }

@@ -17,6 +17,7 @@ import { FixedExpense } from "@/types/fixedExpense";
 import { useCurrency } from "@/hooks/use-currency";
 import { type TimePeriod } from "@/components/shared";
 import { EXPENSE_CATEGORIES, FIXED_EXPENSE_CATEGORIES, ExpenseCategory, FixedExpenseCategory, migrateFixedExpenseCategory } from "@/types/expenseCategory";
+import { getAccruedCollectionStatus } from "@/lib/incomeConversion";
 
 interface SankeyNode {
   id: string;
@@ -64,7 +65,12 @@ const SankeyFlowChart = ({
     const activeGoals = goals.filter(g => !g.completed && g.title);
 
     const cashIncome = incomes.filter(i => i.incomeType === "cash").reduce((sum, inc) => sum + inc.amount, 0);
-    const accruedIncome = incomes.filter(i => i.incomeType === "accrued").reduce((sum, inc) => sum + inc.amount, 0);
+    const accruedIncome = incomes
+      .filter((i) => i.incomeType === "accrued")
+      .reduce(
+        (sum, inc) => sum + getAccruedCollectionStatus(inc, incomes).outstanding,
+        0
+      );
 
     const fixedExpenseTotal = fixedExpenses.filter(f => f.isActive).reduce((sum, exp) => sum + exp.amount, 0);
     const discretionaryExpenseTotal = totalExpenses - fixedExpenseTotal;

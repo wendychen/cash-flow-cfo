@@ -1,4 +1,4 @@
-import { Banknote, Clock } from 'lucide-react';
+import { Banknote, Clock, ArrowDownToLine } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { Income } from '@/types/income';
 import { useCurrency } from '@/hooks/use-currency';
@@ -29,6 +29,12 @@ export default function IncomeBreakdownBar({ incomes }: IncomeBreakdownBarProps)
         {t('income.breakdown.accrued')}: {format(breakdown.accrued)}
         <span className="opacity-70">({breakdown.accruedPercent}%)</span>
       </Badge>
+      {breakdown.collected > 0 && (
+        <Badge variant="outline" className="gap-1 text-teal-700 border-teal-300">
+          <ArrowDownToLine className="h-3 w-3" />
+          {t('income.breakdown.collected')}: {format(breakdown.collected)}
+        </Badge>
+      )}
       <span className="text-xs text-muted-foreground ml-auto">
         {t('income.breakdown.total')}: {format(breakdown.total)}
       </span>

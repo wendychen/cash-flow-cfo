@@ -27,6 +27,11 @@ import { FinancialTarget } from '@/types/target';
 import { sortTasksForImport } from '@/lib/goalExport';
 import { buildDuplicatedTasksForCycle, buildNextCycleGoalFields } from '@/lib/goalRepeat';
 import { isRepeatingGoal, normalizeRepeatInterval } from '@/types/goalRepeat';
+import {
+  buildAccruedCollectionIncome,
+  validateAccruedAmountUpdate,
+  validateCollectionAmount,
+} from '@/lib/incomeConversion';
 import { migratePersistedState } from './migration';
 
 /**
@@ -72,6 +77,10 @@ interface FinanceStore extends FinanceState {
   addIncome: (income: Omit<Income, 'id'>) => void;
   updateIncome: (id: string, updates: Partial<Omit<Income, 'id'>>) => void;
   deleteIncome: (id: string) => void;
+  recordAccruedCollection: (
+    accruedIncomeId: string,
+    collection: { date: string; amount: number; note?: string }
+  ) => string | null;
 
   // Saving actions
   addSaving: (saving: Omit<Saving, 'id'>, displayCurrency?: Currency) => void;
@@ -367,12 +376,48 @@ export const useFinanceStore = create<FinanceStore>()(
         set((state) => ({ incomes: [newIncome, ...state.incomes] }));
       },
       updateIncome: (id, updates) => {
-        set((state) => ({
-          incomes: state.incomes.map((i) => (i.id === id ? { ...i, ...updates } : i)),
-        }));
+        set((state) => {
+          const income = state.incomes.find((i) => i.id === id);
+          if (!income) return state;
+
+          if (
+            income.incomeType === 'accrued' &&
+            updates.amount !== undefined &&
+            updates.amount !== income.amount
+          ) {
+            const check = validateAccruedAmountUpdate(income, updates.amount, state.incomes);
+            if (!check.valid) return state;
+          }
+
+          return {
+            incomes: state.incomes.map((i) => (i.id === id ? { ...i, ...updates } : i)),
+          };
+        });
       },
       deleteIncome: (id) => {
-        set((state) => ({ incomes: state.incomes.filter((i) => i.id !== id) }));
+        set((state) => ({
+          incomes: state.incomes.filter(
+            (i) => i.id !== id && i.linkedAccruedIncomeId !== id
+          ),
+        }));
+      },
+      recordAccruedCollection: (accruedIncomeId, collection) => {
+        const state = get();
+        const accrued = state.incomes.find(
+          (i) => i.id === accruedIncomeId && i.incomeType === 'accrued'
+        );
+        if (!accrued) return null;
+
+        const check = validateCollectionAmount(accrued, collection.amount, state.incomes);
+        if (!check.valid) return null;
+
+        const newIncome: Income = {
+          ...buildAccruedCollectionIncome(accrued, collection),
+          id: crypto.randomUUID(),
+        };
+
+        set((current) => ({ incomes: [newIncome, ...current.incomes] }));
+        return newIncome.id;
       },
 
       // ==================== SAVINGS ====================

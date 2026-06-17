@@ -15,11 +15,30 @@ export const zhTW: Messages = {
     displayCurrency: '顯示幣別',
   },
   income: {
+    type: {
+      cash: '實收',
+      accrued: '應收',
+      collection: '收款',
+    },
     breakdown: {
       label: '收入組成',
       cash: '實收',
-      accrued: '應收',
-      total: '合計',
+      accrued: '應收未收',
+      collected: '已收',
+      total: '實收＋未收',
+    },
+    collection: {
+      record: '登記收款',
+      collected: '已收',
+      outstanding: '未收',
+      date: '收款日期',
+      amount: '金額',
+      note: '備註',
+      notePlaceholder: '選填備註',
+      submit: '登記實收',
+      cancel: '取消',
+      invalidAmount: '收款金額無效',
+      fromAccrued: '來自應收：{source}',
     },
   },
   summary: {

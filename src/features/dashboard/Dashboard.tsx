@@ -70,6 +70,7 @@ export default function Dashboard() {
     addIncome,
     updateIncome,
     deleteIncome,
+    recordAccruedCollection,
     updateTask,
     deleteTask,
     resetAllData,
@@ -473,6 +474,9 @@ export default function Dashboard() {
               {incomeBreakdown.total > 0 && (
                 <div className="text-[11px] text-muted-foreground tabular-nums leading-snug">
                   {t('summary.cashReceived')}: {format(incomeBreakdown.cash)} · {t('summary.accruedIncome')}: {format(incomeBreakdown.accrued)}
+                  {incomeBreakdown.collected > 0 && (
+                    <> · {t('income.breakdown.collected')}: {format(incomeBreakdown.collected)}</>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -537,9 +541,11 @@ export default function Dashboard() {
                 <IncomeForm onAddIncome={addIncome} />
                 <IncomeList
                   incomes={filteredIncomes}
+                  allIncomes={incomes}
                   onDeleteIncome={deleteIncome}
                   onUpdateIncome={updateIncome}
                   onDuplicateIncome={addIncome}
+                  onRecordCollection={recordAccruedCollection}
                 />
               </CardContent>
             </Card>

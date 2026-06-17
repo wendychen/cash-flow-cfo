@@ -15,11 +15,30 @@ export const ja: Messages = {
     displayCurrency: '表示通貨',
   },
   income: {
+    type: {
+      cash: '実収',
+      accrued: '未収（発生）',
+      collection: '入金',
+    },
     breakdown: {
       label: '収入内訳',
       cash: '実収',
-      accrued: '未収（発生）',
-      total: '合計',
+      accrued: '未収残高',
+      collected: '回収済',
+      total: '実収＋未収',
+    },
+    collection: {
+      record: '入金を記録',
+      collected: '回収済',
+      outstanding: '未収',
+      date: '入金日',
+      amount: '金額',
+      note: 'メモ',
+      notePlaceholder: '任意メモ',
+      submit: '実収として記録',
+      cancel: 'キャンセル',
+      invalidAmount: '入金額が無効です',
+      fromAccrued: '未収から：{source}',
     },
   },
   summary: {
