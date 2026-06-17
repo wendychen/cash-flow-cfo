@@ -131,6 +131,8 @@ export interface GoalsPrintInput {
   tasks: TaskNode[];
   formatAmount: AmountFormatter;
   displayCurrency: string;
+  longTermFinGoal?: LongTermFinGoal | null;
+  currentSavings?: number;
   printedAt?: Date;
 }
 
@@ -139,10 +141,17 @@ export function buildGoalsPrintHtml({
   tasks,
   formatAmount,
   displayCurrency,
+  longTermFinGoal,
+  currentSavings = 0,
   printedAt = new Date(),
 }: GoalsPrintInput): string {
   const active = goals.filter((g) => !g.completed);
   const completed = goals.filter((g) => g.completed);
+  const finGoalSection = renderFinGoalPrintSection(
+    longTermFinGoal,
+    currentSavings,
+    formatAmount
+  );
 
   const activeHtml =
     active.length > 0
@@ -162,6 +171,7 @@ export function buildGoalsPrintHtml({
       <p class="subtitle">Printed ${format(printedAt, 'MMMM d, yyyy h:mm a')} · Display currency: ${escapeHtml(displayCurrency)}</p>
       <p class="subtitle">${active.length} active · ${completed.length} completed · ${tasks.length} tasks</p>
     </header>
+    ${finGoalSection}
     <section class="section">
       <h2>Active Goals (${active.length})</h2>
       ${activeHtml}

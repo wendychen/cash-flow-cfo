@@ -125,6 +125,27 @@ describe('printReport', () => {
     expect(html).toContain('incomeCollections');
   });
 
+  it('buildGoalsPrintHtml includes 20-year fin goal when set', () => {
+    const html = buildGoalsPrintHtml({
+      goals: [sampleGoal],
+      tasks: [],
+      formatAmount,
+      displayCurrency: 'USD',
+      longTermFinGoal: {
+        targetAmount: 1e6,
+        endYear: 2046,
+        horizonYears: 20,
+        presetKey: '1M',
+        updatedAt: '2026-06-01T00:00:00.000Z',
+      },
+      currentSavings: 250000,
+    });
+
+    expect(html).toContain('20-Year Fin Goal');
+    expect(html).toContain('1M');
+    expect(html).toContain('25%');
+  });
+
   it('buildGoalsPrintHtml shows duplicate tasks preference for repeating goals', () => {
     const html = buildGoalsPrintHtml({
       goals: [{ ...sampleGoal, repeatInterval: 'monthly', repeatDuplicateTasks: false }],
