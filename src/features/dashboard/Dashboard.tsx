@@ -405,7 +405,7 @@ export default function Dashboard() {
               variant="outline"
               size="sm"
               onClick={() => setUserGuideOpen(true)}
-              aria-label="Open user guide"
+              aria-label={t('nav.openUserGuide')}
             >
               <CircleHelp className="mr-2 h-4 w-4" />
               {t('nav.guide')}

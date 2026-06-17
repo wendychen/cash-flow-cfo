@@ -7,6 +7,7 @@ export const zhTW: Messages = {
   },
   nav: {
     guide: '使用說明',
+    openUserGuide: '開啟使用說明',
     exportJson: '匯出 JSON',
     exportCsv: '匯出 CSV',
     importData: '匯入 JSON/CSV',

@@ -7,6 +7,7 @@ export const ja: Messages = {
   },
   nav: {
     guide: 'ガイド',
+    openUserGuide: 'ユーザーガイドを開く',
     exportJson: 'JSONエクスポート',
     exportCsv: 'CSVエクスポート',
     importData: 'JSON/CSVインポート',

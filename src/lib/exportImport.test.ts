@@ -60,5 +60,23 @@ describe('parseImportJSON', () => {
     expect(result.data?.savings).toEqual([]);
     expect(result.data?.fixedExpenses).toEqual([]);
     expect(result.data?.targets).toEqual([]);
+    expect(result.data?.longTermFinGoal).toBeNull();
+  });
+
+  it('preserves longTermFinGoal through import', () => {
+    const withGoal = {
+      ...sampleV2State,
+      longTermFinGoal: {
+        targetAmount: 1e6,
+        endYear: 2046,
+        horizonYears: 20 as const,
+        presetKey: '1M',
+        updatedAt: '2026-06-01T00:00:00.000Z',
+      },
+    };
+    const result = parseImportJSON(JSON.stringify(withGoal));
+    expect(result.success).toBe(true);
+    expect(result.data?.longTermFinGoal?.presetKey).toBe('1M');
+    expect(result.data?.longTermFinGoal?.targetAmount).toBe(1e6);
   });
 });

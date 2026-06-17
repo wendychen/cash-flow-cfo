@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { parseCsvToFinanceState, csvToExportPayload } from './csvImport';
+import { buildFinanceCsv } from './csvExport';
+import type { FinanceStateV2 } from '@/stores/finance/financeStore';
 
 const SAMPLE_CSV = `### EXPENSES ###
 Date,Description,Amount,Category,NeedsCheck,ReviewCount,LinkedGoalId,LinkedTaskId,LinkedTaskType
@@ -39,5 +41,42 @@ describe('parseCsvToFinanceState', () => {
   it('rejects empty CSV', () => {
     const result = parseCsvToFinanceState('not,valid\n');
     expect(result.success).toBe(false);
+  });
+
+  it('parses long term fin goal section', () => {
+    const csv = `### LONG TERM FIN GOAL ###
+TargetAmount,EndYear,HorizonYears,PresetKey,UpdatedAt
+1000000,2046,20,1M,2026-06-01T00:00:00.000Z`;
+
+    const result = parseCsvToFinanceState(csv);
+    expect(result.success).toBe(true);
+    expect(result.data?.longTermFinGoal?.targetAmount).toBe(1e6);
+    expect(result.data?.longTermFinGoal?.presetKey).toBe('1M');
+    expect(result.data?.longTermFinGoal?.endYear).toBe(2046);
+  });
+
+  it('round-trips long term fin goal through CSV export and import', () => {
+    const state: FinanceStateV2 = {
+      version: 2,
+      expenses: [],
+      incomes: [{ id: 'i1', date: '2026-01-01', source: 'Job', amount: 1, incomeType: 'cash' }],
+      savings: [],
+      fixedExpenses: [],
+      targets: [],
+      longTermFinGoal: {
+        targetAmount: 25e12,
+        endYear: 2046,
+        horizonYears: 20,
+        presetKey: '25T',
+        updatedAt: '2026-06-01T00:00:00.000Z',
+      },
+      goals: [],
+      tasks: [],
+    };
+
+    const imported = parseCsvToFinanceState(buildFinanceCsv(state));
+    expect(imported.success).toBe(true);
+    expect(imported.data?.longTermFinGoal?.presetKey).toBe('25T');
+    expect(imported.data?.longTermFinGoal?.targetAmount).toBe(25e12);
   });
 });

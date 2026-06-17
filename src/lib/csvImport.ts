@@ -8,6 +8,10 @@ import { Goal } from '@/types/goal';
 import { TaskNode, TaskType } from '@/types/task';
 import { FinancialTarget } from '@/types/target';
 import {
+  LONG_TERM_FIN_GOAL_HORIZON_YEARS,
+  type LongTermFinGoal,
+} from '@/types/longTermFinGoal';
+import {
   ExpenseCategory,
   FixedExpenseCategory,
   migrateFixedExpenseCategory,
@@ -21,6 +25,7 @@ type CsvSection =
   | 'tasks'
   | 'fixedExpenses'
   | 'targets'
+  | 'longTermFinGoal'
   | null;
 
 export function parseCsvFields(line: string): string[] {
@@ -111,6 +116,7 @@ export function parseCsvToFinanceState(csvText: string): CsvImportResult {
     const importedTasks: TaskNode[] = [];
     const importedFixedExpenses: FixedExpense[] = [];
     const importedTargets: FinancialTarget[] = [];
+    let importedLongTermFinGoal: LongTermFinGoal | null = null;
 
     let currentSection: CsvSection = null;
     let goalsFormat: 'old' | 'new' | null = null;
@@ -145,6 +151,10 @@ export function parseCsvToFinanceState(csvText: string): CsvImportResult {
         currentSection = 'targets';
         continue;
       }
+      if (line.includes('### LONG TERM FIN GOAL ###')) {
+        currentSection = 'longTermFinGoal';
+        continue;
+      }
 
       if (
         currentSection === 'goals' &&
@@ -163,6 +173,7 @@ export function parseCsvToFinanceState(csvText: string): CsvImportResult {
         line.toLowerCase().startsWith('title,') ||
         line.toLowerCase().startsWith('description,') ||
         line.toLowerCase().startsWith('type,') ||
+        line.toLowerCase().startsWith('targetamount,') ||
         line.toLowerCase().startsWith('id,')
       ) {
         continue;
@@ -382,6 +393,22 @@ export function parseCsvToFinanceState(csvText: string): CsvImportResult {
             updatedAt,
           });
         }
+      } else if (currentSection === 'longTermFinGoal') {
+        if (f.length < 5) continue;
+        const targetAmount = parseFloat(f[0]);
+        const endYear = parseInt(f[1], 10);
+        const presetKey = f[3]?.trim() || undefined;
+        const updatedAt = f[4] || new Date().toISOString();
+
+        if (!isNaN(targetAmount) && targetAmount > 0 && !isNaN(endYear)) {
+          importedLongTermFinGoal = {
+            targetAmount,
+            endYear,
+            horizonYears: LONG_TERM_FIN_GOAL_HORIZON_YEARS,
+            presetKey,
+            updatedAt,
+          };
+        }
       } else if (currentSection === 'expenses') {
         if (f.length < 3) continue;
         const date = f[0];
@@ -459,7 +486,8 @@ export function parseCsvToFinanceState(csvText: string): CsvImportResult {
       importedGoals.length > 0 ||
       dedupedTasks.length > 0 ||
       importedFixedExpenses.length > 0 ||
-      importedTargets.length > 0;
+      importedTargets.length > 0 ||
+      importedLongTermFinGoal !== null;
 
     if (!hasData) {
       return { success: false, error: 'No data found in CSV. Check the file format.' };
@@ -486,6 +514,7 @@ export function parseCsvToFinanceState(csvText: string): CsvImportResult {
       savings: importedSavings,
       fixedExpenses: importedFixedExpenses,
       targets: importedTargets,
+      longTermFinGoal: importedLongTermFinGoal,
       goals,
       tasks: dedupedTasks,
     };
@@ -499,6 +528,7 @@ export function parseCsvToFinanceState(csvText: string): CsvImportResult {
         savings: data.savings.length,
         fixedExpenses: data.fixedExpenses.length,
         targets: data.targets.length,
+        longTermFinGoal: data.longTermFinGoal ? 1 : 0,
         goals: data.goals.length,
         tasks: data.tasks.length,
       },

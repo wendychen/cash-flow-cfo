@@ -5,6 +5,7 @@ export const en = {
   },
   nav: {
     guide: 'Guide',
+    openUserGuide: 'Open user guide',
     exportJson: 'Export JSON',
     exportCsv: 'Export CSV',
     importData: 'Import JSON/CSV',

@@ -101,6 +101,25 @@ describe('golden round-trip — date filtering after import', () => {
     expect(filtered.some((e) => e.date === '2026-03-05')).toBe(true);
   });
 
+  it('preserves longTermFinGoal through export → import', () => {
+    const withGoal = {
+      ...sampleV2State,
+      longTermFinGoal: {
+        targetAmount: 100e12,
+        endYear: 2046,
+        horizonYears: 20 as const,
+        presetKey: '100T',
+        updatedAt: '2026-06-01T00:00:00.000Z',
+      },
+    };
+    const parsed = parseImportJSON(JSON.stringify(wrapForExport(withGoal)));
+    expect(parsed.success).toBe(true);
+    expect(parsed.data?.longTermFinGoal?.presetKey).toBe('100T');
+
+    useFinanceStore.getState().replaceAllData(parsed.data!);
+    expect(useFinanceStore.getState().longTermFinGoal?.targetAmount).toBe(100e12);
+  });
+
   it('active goals stay visible when deadline is outside selected period', () => {
     const store = useFinanceStore.getState();
     store.updateGoal('goal-a', { deadline: '2027-01-01' });
