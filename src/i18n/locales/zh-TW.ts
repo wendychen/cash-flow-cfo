@@ -53,6 +53,8 @@ export const zhTW: Messages = {
     import: '匯入目標',
     importSuccess: '目標匯入成功。',
     importFailed: '匯入失敗：{error}',
+    milestones: '里程碑',
+    addMilestone: '新增里程碑',
   },
   language: {
     label: '語言',

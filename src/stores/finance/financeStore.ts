@@ -415,6 +415,7 @@ export const useFinanceStore = create<FinanceStore>()(
           createdAt: new Date().toISOString(),
           ideations: goal.ideations || [],
           urlPack: goal.urlPack || [],
+          milestones: goal.milestones || [],
           linkedExpenseId: expenseId,
           category: goal.category || 'misc',
         };
@@ -491,6 +492,7 @@ export const useFinanceStore = create<FinanceStore>()(
           linkedExpenseId: expenseId,
           ideations: bundle.goal.ideations ?? [],
           urlPack: bundle.goal.urlPack ?? [],
+          milestones: bundle.goal.milestones ?? [],
         };
 
         const taskIdMap = new Map<string, string>();

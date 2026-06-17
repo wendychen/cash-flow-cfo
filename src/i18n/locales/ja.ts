@@ -53,6 +53,8 @@ export const ja: Messages = {
     import: '目標をインポート',
     importSuccess: '目標をインポートしました。',
     importFailed: 'インポート失敗：{error}',
+    milestones: 'マイルストーン',
+    addMilestone: 'マイルストーンを追加',
   },
   language: {
     label: '言語',

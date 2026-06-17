@@ -38,6 +38,7 @@ import {
   ListTodo,
   DollarSign,
   Sparkles,
+  Flag,
   UtensilsCrossed,
   Users,
   Package,
@@ -61,6 +62,8 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import TaskTreeSection from "./TaskTreeSection";
+import GoalMilestoneSection from "./GoalMilestoneSection";
+import { getMilestoneProgress, normalizeGoalMilestones } from "@/lib/goalMilestones";
 
 const getCategoryIcon = (iconName: string) => {
   const iconMap: Record<string, any> = {
@@ -309,6 +312,8 @@ const SortableGoalItem = ({
   };
 
   const ideations = goal.ideations || [];
+  const milestones = normalizeGoalMilestones(goal.milestones);
+  const milestoneProgress = getMilestoneProgress(milestones);
   const urlPack = goal.urlPack || [];
   const constraint = goal.constraint || "";
 
@@ -502,6 +507,12 @@ const SortableGoalItem = ({
             })}
           </SelectContent>
         </Select>
+        {milestoneProgress.total > 0 && (
+          <Badge variant="outline" className="text-xs gap-1 text-indigo-600">
+            <Flag className="h-3 w-3" />
+            {milestoneProgress.completed}/{milestoneProgress.total}
+          </Badge>
+        )}
         {totalTaskCount > 0 && (
           <Badge variant="outline" className="text-xs gap-1">
             <ListTodo className="h-3 w-3" />
@@ -538,6 +549,8 @@ const SortableGoalItem = ({
 
       {isExpanded && (
         <div className="ml-14 mt-2 space-y-4">
+          <GoalMilestoneSection goal={goal} onUpdateGoal={onUpdateGoal} />
+
           <TaskTreeSection
             goalId={goal.id}
             taskType="pre"

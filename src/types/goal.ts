@@ -1,4 +1,5 @@
 import { ExpenseCategory } from './expenseCategory';
+import type { GoalMilestone } from './goalMilestone';
 
 export interface TaskItem {
   id: string;
@@ -41,6 +42,7 @@ export interface Goal {
   ideations: Ideation[];
   constraint: string;
   urlPack: string[];
+  milestones?: GoalMilestone[];
   preTasks?: TaskItem[];
   postTasks?: TaskItem[];
   postDreams?: PostDream[];

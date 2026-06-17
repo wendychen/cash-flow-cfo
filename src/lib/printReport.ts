@@ -79,6 +79,16 @@ function renderGoalCard(goal: Goal, tasks: TaskNode[], formatAmount: AmountForma
     .filter(Boolean)
     .join('');
 
+  const milestoneSection =
+    goal.milestones && goal.milestones.length > 0
+      ? `<div class="task-section"><h4>Milestones</h4><ul>${goal.milestones
+          .map((m) => {
+            const status = m.completed ? '✓' : '○';
+            return `<li>${status} ${escapeHtml(m.title)} — ${formatDeadline(m.targetDate)}</li>`;
+          })
+          .join('')}</ul></div>`
+      : '';
+
   return `
     <article class="goal-card ${goal.completed ? 'completed' : ''}">
       <h3>${escapeHtml(goal.title)}${goal.isMagicWand ? ' ★' : ''}${goal.completed ? ' (Completed)' : ''}</h3>
@@ -90,6 +100,7 @@ function renderGoalCard(goal: Goal, tasks: TaskNode[], formatAmount: AmountForma
       </p>
       ${constraint}
       ${urls}
+      ${milestoneSection}
       ${taskSections}
       ${ideations}
     </article>

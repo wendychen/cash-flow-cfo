@@ -51,6 +51,8 @@ export const en = {
     import: 'Import goal',
     importSuccess: 'Goal imported successfully.',
     importFailed: 'Import failed: {error}',
+    milestones: 'Milestones',
+    addMilestone: 'Add milestone',
   },
   language: {
     label: 'Language',

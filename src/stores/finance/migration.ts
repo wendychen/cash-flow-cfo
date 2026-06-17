@@ -59,6 +59,7 @@ export function migrateFromV1(oldState: any): FinanceStateV2 {
       ideations: oldGoal.ideations || [],
       constraint: oldGoal.constraint || '',
       urlPack: oldGoal.urlPack || [],
+      milestones: oldGoal.milestones || [],
       // Intentionally do NOT copy preTasks / postTasks / postDreams
     };
 
