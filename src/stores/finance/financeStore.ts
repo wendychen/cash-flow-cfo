@@ -24,6 +24,11 @@ import { FixedExpense } from '@/types/fixedExpense';
 import { Goal } from '@/types/goal';
 import { TaskNode } from '@/types/task';
 import { FinancialTarget } from '@/types/target';
+import {
+  LONG_TERM_FIN_GOAL_HORIZON_YEARS,
+  type LongTermFinGoal,
+} from '@/types/longTermFinGoal';
+import { getDefaultFinGoalEndYear } from '@/lib/finGoalPresets';
 import { sortTasksForImport } from '@/lib/goalExport';
 import { buildDuplicatedTasksForCycle, buildNextCycleGoalFields } from '@/lib/goalRepeat';
 import { isRepeatingGoal, normalizeRepeatInterval } from '@/types/goalRepeat';
@@ -45,6 +50,7 @@ export interface FinanceStateV2 {
   savings: Saving[];
   fixedExpenses: FixedExpense[];
   targets: FinancialTarget[];
+  longTermFinGoal: LongTermFinGoal | null;
   goals: Goal[];
   tasks: TaskNode[];
 }
@@ -115,6 +121,8 @@ interface FinanceStore extends FinanceState {
     currency: Currency,
     skipSavingSync?: boolean
   ) => void;
+  setLongTermFinGoal: (goal: LongTermFinGoal | null) => void;
+  clearLongTermFinGoal: () => void;
 
   // Utility
   resetAllData: () => void;
@@ -158,6 +166,7 @@ const initialState: FinanceStateV2 = {
   savings: [],
   fixedExpenses: [],
   targets: [],
+  longTermFinGoal: null,
   goals: [],
   tasks: [],
 };
@@ -833,6 +842,28 @@ export const useFinanceStore = create<FinanceStore>()(
 
           return { targets: nextTargets, savings: nextSavings };
         });
+      },
+
+      // ==================== LONG-TERM FIN GOAL ====================
+      setLongTermFinGoal: (goal) => {
+        if (goal === null) {
+          set({ longTermFinGoal: null });
+          return;
+        }
+
+        const nowYear = new Date().getFullYear();
+        set({
+          longTermFinGoal: {
+            ...goal,
+            horizonYears: LONG_TERM_FIN_GOAL_HORIZON_YEARS,
+            endYear: goal.endYear || getDefaultFinGoalEndYear(nowYear),
+            updatedAt: new Date().toISOString(),
+          },
+        });
+      },
+
+      clearLongTermFinGoal: () => {
+        set({ longTermFinGoal: null });
       },
 
       // ==================== UTILITIES ====================

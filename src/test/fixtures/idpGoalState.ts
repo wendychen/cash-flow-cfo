@@ -21,6 +21,7 @@ export const idpGoalState: FinanceStateV2 = {
   savings: [],
   fixedExpenses: [],
   targets: [],
+  longTermFinGoal: null,
   goals: [
     {
       id: 'goal-idp',

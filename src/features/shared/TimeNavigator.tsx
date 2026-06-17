@@ -4,7 +4,7 @@ import { format } from "date-fns";
 import { enUS, zhTW, ja } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { getWeeksInMonth } from "@/lib/date";
-import { getNavigatorYears } from "@/lib/timeNavigatorYears";
+import { getNavigatorYears, isFutureNavigatorYear } from "@/lib/timeNavigatorYears";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -124,6 +124,7 @@ export default function TimeNavigator({ selectedPeriod, onSelectPeriod, currentY
     };
     const yearQuarters = expandedQuarters[year] ?? new Set<number>();
     const yearMonths = expandedMonths[year] ?? new Set<number>();
+    const isFutureYear = isFutureNavigatorYear(year);
 
     return (
       <div key={year}>
@@ -131,7 +132,8 @@ export default function TimeNavigator({ selectedPeriod, onSelectPeriod, currentY
           className={cn(
             "flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer hover-elevate transition-colors",
             isPeriodSelected(yearPeriod) && "bg-primary/10 text-primary",
-            year === anchorYear && "ring-1 ring-primary/20"
+            year === anchorYear && "ring-1 ring-primary/20",
+            isFutureYear && !isPeriodSelected(yearPeriod) && "text-muted-foreground"
           )}
           data-testid={`time-nav-year-${year}`}
         >
@@ -148,9 +150,14 @@ export default function TimeNavigator({ selectedPeriod, onSelectPeriod, currentY
           </button>
           <span
             onClick={() => handleSelectPeriod(yearPeriod)}
-            className="flex-1 text-sm font-semibold"
+            className="flex-1 text-sm font-semibold flex items-center gap-1.5"
           >
             {year}
+            {isFutureYear && (
+              <span className="text-[9px] font-normal uppercase tracking-wide px-1 py-0.5 rounded bg-muted text-muted-foreground">
+                {t("timeNav.future")}
+              </span>
+            )}
           </span>
         </div>
 
@@ -304,7 +311,7 @@ export default function TimeNavigator({ selectedPeriod, onSelectPeriod, currentY
         </Label>
       </div>
 
-      <ScrollArea className="h-[min(420px,55vh)] pr-2">
+      <ScrollArea className="h-[min(520px,60vh)] pr-2">
         <div className="space-y-1">
           {[...years].reverse().map((year) => renderYear(year))}
         </div>

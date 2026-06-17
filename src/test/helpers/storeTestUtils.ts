@@ -7,6 +7,7 @@ export const emptyFinanceState: FinanceStateV2 = {
   savings: [],
   fixedExpenses: [],
   targets: [],
+  longTermFinGoal: null,
   goals: [],
   tasks: [],
 };

@@ -21,6 +21,7 @@ export function migrateFromV1(oldState: any): FinanceStateV2 {
       savings: [],
       fixedExpenses: [],
       targets: [],
+      longTermFinGoal: null,
       goals: [],
       tasks: [],
     };
@@ -36,6 +37,7 @@ export function migrateFromV1(oldState: any): FinanceStateV2 {
     savings: v1.savings || [],
     fixedExpenses: v1.fixedExpenses || [],
     targets: v1.targets || [],
+    longTermFinGoal: null,
     goals: [],
     tasks: [],
   };
@@ -125,6 +127,7 @@ export function migratePersistedState(persistedState: any, version: number): Fin
       savings: [],
       fixedExpenses: [],
       targets: [],
+      longTermFinGoal: null,
       goals: [],
       tasks: [],
     };
@@ -132,7 +135,10 @@ export function migratePersistedState(persistedState: any, version: number): Fin
 
   // Already on v2 or higher
   if (persistedState.version === 2) {
-    return persistedState as FinanceStateV2;
+    return {
+      ...(persistedState as FinanceStateV2),
+      longTermFinGoal: persistedState.longTermFinGoal ?? null,
+    };
   }
 
   // v1 or unknown (treat as v1)

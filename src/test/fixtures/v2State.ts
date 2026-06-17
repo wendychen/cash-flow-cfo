@@ -31,6 +31,7 @@ export const sampleV2State: FinanceStateV2 = {
   savings: [],
   fixedExpenses: [],
   targets: [],
+  longTermFinGoal: null,
   goals: [
     {
       id: 'goal-a',

@@ -52,6 +52,7 @@ export function buildExportPayload(state: FinanceStateV2, exportedAt = new Date(
         savings: state.savings?.length ?? 0,
         fixedExpenses: state.fixedExpenses?.length ?? 0,
         targets: state.targets?.length ?? 0,
+        longTermFinGoal: state.longTermFinGoal ? 1 : 0,
         goals: state.goals?.length ?? 0,
         tasks: state.tasks?.length ?? 0,
       },
@@ -63,6 +64,7 @@ export function buildExportPayload(state: FinanceStateV2, exportedAt = new Date(
       savings: state.savings ?? [],
       fixedExpenses: state.fixedExpenses ?? [],
       targets: state.targets ?? [],
+      longTermFinGoal: state.longTermFinGoal ?? null,
       goals: state.goals ?? [],
       tasks: state.tasks ?? [],
     },
@@ -161,6 +163,7 @@ export function parseImportJSON(
       savings: raw.savings || [],
       fixedExpenses: raw.fixedExpenses || [],
       targets: raw.targets || [],
+      longTermFinGoal: raw.longTermFinGoal ?? null,
       goals: raw.goals || [],
       tasks: raw.tasks || [],
     };

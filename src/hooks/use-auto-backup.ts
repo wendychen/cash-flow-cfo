@@ -22,6 +22,7 @@ export function useAutoBackup(enabled = true) {
   const savings = useFinanceStore((s) => s.savings);
   const fixedExpenses = useFinanceStore((s) => s.fixedExpenses);
   const targets = useFinanceStore((s) => s.targets);
+  const longTermFinGoal = useFinanceStore((s) => s.longTermFinGoal);
   const goals = useFinanceStore((s) => s.goals);
   const tasks = useFinanceStore((s) => s.tasks);
 
@@ -37,6 +38,7 @@ export function useAutoBackup(enabled = true) {
         savings: state.savings,
         fixedExpenses: state.fixedExpenses,
         targets: state.targets,
+        longTermFinGoal: state.longTermFinGoal,
         goals: state.goals,
         tasks: state.tasks,
       };
@@ -59,5 +61,5 @@ export function useAutoBackup(enabled = true) {
       if (timerRef.current) clearTimeout(timerRef.current);
       window.removeEventListener('beforeunload', onBeforeUnload);
     };
-  }, [enabled, expenses, incomes, savings, fixedExpenses, targets, goals, tasks]);
+  }, [enabled, expenses, incomes, savings, fixedExpenses, targets, longTermFinGoal, goals, tasks]);
 }

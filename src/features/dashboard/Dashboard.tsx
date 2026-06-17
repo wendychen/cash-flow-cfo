@@ -36,6 +36,7 @@ import {
 } from "@/lib/goalExport";
 import { IncomeForm, IncomeList, IncomeBreakdownBar } from "@/features/income";
 import type { TaskType } from "@/types/task";
+import LongTermFinGoalCard from "./LongTermFinGoalCard";
 
 /**
  * New clean Dashboard — the future home of the app.
@@ -48,6 +49,7 @@ export default function Dashboard() {
     savings,
     fixedExpenses,
     targets,
+    longTermFinGoal,
     goals,
     tasks,
     addGoal,
@@ -63,6 +65,8 @@ export default function Dashboard() {
     updateFixedExpense,
     deleteFixedExpense,
     setTarget,
+    setLongTermFinGoal,
+    clearLongTermFinGoal,
     reorderGoals,
     toggleExpenseNeedsCheck,
     reorderTasks,
@@ -114,6 +118,7 @@ export default function Dashboard() {
       savings,
       fixedExpenses,
       targets,
+      longTermFinGoal,
       goals,
       tasks,
     };
@@ -139,6 +144,7 @@ export default function Dashboard() {
       savings,
       fixedExpenses,
       targets,
+      longTermFinGoal,
       goals,
       tasks,
     };
@@ -458,7 +464,7 @@ export default function Dashboard() {
         <div className="flex gap-8">
           {/* Left Sidebar - Time Navigator */}
           <div className="w-80 flex-shrink-0">
-            <div className="sticky top-6">
+            <div className="sticky top-6 space-y-4">
               <Card>
                 <CardContent className="p-4">
                   <TimeNavigator
@@ -467,6 +473,12 @@ export default function Dashboard() {
                   />
                 </CardContent>
               </Card>
+              <LongTermFinGoalCard
+                goal={longTermFinGoal}
+                currentSavings={latestSavingsBalance}
+                onSetGoal={setLongTermFinGoal}
+                onClearGoal={clearLongTermFinGoal}
+              />
             </div>
           </div>
 
