@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { ChevronRight, ChevronDown, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getWeeksInMonth } from "@/lib/date";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 
@@ -32,37 +33,6 @@ const QUARTERS = [
   { name: "Q3", months: [6, 7, 8] },
   { name: "Q4", months: [9, 10, 11] },
 ];
-
-function getWeeksInMonth(year: number, month: number): { week: number; startDate: Date; endDate: Date }[] {
-  const weeks: { week: number; startDate: Date; endDate: Date }[] = [];
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
-  
-  let currentDate = new Date(firstDay);
-  let weekNum = 1;
-  
-  while (currentDate <= lastDay) {
-    const weekStart = new Date(currentDate);
-    const weekEnd = new Date(currentDate);
-    weekEnd.setDate(weekEnd.getDate() + 6);
-    
-    if (weekEnd > lastDay) {
-      weekEnd.setTime(lastDay.getTime());
-    }
-    
-    weeks.push({
-      week: weekNum,
-      startDate: weekStart,
-      endDate: weekEnd,
-    });
-    
-    currentDate = new Date(weekEnd);
-    currentDate.setDate(currentDate.getDate() + 1);
-    weekNum++;
-  }
-  
-  return weeks;
-}
 
 function formatDateRange(start: Date, end: Date): string {
   const startStr = `${start.getMonth() + 1}/${start.getDate()}`;
