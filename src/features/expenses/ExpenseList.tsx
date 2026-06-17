@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { format, parseISO } from "date-fns";
-import { Trash2, Pencil, Check, X, UtensilsCrossed, Sparkles, Users, Package, Filter, Link } from "lucide-react";
+import { Trash2, Pencil, Check, X, Filter, Link } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -15,7 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ExpenseCategory, EXPENSE_CATEGORIES } from "@/types/expenseCategory";
+import { ExpenseCategory, EXPENSE_CATEGORIES, migrateExpenseCategory } from "@/types/expenseCategory";
+import { ExpenseCategoryIcon } from "./ExpenseCategoryIcon";
 import {
   Pagination,
   PaginationContent,
@@ -57,22 +58,6 @@ const ExpenseList = ({
   useEffect(() => {
     setCurrentPage(1);
   }, [expenses, filterCategory]);
-
-  const getCategoryIcon = (cat: ExpenseCategory) => {
-    const category = EXPENSE_CATEGORIES[cat];
-    if (!category) {
-      return <Package className="h-3 w-3" />;
-    }
-    const iconName = category.icon;
-
-    switch (iconName) {
-      case "UtensilsCrossed": return <UtensilsCrossed className="h-3 w-3" />;
-      case "Sparkles": return <Sparkles className="h-3 w-3" />;
-      case "Users": return <Users className="h-3 w-3" />;
-      case "Package": return <Package className="h-3 w-3" />;
-      default: return <Package className="h-3 w-3" />;
-    }
-  };
 
   const getGoalTitle = (goalId: string | undefined) => {
     if (!goalId) return null;
@@ -188,14 +173,8 @@ const ExpenseList = ({
             </div>
             <div className="space-y-2">
               {dayExpenses.map((expense, index) => {
-                let categoryKey = (expense.category || "misc") as ExpenseCategory;
-                if (!(categoryKey in EXPENSE_CATEGORIES)) {
-                  categoryKey = "misc";
-                }
+                const categoryKey = migrateExpenseCategory(expense.category);
                 const categoryMeta = EXPENSE_CATEGORIES[categoryKey];
-
-                console.log(categoryKey);
-                console.log(categoryMeta);
                 return (
                   <div
                     key={expense.id}
@@ -294,7 +273,7 @@ const ExpenseList = ({
                             value={expense.reviewCount || ""}
                             onChange={(e) => onUpdateExpense(expense.id, { reviewCount: e.target.value ? parseInt(e.target.value) : undefined })}
                             placeholder="0"
-                            className="h-7 w-12 text-xs text-center shrink-0"
+                            className="h-7 w-16 min-w-[4rem] text-xs text-center shrink-0"
                           />
                           <Switch
                             checked={expense.needsCheck}
@@ -304,7 +283,7 @@ const ExpenseList = ({
                           <div className="flex items-center gap-2 flex-1 min-w-0">
                             <Badge variant="outline" className={`${categoryMeta.color} border-current shrink-0`}>
                               <div className="flex items-center gap-1">
-                                {getCategoryIcon(categoryKey)}
+                                <ExpenseCategoryIcon category={categoryKey} className="h-3 w-3" />
                                 <span className="text-xs">{categoryMeta.label}</span>
                               </div>
                             </Badge>

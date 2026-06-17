@@ -5,7 +5,9 @@ import { useCurrency } from "@/hooks/use-currency";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Target, Receipt, TrendingUp, PiggyBank, Target as GoalIcon, Download, Upload } from "lucide-react";
-import { exportFinanceData, parseImportJSON } from "@/lib/exportImport";
+import { saveFinanceExport, parseImportJSON } from "@/lib/exportImport";
+import { getLatestAutoBackup } from "@/lib/autoBackup";
+import { useAutoBackup } from "@/hooks/use-auto-backup";
 import { parseCsvToFinanceState } from "@/lib/csvImport";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TimeNavigator, type TimePeriod } from "@/components/shared";
@@ -66,11 +68,14 @@ export default function Dashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod | null>(null);
   const [activeTab, setActiveTab] = useState("income");
   const isStoreHydrated = useFinanceHydrated();
+  useAutoBackup(isStoreHydrated);
+
+  const latestAutoBackup = getLatestAutoBackup();
 
   // Ref for hidden file input (import)
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleExport = () => {
+  const handleExport = async () => {
     const stateSnapshot = {
       version: 2 as const,
       expenses,
@@ -81,8 +86,18 @@ export default function Dashboard() {
       goals,
       tasks,
     };
-    const result = exportFinanceData(stateSnapshot);
-    alert(`✅ Exported to ${result.filename}`);
+    const result = await saveFinanceExport(stateSnapshot);
+    if (!result.success) {
+      if (result.method !== 'cancelled') {
+        alert('❌ Export failed. Please try again.');
+      }
+      return;
+    }
+    const methodNote =
+      result.method === 'picker'
+        ? 'saved to your chosen location'
+        : 'downloaded to your browser default folder';
+    alert(`✅ Exported ${result.filename} (${methodNote})`);
   };
 
   const handleImportClick = () => {
@@ -160,7 +175,7 @@ export default function Dashboard() {
       deadline,
       completed: false,
       isMagicWand: false,
-      category: "misc",
+      category: "food",
       budget: 0,
       timeCost: "",
       ideations: [],
@@ -509,22 +524,48 @@ export default function Dashboard() {
               <p>✅ <strong>New: Export / Import full data as JSON</strong> (backup, transfer, restore)</p>
             </div>
 
-            <div className="pt-2 border-t">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const result = reimportOldData();
-                  alert(result.message);
-                  if (result.success) {
-                    window.location.reload();
-                  }
-                }}
-              >
-                Re-import old data from localStorage
-              </Button>
-              <p className="text-xs text-muted-foreground mt-1">
-                Legacy: Use this if your old data didn't appear automatically.
+            <div className="pt-2 border-t space-y-3">
+              {latestAutoBackup && (
+                <div className="text-xs text-muted-foreground">
+                  Last auto-backup: {new Date(latestAutoBackup.savedAt).toLocaleString()}
+                </div>
+              )}
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!latestAutoBackup}
+                  onClick={() => {
+                    if (!latestAutoBackup) return;
+                    if (
+                      confirm(
+                        `Restore auto-backup from ${new Date(latestAutoBackup.savedAt).toLocaleString()}?\n\nThis replaces all current data.`
+                      )
+                    ) {
+                      replaceAllData(latestAutoBackup.data);
+                      backfillMissingShadowExpenses();
+                      alert('✅ Restored from latest auto-backup.');
+                    }
+                  }}
+                >
+                  Restore latest auto-backup
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const result = reimportOldData();
+                    alert(result.message);
+                    if (result.success) {
+                      window.location.reload();
+                    }
+                  }}
+                >
+                  Re-import old data from localStorage
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Auto-backup keeps the last 5 snapshots locally. Export JSON lets you pick a save location when your browser supports it.
               </p>
             </div>
           </CardContent>

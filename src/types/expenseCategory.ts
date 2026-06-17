@@ -1,5 +1,6 @@
 export type ExpenseCategory =
   | 'food'
+  | 'necessities'
   | 'lifestyle'
   | 'family'
   | 'misc'
@@ -42,6 +43,12 @@ export const EXPENSE_CATEGORIES: Record<ExpenseCategory, CategoryMetadata> = {
     color: 'text-emerald-500',
     icon: 'UtensilsCrossed',
     description: 'Meals, groceries, and dining expenses',
+  },
+  necessities: {
+    label: 'Household Essentials',
+    color: 'text-teal-500',
+    icon: 'ShoppingBasket',
+    description: 'Daily necessities — toiletries, cleaning supplies, household basics',
   },
   lifestyle: {
     label: 'Lifestyle',
@@ -211,6 +218,24 @@ export function getExpenseCategoryIcon(category: ExpenseCategory): string {
 
 export function getFixedExpenseCategoryIcon(category: FixedExpenseCategory): string {
   return FIXED_EXPENSE_CATEGORIES[category].icon;
+}
+
+/** Map legacy expense category strings to the current schema */
+export const EXPENSE_CATEGORY_MIGRATION: Record<string, ExpenseCategory> = {
+  business: 'opex',
+  essentials: 'necessities',
+  household: 'necessities',
+};
+
+/** Migrate old category to new schema; returns valid ExpenseCategory */
+export function migrateExpenseCategory(category: string | undefined): ExpenseCategory {
+  if (!category) return 'food';
+  if (Object.prototype.hasOwnProperty.call(EXPENSE_CATEGORIES, category)) {
+    return category as ExpenseCategory;
+  }
+  const migrated = EXPENSE_CATEGORY_MIGRATION[category];
+  if (migrated) return migrated;
+  return 'misc';
 }
 
 /** Migrate old category to new schema; returns valid FixedExpenseCategory */

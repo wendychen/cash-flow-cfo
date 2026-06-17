@@ -72,27 +72,36 @@ const SankeyFlowChart = ({
     const links: SankeyLink[] = [];
 
     if (drillDownLevel === "overview") {
+      const totalGoalBudget = activeGoals.reduce((sum, g) => sum + (g.budget ?? 0), 0);
+      const goalsNodeValue = Math.max(totalGoalBudget, goalExpenseTotal);
+
       nodes.push(
         { id: "income", name: "Income", color: "#8b5cf6", value: totalIncome },
         { id: "savings", name: "Savings", color: "#3b82f6", value: totalSavings },
-        { id: "goals", name: "Goals", color: "#f59e0b", value: activeGoals.length * 1000 },
+        { id: "goals", name: "Goals", color: "#f59e0b", value: goalsNodeValue },
         { id: "expenses", name: "Expenses", color: "#ef4444", value: totalExpenses }
       );
 
       if (totalIncome > 0) {
-        const savingsFlow = Math.min(totalSavings, totalIncome * 0.3);
-        const expenseFlow = totalIncome - savingsFlow;
+        const incomeToSavings = Math.min(totalSavings, totalIncome);
+        const incomeToExpenses = Math.max(0, totalIncome - incomeToSavings);
 
-        links.push(
-          { source: "income", target: "savings", value: savingsFlow, color: "#3b82f680" },
-          { source: "income", target: "expenses", value: expenseFlow, color: "#ef444480" }
-        );
+        if (incomeToSavings > 0) {
+          links.push(
+            { source: "income", target: "savings", value: incomeToSavings, color: "#3b82f680" }
+          );
+        }
+        if (incomeToExpenses > 0) {
+          links.push(
+            { source: "income", target: "expenses", value: incomeToExpenses, color: "#ef444480" }
+          );
+        }
       }
 
-      if (totalSavings > 0 && activeGoals.length > 0) {
-        const goalsFlow = Math.min(totalSavings * 0.4, activeGoals.length * 1000);
+      if (totalSavings > 0 && goalsNodeValue > 0) {
+        const savingsToGoals = Math.min(totalSavings, goalsNodeValue);
         links.push(
-          { source: "savings", target: "goals", value: goalsFlow, color: "#f59e0b80" }
+          { source: "savings", target: "goals", value: savingsToGoals, color: "#f59e0b80" }
         );
       }
 
@@ -204,7 +213,7 @@ const SankeyFlowChart = ({
       const oneTimeExpenseTotal = expenses.reduce((sum, exp) => sum + exp.amount, 0);
       nodes.push({ id: "onetime-expenses", name: "One-Time Expenses", color: "#f87171", value: oneTimeExpenseTotal });
 
-      const expenseCategoryKeys: ExpenseCategory[] = ["food", "lifestyle", "family", "misc", "opex", "capex", "gna"];
+      const expenseCategoryKeys: ExpenseCategory[] = ["food", "necessities", "lifestyle", "family", "misc", "opex", "capex", "gna"];
       const categoryTotals: Record<string, number> = Object.fromEntries(expenseCategoryKeys.map((k) => [k, 0]));
 
       expenses.forEach((expense) => {
@@ -218,6 +227,7 @@ const SankeyFlowChart = ({
           const meta = EXPENSE_CATEGORIES[cat];
           const colorMap: Record<ExpenseCategory, string> = {
             food: "#10b981",
+            necessities: "#14b8a6",
             lifestyle: "#ec4899",
             family: "#06b6d4",
             misc: "#64748b",
@@ -375,14 +385,23 @@ const SankeyVisualization = ({
 
   const maxValue = Math.max(...nodes.map(n => n.value), 1);
 
+  const OVERVIEW_COLUMN: Record<string, number> = {
+    income: 0,
+    savings: 1,
+    goals: 2,
+    expenses: 3,
+  };
+
   const columns: { [key: number]: SankeyNode[] } = {};
   nodes.forEach((node, idx) => {
-    const col = idx % 3;
+    const col = drillDownLevel === "overview" && OVERVIEW_COLUMN[node.id] !== undefined
+      ? OVERVIEW_COLUMN[node.id]
+      : idx % 3;
     if (!columns[col]) columns[col] = [];
     columns[col].push(node);
   });
 
-  const columnCount = Object.keys(columns).length;
+  const columnCount = Math.max(...Object.keys(columns).map(Number), 0) + 1;
   const columnWidth = svgWidth / (columnCount + 1);
 
   const isDetailView = drillDownLevel !== "overview";
@@ -406,7 +425,7 @@ const SankeyVisualization = ({
         totalInCol = targetNodes.length;
       }
     } else {
-      col = idx % 3;
+      col = OVERVIEW_COLUMN[node.id] ?? idx % 3;
       rowIdx = columns[col].indexOf(node);
       totalInCol = columns[col].length;
     }

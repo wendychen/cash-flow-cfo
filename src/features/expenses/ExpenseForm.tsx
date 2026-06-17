@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, UtensilsCrossed, Sparkles, Users, Package, Repeat, TrendingUp, Building2, Info } from "lucide-react";
+import { Plus, Info } from "lucide-react";
 import { Expense } from "@/types/expense";
 import { useCurrency, Currency } from "@/hooks/use-currency";
 import {
@@ -17,15 +17,18 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import { ExpenseCategoryIcon } from "./ExpenseCategoryIcon";
 
 interface ExpenseFormProps {
   onAddExpense: (expense: Omit<Expense, "id">) => void;
 }
 
+const DEFAULT_CATEGORY: ExpenseCategory = "food";
+
 const ExpenseForm = ({ onAddExpense }: ExpenseFormProps) => {
   const { convertToNTD } = useCurrency();
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const [category, setCategory] = useState<ExpenseCategory>("misc");
+  const [category, setCategory] = useState<ExpenseCategory>(DEFAULT_CATEGORY);
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [timeCost, setTimeCost] = useState("");
@@ -46,22 +49,10 @@ const ExpenseForm = ({ onAddExpense }: ExpenseFormProps) => {
       category,
     });
 
-    setCategory("misc");
+    setCategory(DEFAULT_CATEGORY);
     setDescription("");
     setAmount("");
     setTimeCost("");
-  };
-
-  const getCategoryIcon = (cat: ExpenseCategory) => {
-    switch (cat) {
-      case "food": return <UtensilsCrossed className="h-4 w-4" />;
-      case "lifestyle": return <Sparkles className="h-4 w-4" />;
-      case "family": return <Users className="h-4 w-4" />;
-      case "misc": return <Package className="h-4 w-4" />;
-      case "opex": return <Repeat className="h-4 w-4" />;
-      case "capex": return <TrendingUp className="h-4 w-4" />;
-      case "gna": return <Building2 className="h-4 w-4" />;
-    }
   };
 
   return (
@@ -118,7 +109,7 @@ const ExpenseForm = ({ onAddExpense }: ExpenseFormProps) => {
         <Select value={category} onValueChange={(val) => setCategory(val as ExpenseCategory)}>
           <SelectTrigger className="bg-card">
             <div className="flex items-center gap-2">
-              {getCategoryIcon(category)}
+              <ExpenseCategoryIcon category={category} className="h-4 w-4" />
               <SelectValue />
             </div>
           </SelectTrigger>
@@ -126,7 +117,7 @@ const ExpenseForm = ({ onAddExpense }: ExpenseFormProps) => {
             {Object.entries(EXPENSE_CATEGORIES).map(([key, meta]) => (
               <SelectItem key={key} value={key}>
                 <div className="flex items-center gap-2">
-                  {getCategoryIcon(key as ExpenseCategory)}
+                  <ExpenseCategoryIcon category={key as ExpenseCategory} className="h-4 w-4" />
                   <span>{meta.label}</span>
                 </div>
               </SelectItem>
