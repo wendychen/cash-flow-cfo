@@ -29,7 +29,11 @@ The agent **always moves on** to the next PR in the design DAG unless blocked. S
 
 Reports are written when an agent session runs. For a true 07:00 HKT drop without opening Cursor:
 
-1. **Cron + reminder** — `0 7 * * * TZ=Asia/Taipei` runs `scripts/daily-devlog-reminder.sh` (creates a stub if missing).
+1. **Cron + reminder** (installed via `scripts/install-devlog-cron.sh`):
+   ```cron
+   0 7 * * * TZ=Asia/Taipei /mnt/c/dev/cash_flow_cfo/scripts/daily-devlog-reminder.sh >> .../docs/devlog/cron.log 2>&1
+   ```
+   Creates a stub at `docs/devlog/YYYY-MM-DD-0700-hkt.md` if missing. Log: `docs/devlog/cron.log` (gitignored).
 2. **Cursor / cloud agent** — schedule a daily task at 07:00 HKT with: *“Write yesterday’s devlog to `docs/devlog/YYYY-MM-DD-0700-hkt.md` and continue the next PR.”*
 3. **Manual** — open the latest `docs/devlog/*-0700-hkt.md` anytime.
 
