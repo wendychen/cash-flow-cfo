@@ -4,9 +4,10 @@ import { useFinance, useFinanceHydrated } from "@/stores";
 import { useCurrency } from "@/hooks/use-currency";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Target, Receipt, TrendingUp, PiggyBank, Target as GoalIcon, Download, Upload } from "lucide-react";
+import { Target, Receipt, TrendingUp, PiggyBank, Target as GoalIcon, Download, Upload, Printer } from "lucide-react";
 import { saveFinanceExport, parseImportJSON } from "@/lib/exportImport";
-import { getLatestAutoBackup } from "@/lib/autoBackup";
+import { getLatestAutoBackup, listAutoBackups } from "@/lib/autoBackup";
+import { printBackupReport, printGoalsReport } from "@/lib/printReport";
 import { useAutoBackup } from "@/hooks/use-auto-backup";
 import { parseCsvToFinanceState } from "@/lib/csvImport";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -242,6 +243,31 @@ export default function Dashboard() {
     updateSaving(id, updates, currency);
   };
 
+  const handlePrintGoals = () => {
+    printGoalsReport({
+      goals,
+      tasks,
+      formatAmount: format,
+      displayCurrency: currency,
+    });
+  };
+
+  const handlePrintBackup = () => {
+    printBackupReport({
+      backups: listAutoBackups(),
+      currentState: {
+        version: 2,
+        expenses,
+        incomes,
+        savings,
+        fixedExpenses,
+        targets,
+        goals,
+        tasks,
+      },
+    });
+  };
+
   const handleUpdateTarget = (
     type: Parameters<typeof setTarget>[0],
     amount: number,
@@ -447,11 +473,15 @@ export default function Dashboard() {
           {/* Goals & Tasks Tab */}
           <TabsContent value="goals" className="space-y-6 mt-6">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
                 <CardTitle className="flex items-center gap-2">
                   <GoalIcon className="h-5 w-5" />
                   Goals &amp; Tasks
                 </CardTitle>
+                <Button variant="outline" size="sm" onClick={handlePrintGoals}>
+                  <Printer className="mr-2 h-4 w-4" />
+                  Print Goals
+                </Button>
               </CardHeader>
               <CardContent>
                 <GoalList
@@ -556,6 +586,10 @@ export default function Dashboard() {
                 </div>
               )}
               <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" onClick={handlePrintBackup}>
+                  <Printer className="mr-2 h-4 w-4" />
+                  Print Backup Report
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
