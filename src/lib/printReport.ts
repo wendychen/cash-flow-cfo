@@ -1,4 +1,5 @@
 import { format, parseISO, isValid } from 'date-fns';
+import { getDateFnsLocale } from '@/lib/dateLocale';
 import type { TranslationKey } from '@/i18n';
 import type { Goal } from '@/types/goal';
 import { isRepeatingGoal, normalizeRepeatInterval } from '@/types/goalRepeat';
@@ -53,11 +54,13 @@ function escapeHtml(value: string): string {
     .replace(/"/g, '&quot;');
 }
 
-function formatDeadline(deadline: string): string {
+function formatDeadline(deadline: string, locale?: string): string {
   if (!deadline) return '—';
   try {
     const parsed = parseISO(deadline);
-    return isValid(parsed) ? format(parsed, 'MMM d, yyyy') : deadline;
+    return isValid(parsed)
+      ? format(parsed, 'MMM d, yyyy', { locale: getDateFnsLocale(locale) })
+      : deadline;
   } catch {
     return deadline;
   }
@@ -96,7 +99,8 @@ function renderGoalCard(
   goal: Goal,
   tasks: TaskNode[],
   formatAmount: AmountFormatter,
-  t: PrintTranslateFn
+  t: PrintTranslateFn,
+  locale?: string
 ): string {
   const categoryKey = migrateExpenseCategory(goal.category);
   const categoryLabel = getExpenseCategoryLabel(categoryKey, t);
@@ -125,7 +129,7 @@ function renderGoalCard(
       ? `<div class="task-section"><h4>${t('printReport.goal.milestones')}</h4><ul>${goal.milestones
           .map((m) => {
             const status = m.completed ? '✓' : '○';
-            return `<li>${status} ${escapeHtml(m.title)} — ${formatDeadline(m.targetDate)}</li>`;
+            return `<li>${status} ${escapeHtml(m.title)} — ${formatDeadline(m.targetDate, locale)}</li>`;
           })
           .join('')}</ul></div>`
       : '';
@@ -140,7 +144,7 @@ function renderGoalCard(
     <article class="goal-card ${goal.completed ? 'completed' : ''}">
       <h3>${escapeHtml(goal.title)}${goal.isMagicWand ? ' ★' : ''}${goal.completed ? ` ${t('printReport.goals.completed')}` : ''}</h3>
       <p class="meta">
-        <span><strong>${t('printReport.goal.deadline')}</strong> ${formatDeadline(goal.deadline)}</span>
+        <span><strong>${t('printReport.goal.deadline')}</strong> ${formatDeadline(goal.deadline, locale)}</span>
         <span><strong>${t('printReport.goal.budget')}</strong> ${budget}</span>
         <span><strong>${t('printReport.goal.category')}</strong> ${escapeHtml(categoryLabel)}</span>
         ${goal.timeCost ? `<span><strong>${t('printReport.goal.time')}</strong> ${escapeHtml(goal.timeCost)}</span>` : ''}
@@ -173,6 +177,7 @@ export function buildGoalsPrintHtml({
   formatAmount,
   displayCurrency,
   t,
+  locale,
   longTermFinGoal,
   currentSavings = 0,
   printedAt = new Date(),
@@ -188,17 +193,18 @@ export function buildGoalsPrintHtml({
 
   const activeHtml =
     active.length > 0
-      ? active.map((g) => renderGoalCard(g, tasks, formatAmount, t)).join('')
+      ? active.map((g) => renderGoalCard(g, tasks, formatAmount, t, locale)).join('')
       : `<p class="empty">${t('printReport.goals.noActiveGoals')}</p>`;
 
   const completedHtml =
     completed.length > 0
       ? `<section class="section"><h2>${t('printReport.goals.completedGoals', { count: completed.length })}</h2>${completed
-          .map((g) => renderGoalCard(g, tasks, formatAmount, t))
+          .map((g) => renderGoalCard(g, tasks, formatAmount, t, locale))
           .join('')}</section>`
       : '';
 
-  const printedDate = format(printedAt, 'MMMM d, yyyy h:mm a');
+  const dateFnsLocale = getDateFnsLocale(locale);
+  const printedDate = format(printedAt, 'PPpp', { locale: dateFnsLocale });
 
   return `
     <header class="report-header">
@@ -283,10 +289,12 @@ function countState(state: FinanceStateV2) {
   };
 }
 
-function formatIncomeDate(dateStr: string): string {
+function formatIncomeDate(dateStr: string, locale?: string): string {
   try {
     const parsed = parseISO(dateStr);
-    return isValid(parsed) ? format(parsed, 'MMM d, yyyy') : dateStr;
+    return isValid(parsed)
+      ? format(parsed, 'MMM d, yyyy', { locale: getDateFnsLocale(locale) })
+      : dateStr;
   } catch {
     return dateStr;
   }
@@ -295,7 +303,8 @@ function formatIncomeDate(dateStr: string): string {
 function renderIncomePrintSection(
   incomes: Income[],
   formatAmount: AmountFormatter,
-  t: PrintTranslateFn
+  t: PrintTranslateFn,
+  locale?: string
 ): string {
   if (incomes.length === 0) return '';
 
@@ -328,7 +337,7 @@ function renderIncomePrintSection(
               ? t('printReport.income.fullyCollected')
               : t('printReport.income.percentCollected', { percent: status.percentCollected });
             return `<tr>
-              <td>${formatIncomeDate(accrued.date)}</td>
+              <td>${formatIncomeDate(accrued.date, locale)}</td>
               <td>${escapeHtml(accrued.source)}</td>
               <td class="num">${formatAmount(accrued.amount)}</td>
               <td class="num">${formatAmount(status.collected)}</td>
@@ -348,7 +357,7 @@ function renderIncomePrintSection(
               : undefined;
             const linkedLabel = linked ? escapeHtml(linked.source) : '—';
             return `<tr>
-              <td>${formatIncomeDate(collection.date)}</td>
+              <td>${formatIncomeDate(collection.date, locale)}</td>
               <td>${escapeHtml(collection.source)}</td>
               <td>${linkedLabel}</td>
               <td class="num">${formatAmount(collection.amount)}</td>
@@ -407,6 +416,7 @@ export function buildBackupPrintHtml(
     backups,
     currentState,
     t,
+    locale,
     printedAt = new Date(),
   }: BackupPrintInput,
   options: BackupPrintOptions = {}
@@ -420,15 +430,21 @@ export function buildBackupPrintHtml(
     formatAmount,
     t
   );
-  const incomeSection = renderIncomePrintSection(currentState.incomes ?? [], formatAmount, t);
+  const incomeSection = renderIncomePrintSection(
+    currentState.incomes ?? [],
+    formatAmount,
+    t,
+    locale
+  );
 
+  const dateFnsLocale = getDateFnsLocale(locale);
   const backupRows =
     backups.length > 0
       ? backups
           .map((entry, index) => {
             const counts = countState(entry.data);
             const total = Object.values(counts).reduce((a, b) => a + b, 0);
-            const saved = format(new Date(entry.savedAt), 'MMM d, yyyy h:mm a');
+            const saved = format(new Date(entry.savedAt), 'PPpp', { locale: dateFnsLocale });
             const slotLabel =
               index === 0 ? t('printReport.backup.latest') : t('printReport.backup.slotNumber', { n: index + 1 });
             return `<tr>
@@ -445,7 +461,7 @@ export function buildBackupPrintHtml(
           .join('')
       : `<tr><td colspan="8" class="empty">${t('printReport.backup.noBackups')}</td></tr>`;
 
-  const printedDate = format(printedAt, 'MMMM d, yyyy h:mm a');
+  const printedDate = format(printedAt, 'PPpp', { locale: dateFnsLocale });
   const snapshotInfo =
     backups.length === 1
       ? t('printReport.backup.snapshotInfoOne')

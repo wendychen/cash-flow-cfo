@@ -244,6 +244,31 @@ describe('printReport', () => {
     expect(html).toContain('25%');
   });
 
+  it('buildGoalsPrintHtml uses locale-aware printed date', () => {
+    const enHtml = buildGoalsPrintHtml({
+      goals: [sampleGoal],
+      tasks: [],
+      formatAmount,
+      displayCurrency: 'USD',
+      t: testT,
+      locale: 'en',
+      printedAt: new Date('2026-06-16T12:00:00'),
+    });
+    const jaHtml = buildGoalsPrintHtml({
+      goals: [sampleGoal],
+      tasks: [],
+      formatAmount,
+      displayCurrency: 'USD',
+      t: testT,
+      locale: 'ja',
+      printedAt: new Date('2026-06-16T12:00:00'),
+    });
+
+    expect(enHtml).toContain('Jun');
+    expect(jaHtml).toContain('6');
+    expect(jaHtml).not.toContain('Jun');
+  });
+
   it('wrapPrintDocument produces valid HTML shell', () => {
     const doc = wrapPrintDocument('Test Title', '<p>Body</p>', 'zh-TW');
     expect(doc).toContain('<title>Test Title</title>');

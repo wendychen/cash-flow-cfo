@@ -73,7 +73,23 @@ const IncomeList = ({
   const [editReviewCount, setEditReviewCount] = useState("");
   const [editDate, setEditDate] = useState("");
   const [editError, setEditError] = useState<string | null>(null);
+  const [inlineError, setInlineError] = useState<{ id: string; message: string } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+
+  const applyIncomeUpdate = (
+    id: string,
+    updates: Partial<Omit<Income, "id">>
+  ): IncomeUpdateResult => {
+    const result = onUpdateIncome(id, updates);
+    if (!result.ok) {
+      setInlineError({ id, message: t(result.errorKey) });
+      return result;
+    }
+    if (inlineError?.id === id) {
+      setInlineError(null);
+    }
+    return result;
+  };
 
   const startEdit = (income: Income) => {
     setEditingId(income.id);
@@ -116,7 +132,7 @@ const IncomeList = ({
       editCurrency,
       convertToNTD
     );
-    const result = onUpdateIncome(id, {
+    const result = applyIncomeUpdate(id, {
       source: editSource.trim(),
       ...stored,
       incomeType: editIncomeType,
@@ -342,7 +358,11 @@ const IncomeList = ({
                           type="number"
                           min="0"
                           value={income.reviewCount || ""}
-                          onChange={(e) => onUpdateIncome(income.id, { reviewCount: e.target.value ? parseInt(e.target.value) : undefined })}
+                          onChange={(e) =>
+                            applyIncomeUpdate(income.id, {
+                              reviewCount: e.target.value ? parseInt(e.target.value) : undefined,
+                            })
+                          }
                           placeholder={t('forms.reviewCountPlaceholder')}
                           className="h-7 w-12 text-xs text-center shrink-0"
                         />
@@ -428,6 +448,9 @@ const IncomeList = ({
                     </>
                   )}
                 </div>
+                {inlineError?.id === income.id && (
+                  <p className="text-xs text-destructive px-3 -mt-1">{inlineError.message}</p>
+                )}
                 {collectingId === income.id && onRecordCollection && (
                   <IncomeCollectForm
                     accrued={income}
