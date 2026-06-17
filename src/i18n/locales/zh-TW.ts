@@ -763,6 +763,12 @@ export const zhTW: Messages = {
       error: '教練請求失敗：{error}',
       thinking: '正在產生建議…',
       emptyResponse: '未收到建議，請再試一次。',
+      confirmSecondCall: '要再產生一次教練計畫嗎？（會使用 API 額度）',
+      priority: '優先順序 {n}',
+      sections: {
+        reorder: '套用優先順序調整',
+        weeklyFocus: '本週焦點（僅供參考）',
+      },
     },
     conflictsPanel: {
       title: '衝突',

@@ -765,6 +765,12 @@ export const en = {
       error: 'Coach request failed: {error}',
       thinking: 'Generating suggestions…',
       emptyResponse: 'No suggestions returned. Try again.',
+      confirmSecondCall: 'Generate another coach plan? (uses API quota)',
+      priority: 'priority {n}',
+      sections: {
+        reorder: 'Apply priority reorder',
+        weeklyFocus: 'Weekly focus (informational)',
+      },
     },
     conflictsPanel: {
       title: 'Conflicts',

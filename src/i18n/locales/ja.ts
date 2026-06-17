@@ -764,6 +764,12 @@ export const ja: Messages = {
       error: 'コーチのリクエストに失敗：{error}',
       thinking: '提案を生成中…',
       emptyResponse: '提案がありません。もう一度お試しください。',
+      confirmSecondCall: 'もう一度コーチプランを生成しますか？（API 枠を使用）',
+      priority: '優先度 {n}',
+      sections: {
+        reorder: '優先順の並べ替えを適用',
+        weeklyFocus: '今週のフォーカス（参考）',
+      },
     },
     conflictsPanel: {
       title: 'コンフリクト',

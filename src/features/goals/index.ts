@@ -3,6 +3,7 @@ export { default as GoalBudgetAllocator } from './GoalBudgetAllocator';
 export { default as GoalReachPlannerCard } from './GoalReachPlannerCard';
 export { default as WeeklyFocusList } from './WeeklyFocusList';
 export { default as PlannerConflictDrawer } from './PlannerConflictDrawer';
+export { default as GoalCoachDialog } from './GoalCoachDialog';
 export { default as TaskTreeSection } from './TaskTreeSection';
 export { default as TaskTreeNode } from './TaskTreeNode';
 export { default as GoalMilestoneSection } from './GoalMilestoneSection';

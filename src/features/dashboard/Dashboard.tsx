@@ -773,6 +773,7 @@ export default function Dashboard() {
                     onOpenBudgetAllocator={handleOpenBudgetAllocatorFromPlanner}
                     onOpenGoal={handleOpenGoalFromPlanner}
                     onApplyDeadlineShift={handleApplyDeadlineShiftFromPlanner}
+                    onUpdateGoal={updateGoal}
                   />
                 </CardContent>
               </Card>

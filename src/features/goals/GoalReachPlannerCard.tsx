@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { RefreshCw, Route, Target } from 'lucide-react';
+import { RefreshCw, Route, Sparkles, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCurrency } from '@/hooks/use-currency';
 import { useI18n } from '@/i18n';
@@ -15,6 +15,7 @@ import GoalMasterTimeline from './GoalMasterTimeline';
 import MonthlyFundingChart from './MonthlyFundingChart';
 import PlannerConflictDrawer from './PlannerConflictDrawer';
 import WeeklyFocusList from './WeeklyFocusList';
+import GoalCoachDialog from './GoalCoachDialog';
 
 interface GoalReachPlannerCardProps {
   goals: Goal[];
@@ -27,6 +28,7 @@ interface GoalReachPlannerCardProps {
   onOpenBudgetAllocator?: () => void;
   onOpenGoal?: (goalId: string) => void;
   onApplyDeadlineShift?: (goalId: string, newDeadline: string) => void;
+  onUpdateGoal?: (id: string, updates: Partial<Omit<Goal, 'id'>>) => void;
 }
 
 export default function GoalReachPlannerCard({
@@ -40,11 +42,13 @@ export default function GoalReachPlannerCard({
   onOpenBudgetAllocator,
   onOpenGoal,
   onApplyDeadlineShift,
+  onUpdateGoal,
 }: GoalReachPlannerCardProps) {
   const { t } = useI18n();
   const { format } = useCurrency();
   const [now, setNow] = useState(() => new Date());
   const [conflictsOpen, setConflictsOpen] = useState(false);
+  const [coachOpen, setCoachOpen] = useState(false);
 
   const plan = useMemo(
     () =>
@@ -98,15 +102,23 @@ export default function GoalReachPlannerCard({
           <Route className="h-5 w-5 text-violet-600" />
           <h3 className="font-semibold text-foreground">{t('goalReach.title')}</h3>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setNow(new Date())}
-        >
-          <RefreshCw className="mr-2 h-4 w-4" />
-          {t('goalReach.refresh')}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {onUpdateGoal && (
+            <Button type="button" variant="outline" size="sm" onClick={() => setCoachOpen(true)}>
+              <Sparkles className="mr-2 h-4 w-4 text-violet-500" />
+              {t('goalReach.aiCoach.menu')}
+            </Button>
+          )}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setNow(new Date())}
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            {t('goalReach.refresh')}
+          </Button>
+        </div>
       </div>
 
       <FeasibilitySummaryChip
@@ -161,6 +173,24 @@ export default function GoalReachPlannerCard({
         onOpenGoal={onOpenGoal}
         onApplyDeadlineShift={onApplyDeadlineShift}
       />
+
+      {onUpdateGoal && (
+        <GoalCoachDialog
+          open={coachOpen}
+          onOpenChange={setCoachOpen}
+          goals={goals}
+          tasks={tasks}
+          plan={plan}
+          cashSummary={{
+            savings: latestSavingsBalance,
+            monthlySurplus,
+            monthlyIncome,
+            monthlyExpenses,
+          }}
+          longTermFinGoal={longTermFinGoal}
+          onUpdateGoal={onUpdateGoal}
+        />
+      )}
     </div>
   );
 }
