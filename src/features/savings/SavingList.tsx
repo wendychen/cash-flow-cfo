@@ -223,7 +223,7 @@ const SavingList = ({
                   min="0"
                   value={saving.reviewCount || ""}
                   onChange={(e) => onUpdateSaving(saving.id, { reviewCount: e.target.value ? parseInt(e.target.value) : undefined })}
-                  placeholder="0"
+                  placeholder={t('forms.reviewCountPlaceholder')}
                   className="h-7 w-12 text-xs text-center shrink-0"
                 />
                 <span className="text-sm text-muted-foreground">

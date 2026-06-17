@@ -112,7 +112,7 @@ const FixedExpenseForm = ({ onAddFixedExpense }: FixedExpenseFormProps) => {
       <div className="flex gap-1">
         <Input
           type="number"
-          placeholder="Amount"
+          placeholder={t('forms.amountPlaceholder')}
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           className="w-24"

@@ -79,35 +79,54 @@ const ExpenseForm = ({ onAddExpense }: ExpenseFormProps) => {
           <label className="text-sm font-medium text-muted-foreground">{t('forms.category')}</label>
           <HoverCard>
             <HoverCardTrigger asChild>
-              <button type="button" className="text-muted-foreground hover:text-foreground transition-colors">
+              <button
+                type="button"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                aria-label={t('expenses.categoryHelpAria')}
+              >
                 <Info className="h-3.5 w-3.5" />
               </button>
             </HoverCardTrigger>
             <HoverCardContent className="w-96 p-4" side="top">
               <div className="space-y-4">
                 <div>
-                  <h4 className="font-semibold mb-2">1. Spending Money: Expenses vs. Assets</h4>
+                  <h4 className="font-semibold mb-2">{t('expenses.categoryHelp.spendingMoneyTitle')}</h4>
                   <div className="space-y-2 text-sm">
                     <div>
-                      <p className="font-medium">Operating Expenses (OPEX):</p>
+                      <p className="font-medium">{t('expenses.categoryHelp.opexTitle')}</p>
                       <ul className="list-disc list-inside ml-2 text-muted-foreground">
-                        <li><strong>Subscription Fees:</strong> Monthly or annual payments for cloud storage (e.g., Google Drive, iCloud, or your Canva Pro subscription) are typically recorded as Software Expenses or Office Expenses. These are deducted from your income in the period they are paid.</li>
-                        <li><strong>Consumables:</strong> Small items like USB sticks or cheap external hard drives are usually written off immediately as Supplies Expense or Miscellaneous Expenses.</li>
+                        <li>
+                          <strong>{t('expenses.categoryHelp.opexSubscriptionLabel')}</strong>{' '}
+                          {t('expenses.categoryHelp.opexSubscription')}
+                        </li>
+                        <li>
+                          <strong>{t('expenses.categoryHelp.opexConsumablesLabel')}</strong>{' '}
+                          {t('expenses.categoryHelp.opexConsumables')}
+                        </li>
                       </ul>
                     </div>
                     <div>
-                      <p className="font-medium">Capital Expenditures (CAPEX):</p>
+                      <p className="font-medium">{t('expenses.categoryHelp.capexTitle')}</p>
                       <ul className="list-disc list-inside ml-2 text-muted-foreground">
-                        <li><strong>Fixed Assets:</strong> If you buy expensive hardware (like a high-end NAS server) that lasts for several years, it is recorded as an Asset (Computer Equipment). Instead of being "spent" all at once, its cost is spread out over several years through Depreciation.</li>
+                        <li>
+                          <strong>{t('expenses.categoryHelp.capexFixedAssetsLabel')}</strong>{' '}
+                          {t('expenses.categoryHelp.capexFixedAssets')}
+                        </li>
                       </ul>
                     </div>
                   </div>
                 </div>
                 <div>
-                  <h4 className="font-semibold mb-2">2. Spending Time: Labor & Opportunity Cost</h4>
+                  <h4 className="font-semibold mb-2">{t('expenses.categoryHelp.spendingTimeTitle')}</h4>
                   <div className="space-y-2 text-sm text-muted-foreground">
-                    <p><strong>Labor Costs:</strong> If an employee performs the backup, their salary for those hours is a Direct or Indirect Labor Cost. It is part of the General and Administrative (G&A) Expenses.</p>
-                    <p><strong>Opportunity Cost (Management Accounting):</strong> In formal financial accounting, your personal time isn't "recorded" as a dollar amount on a balance sheet. However, in strategy, it is a massive Opportunity Cost. Every hour spent manually dragging files is an hour not spent on your "365-day content system" or business strategy.</p>
+                    <p>
+                      <strong>{t('expenses.categoryHelp.laborCostsLabel')}</strong>{' '}
+                      {t('expenses.categoryHelp.laborCosts')}
+                    </p>
+                    <p>
+                      <strong>{t('expenses.categoryHelp.opportunityCostLabel')}</strong>{' '}
+                      {t('expenses.categoryHelp.opportunityCost')}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -147,7 +166,7 @@ const ExpenseForm = ({ onAddExpense }: ExpenseFormProps) => {
         <label className="text-sm font-medium text-muted-foreground mb-1.5 block">{t('forms.time')}</label>
         <Input
           type="text"
-          placeholder="2h 30m"
+          placeholder={t('forms.timePlaceholder')}
           value={timeCost}
           onChange={(e) => setTimeCost(e.target.value)}
           className="bg-card"
@@ -158,7 +177,7 @@ const ExpenseForm = ({ onAddExpense }: ExpenseFormProps) => {
         <div className="flex gap-2">
           <Input
             type="number"
-            placeholder="0.00"
+            placeholder={t('forms.amountPlaceholder')}
             step="0.01"
             min="0"
             value={amount}

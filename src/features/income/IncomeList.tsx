@@ -309,7 +309,7 @@ const IncomeList = ({
                           min="0"
                           value={income.reviewCount || ""}
                           onChange={(e) => onUpdateIncome(income.id, { reviewCount: e.target.value ? parseInt(e.target.value) : undefined })}
-                          placeholder="0"
+                          placeholder={t('forms.reviewCountPlaceholder')}
                           className="h-7 w-12 text-xs text-center shrink-0"
                         />
                         <Badge 

@@ -86,7 +86,7 @@ const SavingForm = ({ onAddSaving }: SavingFormProps) => {
         <div className="flex gap-2">
           <Input
             type="number"
-            placeholder="0.00"
+            placeholder={t('forms.amountPlaceholder')}
             step="0.01"
             min="0"
             value={amount}

@@ -295,8 +295,33 @@ export const en = {
     expenseDescriptionPlaceholder: 'What was this expense for?',
     savingNotePlaceholder: 'What does this savings entry represent?',
     fixedDescriptionPlaceholder: 'Description (e.g., Health Insurance)',
+    amountPlaceholder: '0.00',
+    reviewCountPlaceholder: '0',
+    timePlaceholder: '2h 30m',
   },
   expenses: {
+    categoryHelpAria: 'Expense category classification help',
+    categoryHelp: {
+      spendingMoneyTitle: '1. Spending Money: Expenses vs. Assets',
+      opexTitle: 'Operating Expenses (OPEX):',
+      opexSubscriptionLabel: 'Subscription Fees:',
+      opexSubscription:
+        'Monthly or annual payments for cloud storage (e.g., Google Drive, iCloud, or your Canva Pro subscription) are typically recorded as Software Expenses or Office Expenses. These are deducted from your income in the period they are paid.',
+      opexConsumablesLabel: 'Consumables:',
+      opexConsumables:
+        'Small items like USB sticks or cheap external hard drives are usually written off immediately as Supplies Expense or Miscellaneous Expenses.',
+      capexTitle: 'Capital Expenditures (CAPEX):',
+      capexFixedAssetsLabel: 'Fixed Assets:',
+      capexFixedAssets:
+        'If you buy expensive hardware (like a high-end NAS server) that lasts for several years, it is recorded as an Asset (Computer Equipment). Instead of being "spent" all at once, its cost is spread out over several years through Depreciation.',
+      spendingTimeTitle: '2. Spending Time: Labor & Opportunity Cost',
+      laborCostsLabel: 'Labor Costs:',
+      laborCosts:
+        'If an employee performs the backup, their salary for those hours is a Direct or Indirect Labor Cost. It is part of the General and Administrative (G&A) Expenses.',
+      opportunityCostLabel: 'Opportunity Cost (Management Accounting):',
+      opportunityCost:
+        'In formal financial accounting, your personal time isn\'t "recorded" as a dollar amount on a balance sheet. However, in strategy, it is a massive Opportunity Cost. Every hour spent manually dragging files is an hour not spent on your "365-day content system" or business strategy.',
+    },
     list: {
       empty: 'No expenses yet',
       emptyHint: 'Add your first expense above',

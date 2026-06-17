@@ -117,7 +117,7 @@ const GoalBudgetAllocator = ({
                     })
                   }
                   className="w-24 h-8 text-sm"
-                  placeholder="0"
+                  placeholder={t('forms.reviewCountPlaceholder')}
                   min="0"
                 />
               </div>

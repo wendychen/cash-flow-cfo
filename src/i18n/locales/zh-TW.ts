@@ -297,8 +297,33 @@ export const zhTW: Messages = {
     expenseDescriptionPlaceholder: '這筆支出是什麼？',
     savingNotePlaceholder: '這筆儲蓄代表什麼？',
     fixedDescriptionPlaceholder: '說明（例如：健康保險）',
+    amountPlaceholder: '0.00',
+    reviewCountPlaceholder: '0',
+    timePlaceholder: '2小時 30分',
   },
   expenses: {
+    categoryHelpAria: '支出分類說明',
+    categoryHelp: {
+      spendingMoneyTitle: '1. 花錢：費用 vs. 資產',
+      opexTitle: '營運費用（OPEX）：',
+      opexSubscriptionLabel: '訂閱費用：',
+      opexSubscription:
+        '雲端儲存（如 Google Drive、iCloud 或 Canva Pro）的月費或年費，通常記為軟體費用或辦公費用，在付款當期從收入中扣除。',
+      opexConsumablesLabel: '消耗品：',
+      opexConsumables:
+        '隨身碟或便宜外接硬碟等小物品，通常立即列為用品費用或雜項支出。',
+      capexTitle: '資本支出（CAPEX）：',
+      capexFixedAssetsLabel: '固定資產：',
+      capexFixedAssets:
+        '若購買可使用多年的高價硬體（如高階 NAS），則記為資產（電腦設備）。成本不會一次認列，而是透過折舊分攤到數年。',
+      spendingTimeTitle: '2. 花時間：人工與機會成本',
+      laborCostsLabel: '人工成本：',
+      laborCosts:
+        '若員工執行備份，其薪資屬於直接或間接人工成本，歸入一般及行政（G&A）費用。',
+      opportunityCostLabel: '機會成本（管理會計）：',
+      opportunityCost:
+        '在正式財務會計中，個人時間不會以金額記在資產負債表上。但在策略上，這是巨大的機會成本——每花一小時手動搬檔案，就少一小時投入「365 天內容系統」或商業策略。',
+    },
     list: {
       empty: '尚無支出紀錄',
       emptyHint: '請在上方新增第一筆支出',

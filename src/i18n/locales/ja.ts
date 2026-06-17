@@ -297,8 +297,33 @@ export const ja: Messages = {
     expenseDescriptionPlaceholder: 'この支出は何ですか？',
     savingNotePlaceholder: 'この貯蓄エントリは何を表しますか？',
     fixedDescriptionPlaceholder: '説明（例：健康保険）',
+    amountPlaceholder: '0.00',
+    reviewCountPlaceholder: '0',
+    timePlaceholder: '2時間30分',
   },
   expenses: {
+    categoryHelpAria: '支出カテゴリの分類ヘルプ',
+    categoryHelp: {
+      spendingMoneyTitle: '1. お金の支出：費用と資産',
+      opexTitle: '運営費（OPEX）：',
+      opexSubscriptionLabel: 'サブスクリプション料：',
+      opexSubscription:
+        'クラウドストレージ（Google Drive、iCloud、Canva Pro など）の月額・年額料金は、通常ソフトウェア費または事務費として記録し、支払った期間の収入から控除します。',
+      opexConsumablesLabel: '消耗品：',
+      opexConsumables:
+        'USBメモリや安価な外付けHDDなどの小物は、通常すぐに消耗品費または雑費として計上します。',
+      capexTitle: '資本的支出（CAPEX）：',
+      capexFixedAssetsLabel: '固定資産：',
+      capexFixedAssets:
+        '高価なNASサーバーなど数年使える機器を購入した場合は、資産（コンピュータ機器）として記録します。一度に費用化せず、減価償却で数年にわたって配分します。',
+      spendingTimeTitle: '2. 時間の支出：人件費と機会費用',
+      laborCostsLabel: '人件費：',
+      laborCosts:
+        '従業員がバックアップ作業を行う場合、その給与は直接または間接の人件費となり、一般管理費（G&A）の一部です。',
+      opportunityCostLabel: '機会費用（管理会計）：',
+      opportunityCost:
+        '正式な財務会計では、個人の時間は貸借対照表に金額で記録されません。しかし戦略上は大きな機会費用です。ファイルを手動で移す1時間は、「365日コンテンツシステム」や事業戦略に使えた1時間でもあります。',
+    },
     list: {
       empty: '支出記録がありません',
       emptyHint: '上から最初の支出を追加してください',

@@ -296,7 +296,7 @@ const ExpenseList = ({
                             min="0"
                             value={expense.reviewCount || ""}
                             onChange={(e) => onUpdateExpense(expense.id, { reviewCount: e.target.value ? parseInt(e.target.value) : undefined })}
-                            placeholder="0"
+                            placeholder={t('forms.reviewCountPlaceholder')}
                             className="h-7 w-16 min-w-[4rem] text-xs text-center shrink-0"
                           />
                           <Switch
