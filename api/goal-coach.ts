@@ -31,6 +31,7 @@ const requestSchema = z.object({
         plannerPriority: z.number().int().optional(),
         plannedStartDate: z.string().optional(),
         isMagicWand: z.boolean(),
+        deadlineLocked: z.boolean(),
         milestoneCount: z.number().int().nonnegative(),
         incompleteMilestones: z.number().int().nonnegative(),
         taskCostTotal: z.number().finite(),
@@ -79,6 +80,7 @@ Output ONLY valid JSON matching this schema:
 }
 Rules:
 - Never invent goals; only reference provided goal ids.
+- Never suggest deadlineShifts for goals with deadlineLocked true; only goals with deadlineLocked false may appear in deadlineShifts.
 - Prefer shifting lower-priority goals before recommending income changes.
 - Respect constraints verbatim when present.
 - Quantify trade-offs using the user's currency context from the payload.
@@ -308,7 +310,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const goalIds = new Set(body.goals.map((g) => g.id));
-    const filtered = filterSuggestionToKnownGoals(suggestion, goalIds);
+    const lockedDeadlineGoalIds = new Set(
+      body.goals.filter((g) => g.deadlineLocked).map((g) => g.id)
+    );
+    const filtered = filterSuggestionToKnownGoals(suggestion, goalIds, lockedDeadlineGoalIds);
 
     return res.status(200).json({
       suggestion: filtered,

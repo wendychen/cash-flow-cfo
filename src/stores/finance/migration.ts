@@ -68,6 +68,7 @@ export function migrateFromV1(oldState: any): FinanceStateV2 {
       plannerPriority: oldGoal.plannerPriority,
       plannerNotes: oldGoal.plannerNotes,
       plannedStartDate: oldGoal.plannedStartDate,
+      deadlineLocked: oldGoal.deadlineLocked === false ? false : true,
       // Intentionally do NOT copy preTasks / postTasks / postDreams
     };
 

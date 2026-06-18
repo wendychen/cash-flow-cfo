@@ -54,5 +54,29 @@ describe('goalCoachPayload', () => {
     expect(body.cashSummary.monthlyIncome).toBe(8000);
     expect(body.feasibility).toBe(plan.feasibility);
     expect(body.conflicts).toBeDefined();
+    expect(body.goals[0].deadlineLocked).toBe(true);
+  });
+
+  it('marks unlocked goals in coach payload', () => {
+    const unlocked: Goal = { ...goal, deadlineLocked: false };
+    const plan = computeGoalReachPlan(
+      {
+        goals: [unlocked],
+        tasks: [],
+        latestSavingsBalance: 3000,
+        monthlySurplus: 500,
+      },
+      NOW
+    );
+
+    const body = buildGoalCoachRequestBody({
+      prompt: 'Help',
+      goals: [unlocked],
+      tasks: [],
+      plan,
+      cashSummary: { savings: 3000, monthlySurplus: 500 },
+    });
+
+    expect(body.goals[0].deadlineLocked).toBe(false);
   });
 });

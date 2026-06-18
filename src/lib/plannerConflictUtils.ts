@@ -90,8 +90,11 @@ export function suggestClusterDeadlineShift(
   const inCluster = goalRows.filter((row) => conflict.goalIds.includes(row.goalId));
   if (inCluster.length === 0) return null;
 
-  const candidates = inCluster.filter((row) => !row.isMagicWand);
-  const pool = candidates.length > 0 ? candidates : inCluster;
+  const unlocked = inCluster.filter((row) => !row.deadlineLocked);
+  if (unlocked.length === 0) return null;
+
+  const candidates = unlocked.filter((row) => !row.isMagicWand);
+  const pool = candidates.length > 0 ? candidates : unlocked;
   const target = [...pool].sort((a, b) =>
     (b.effectiveDeadline ?? '').localeCompare(a.effectiveDeadline ?? '')
   )[0];

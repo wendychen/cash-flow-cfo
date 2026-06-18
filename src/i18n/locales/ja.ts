@@ -504,6 +504,9 @@ export const ja: Messages = {
       priority: 'プランナー優先度（1 = 最優先）',
       plannedStart: '計画開始日',
       notesPlaceholder: 'この目標のプランナーメモ…',
+      allowDeadlineSuggestions: '期限変更の提案を許可',
+      deadlineLockedHint: '期限はロック中 — プランナーと AI コーチは移動を提案できません。',
+      deadlineSoftHint: '解除済み — コーチが提案可能。適用は都度承認が必要です。',
     },
     export: '目標をエクスポート',
     import: '目標をインポート',
@@ -821,6 +824,8 @@ export const ja: Messages = {
       openGoal: '目標を開く',
       suggestShift: '提案：{title} を {date} に移動',
       applyShift: '{title} → {date} を適用',
+      allDeadlinesLocked:
+        'このクラスター内の目標はすべて期限ロック中です。期限変更の提案を許可してからシフトを検討してください。',
     },
   },
   language: {

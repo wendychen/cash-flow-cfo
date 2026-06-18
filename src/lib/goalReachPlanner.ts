@@ -67,6 +67,7 @@ export interface GoalPlanRow {
   timelineStartPercent: number;
   timelineEndPercent: number;
   isMagicWand: boolean;
+  deadlineLocked: boolean;
   plannerPriority?: number;
   plannerNotes?: string;
   plannedStartDate?: string;
@@ -419,6 +420,7 @@ export function computeGoalReachPlan(
         timelineStartPercent: timeline.start,
         timelineEndPercent: timeline.end,
         isMagicWand: goal.isMagicWand,
+        deadlineLocked: goal.deadlineLocked !== false,
         plannerPriority: goal.plannerPriority,
         plannerNotes: goal.plannerNotes,
         plannedStartDate: goal.plannedStartDate,

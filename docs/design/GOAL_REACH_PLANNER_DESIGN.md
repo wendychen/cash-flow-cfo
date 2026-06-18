@@ -416,13 +416,17 @@ Export JSON backup after each planning session.
 
 ---
 
-## 12. Open questions (for you)
+## 12. Product decisions (resolved 2026-06-18)
 
-1. **Are all 11 goals financial** (need savings) or some pure time/habit goals?
-2. **Hard vs soft deadlines** — can AI move deadlines, or only you?
-3. **Magic wand goals** — always top priority?
-4. **Preferred AI provider** — Gemini free first OK?
-5. **Deploy target** — Vercel functions acceptable for API proxy?
+| # | Question | Decision |
+|---|----------|----------|
+| 1 | Financial vs habit goals | **All financial** — every goal participates in budget, funding need, and feasibility (no separate habit-only mode). |
+| 2 | Hard vs soft deadlines | **Hard-locked by default** (`deadlineLocked` true or omitted). User must enable **Allow deadline suggestions** on a goal (`deadlineLocked: false`); coach/drawer may then suggest shifts; **Apply** still required per change. |
+| 3 | Magic wand priority | **Default OK** — wand goals sort first in weekly focus and are protected from automatic cluster shifts when possible; not forced to `plannerPriority: 1`. |
+| 4 | AI provider | **Gemini server default** + BYOK (Gemini / OpenAI / Groq) in coach settings. |
+| 5 | Deploy target | **Vercel serverless** `/api/goal-coach`; local `npm run dev` serves the proxy in-process. |
+
+**Implementation:** `Goal.deadlineLocked`, planner section checkbox in Goals list, filters in `goalCoachSchema`, `goalCoachApply`, `plannerConflictUtils`, and coach API prompt.
 
 ---
 

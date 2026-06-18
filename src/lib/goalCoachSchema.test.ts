@@ -40,4 +40,20 @@ describe('goalCoachSchema', () => {
     expect(filtered.reorder).toHaveLength(1);
     expect(filtered.reorder?.[0].goalId).toBe('g1');
   });
+
+  it('drops deadline shifts for locked goals', () => {
+    const filtered = filterSuggestionToKnownGoals(
+      {
+        summary: 'Plan',
+        deadlineShifts: [
+          { goalId: 'g1', newDeadline: '2026-12-01', reason: 'ok' },
+          { goalId: 'g2', newDeadline: '2027-01-01', reason: 'locked' },
+        ],
+      },
+      new Set(['g1', 'g2']),
+      new Set(['g2'])
+    );
+    expect(filtered.deadlineShifts).toHaveLength(1);
+    expect(filtered.deadlineShifts?.[0].goalId).toBe('g1');
+  });
 });

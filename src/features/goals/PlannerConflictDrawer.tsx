@@ -65,6 +65,10 @@ export default function PlannerConflictDrawer({
                 conflict.type === 'deadline_cluster'
                   ? suggestClusterDeadlineShift(conflict, goalRows)
                   : null;
+              const clusterAllLocked =
+                conflict.type === 'deadline_cluster' &&
+                !clusterShift &&
+                conflict.goalIds.length > 0;
 
               return (
                 <div
@@ -87,6 +91,12 @@ export default function PlannerConflictDrawer({
                         title: clusterShift.goalTitle,
                         date: clusterShift.newDeadline,
                       })}
+                    </p>
+                  )}
+
+                  {clusterAllLocked && (
+                    <p className="text-xs text-muted-foreground">
+                      {t('goalReach.conflicts.allDeadlinesLocked')}
                     </p>
                   )}
 

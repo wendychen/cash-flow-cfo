@@ -63,4 +63,4 @@ The write-up must include: summary, commits, architecture, test count, user how-
 | ✅ | Income form width parity | — |
 | ✅ | Savings/fixed-expense form width parity | — |
 
-**Post-DAG polish complete.** Next: design §12 open questions or new roadmap.
+**Post-DAG polish complete.** Design §12 resolved (all-financial, hard-locked deadlines, wand default).

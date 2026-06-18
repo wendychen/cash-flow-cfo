@@ -57,15 +57,20 @@ export function parseGoalReachAiSuggestion(raw: unknown): GoalReachAiSuggestion 
 
 export function filterSuggestionToKnownGoals(
   suggestion: GoalReachAiSuggestion,
-  goalIds: Set<string>
+  goalIds: Set<string>,
+  lockedDeadlineGoalIds: Set<string> = new Set()
 ): GoalReachAiSuggestion {
   const keep = <T extends { goalId: string }>(items: T[] | undefined) =>
     items?.filter((item) => goalIds.has(item.goalId));
 
+  const keepUnlockedShifts = suggestion.deadlineShifts?.filter(
+    (item) => goalIds.has(item.goalId) && !lockedDeadlineGoalIds.has(item.goalId)
+  );
+
   return {
     summary: suggestion.summary,
     reorder: keep(suggestion.reorder),
-    deadlineShifts: keep(suggestion.deadlineShifts),
+    deadlineShifts: keepUnlockedShifts?.length ? keepUnlockedShifts : undefined,
     budgetAdjustments: keep(suggestion.budgetAdjustments),
     newMilestones: keep(suggestion.newMilestones),
     weeklyFocus: keep(suggestion.weeklyFocus),

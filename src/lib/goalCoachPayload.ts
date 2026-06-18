@@ -3,6 +3,7 @@ import type { Goal } from '@/types/goal';
 import type { TaskNode } from '@/types/task';
 import type { LongTermFinGoal } from '@/types/longTermFinGoal';
 import type { GoalCoachRequestBody } from '@/types/goalCoach';
+import { isGoalDeadlineLocked } from '@/lib/goalDeadlineLock';
 import { getMilestoneProgress, normalizeGoalMilestones } from '@/lib/goalMilestones';
 
 const MAX_GOALS = 20;
@@ -51,6 +52,7 @@ export function buildGoalCoachRequestBody(input: {
       plannerPriority: goal.plannerPriority,
       plannedStartDate: goal.plannedStartDate,
       isMagicWand: goal.isMagicWand,
+      deadlineLocked: isGoalDeadlineLocked(goal),
       milestoneCount: progress.total,
       incompleteMilestones: progress.total - progress.completed,
       taskCostTotal,

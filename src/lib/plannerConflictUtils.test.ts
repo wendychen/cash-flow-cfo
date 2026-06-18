@@ -57,6 +57,7 @@ describe('plannerConflictUtils', () => {
         timelineStartPercent: 0,
         timelineEndPercent: 20,
         isMagicWand: true,
+        deadlineLocked: false,
       },
       {
         goalId: 'g2',
@@ -74,6 +75,7 @@ describe('plannerConflictUtils', () => {
         timelineStartPercent: 0,
         timelineEndPercent: 25,
         isMagicWand: false,
+        deadlineLocked: false,
       },
       {
         goalId: 'g3',
@@ -91,6 +93,7 @@ describe('plannerConflictUtils', () => {
         timelineStartPercent: 0,
         timelineEndPercent: 30,
         isMagicWand: false,
+        deadlineLocked: false,
       },
     ];
 
@@ -98,5 +101,55 @@ describe('plannerConflictUtils', () => {
     expect(shift?.goalId).toBe('g3');
     expect(shift?.goalTitle).toBe('C');
     expect(shift?.newDeadline).toBe('2026-11-19');
+  });
+
+  it('returns null when every goal in a cluster has a locked deadline', () => {
+    const conflict: PlannerConflict = {
+      type: 'deadline_cluster',
+      goalIds: ['g1', 'g2'],
+      messageKey: 'goalReach.conflicts.deadlineCluster',
+      messageParams: { windowStart: '2026-09-01', count: 2, combinedNeed: 2000 },
+    };
+
+    const goalRows: GoalPlanRow[] = [
+      {
+        goalId: 'g1',
+        title: 'A',
+        effectiveDeadline: '2026-09-01',
+        timerLabel: null,
+        taskCostTotal: 0,
+        fundingNeed: 1000,
+        allocatedSavings: 500,
+        fundingGap: 500,
+        daysToDeadline: 30,
+        earliestFeasibleDeadline: null,
+        atRisk: true,
+        atRiskReasons: ['deadline_cluster'],
+        timelineStartPercent: 0,
+        timelineEndPercent: 20,
+        isMagicWand: false,
+        deadlineLocked: true,
+      },
+      {
+        goalId: 'g2',
+        title: 'B',
+        effectiveDeadline: '2026-09-05',
+        timerLabel: null,
+        taskCostTotal: 0,
+        fundingNeed: 1000,
+        allocatedSavings: 500,
+        fundingGap: 500,
+        daysToDeadline: 35,
+        earliestFeasibleDeadline: null,
+        atRisk: true,
+        atRiskReasons: ['deadline_cluster'],
+        timelineStartPercent: 0,
+        timelineEndPercent: 22,
+        isMagicWand: false,
+        deadlineLocked: true,
+      },
+    ];
+
+    expect(suggestClusterDeadlineShift(conflict, goalRows)).toBeNull();
   });
 });

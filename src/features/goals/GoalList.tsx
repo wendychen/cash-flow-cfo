@@ -21,6 +21,7 @@ import {
 import { useCurrency } from "@/hooks/use-currency";
 import { useI18n } from "@/i18n";
 import { getExpenseCategoryLabel } from "@/lib/categoryLabels";
+import { isGoalDeadlineLocked } from "@/lib/goalDeadlineLock";
 import { EXPENSE_CATEGORIES, ExpenseCategory } from "@/types/expenseCategory";
 import {
   Plus,
@@ -711,6 +712,23 @@ const SortableGoalItem = ({
               }
               className="min-h-[48px] text-sm resize-none"
             />
+            <label className="flex items-start gap-2 text-sm cursor-pointer">
+              <Checkbox
+                checked={!isGoalDeadlineLocked(goal)}
+                onCheckedChange={(checked) =>
+                  onUpdateGoal(goal.id, { deadlineLocked: checked !== true })
+                }
+                className="mt-0.5"
+              />
+              <span>
+                <span className="font-medium">{t('goals.planner.allowDeadlineSuggestions')}</span>
+                <span className="block text-xs text-muted-foreground mt-0.5">
+                  {isGoalDeadlineLocked(goal)
+                    ? t('goals.planner.deadlineLockedHint')
+                    : t('goals.planner.deadlineSoftHint')}
+                </span>
+              </span>
+            </label>
           </div>
 
           <div className="space-y-2">

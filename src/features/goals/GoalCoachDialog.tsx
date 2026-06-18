@@ -27,6 +27,7 @@ import {
   milestoneKey,
   type GoalCoachApplySelection,
 } from '@/lib/goalCoachApply';
+import { isGoalDeadlineLocked } from '@/lib/goalDeadlineLock';
 import type { GoalReachPlanSnapshot } from '@/lib/goalReachPlanner';
 import type { GoalReachAiSuggestion } from '@/types/goalCoach';
 import type { Goal } from '@/types/goal';
@@ -82,10 +83,16 @@ export default function GoalCoachDialog({
   const [budgetAdjustmentIds, setBudgetAdjustmentIds] = useState<string[]>([]);
   const [newMilestoneKeys, setNewMilestoneKeys] = useState<string[]>([]);
 
+  const unlockedDeadlineShifts = (next: GoalReachAiSuggestion) =>
+    next.deadlineShifts?.filter((d) => {
+      const goal = goals.find((g) => g.id === d.goalId);
+      return goal && !isGoalDeadlineLocked(goal);
+    }) ?? [];
+
   const resetSuggestionState = (next: GoalReachAiSuggestion) => {
     setSuggestion(next);
     setApplyReorder(!!next.reorder?.length);
-    setDeadlineShiftIds(next.deadlineShifts?.map((d) => d.goalId) ?? []);
+    setDeadlineShiftIds(unlockedDeadlineShifts(next).map((d) => d.goalId));
     setBudgetAdjustmentIds(next.budgetAdjustments?.map((b) => b.goalId) ?? []);
     setNewMilestoneKeys(
       next.newMilestones?.map((m) => milestoneKey(m.goalId, m.title)) ?? []
@@ -239,7 +246,7 @@ export default function GoalCoachDialog({
                 </div>
               )}
 
-              {suggestion.deadlineShifts?.map((d) => (
+              {unlockedDeadlineShifts(suggestion).map((d) => (
                 <label key={d.goalId} className="flex items-start gap-2 text-sm">
                   <Checkbox
                     checked={deadlineShiftIds.includes(d.goalId)}

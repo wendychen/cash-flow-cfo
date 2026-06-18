@@ -15,6 +15,7 @@ const goal: Goal = {
   ideations: [],
   constraint: '',
   urlPack: [],
+  deadlineLocked: false,
 };
 
 describe('goalCoachApply', () => {
@@ -41,5 +42,29 @@ describe('goalCoachApply', () => {
     expect(count).toBe(2);
     expect(onUpdateGoal).toHaveBeenCalledWith('g1', { deadline: '2027-01-15' });
     expect(onUpdateGoal).toHaveBeenCalledWith('g1', { budget: 6000 });
+  });
+
+  it('skips deadline shifts for locked goals', () => {
+    const onUpdateGoal = vi.fn();
+    const lockedGoal: Goal = { ...goal, deadlineLocked: true };
+    const count = applyGoalCoachSuggestion(
+      {
+        summary: 'Shift trip',
+        deadlineShifts: [
+          { goalId: 'g1', newDeadline: '2027-01-15', reason: 'More time to save' },
+        ],
+      },
+      {
+        applyReorder: false,
+        deadlineShiftIds: ['g1'],
+        budgetAdjustmentIds: [],
+        newMilestoneKeys: [],
+      },
+      [lockedGoal],
+      onUpdateGoal
+    );
+
+    expect(count).toBe(0);
+    expect(onUpdateGoal).not.toHaveBeenCalled();
   });
 });

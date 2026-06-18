@@ -504,6 +504,9 @@ export const en = {
       priority: 'Planner priority (1 = first)',
       plannedStart: 'Planned start',
       notesPlaceholder: 'Planner notes for this goal…',
+      allowDeadlineSuggestions: 'Allow deadline suggestions',
+      deadlineLockedHint: 'Deadline is locked — planner and AI Coach cannot suggest moving it.',
+      deadlineSoftHint: 'Unlocked — coach may suggest shifts; you still approve each change.',
     },
     export: 'Export goal',
     import: 'Import goal',
@@ -826,6 +829,8 @@ export const en = {
       openGoal: 'Open goal',
       suggestShift: 'Suggest: move {title} → {date}',
       applyShift: 'Apply {title} → {date}',
+      allDeadlinesLocked:
+        'All goals in this cluster have locked deadlines. Enable “Allow deadline suggestions” on a goal to permit a shift.',
     },
   },
   language: {

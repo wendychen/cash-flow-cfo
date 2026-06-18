@@ -1,5 +1,6 @@
 import type { GoalReachAiSuggestion } from '@/types/goalCoach';
 import type { Goal } from '@/types/goal';
+import { isGoalDeadlineLocked } from '@/lib/goalDeadlineLock';
 import { normalizeGoalMilestones } from '@/lib/goalMilestones';
 import { MAX_MILESTONES_PER_GOAL } from '@/types/goalMilestone';
 
@@ -33,7 +34,8 @@ export function applyGoalCoachSuggestion(
 
   for (const item of suggestion.deadlineShifts ?? []) {
     if (!selection.deadlineShiftIds.includes(item.goalId)) continue;
-    if (!goalById.has(item.goalId)) continue;
+    const goal = goalById.get(item.goalId);
+    if (!goal || isGoalDeadlineLocked(goal)) continue;
     onUpdateGoal(item.goalId, { deadline: item.newDeadline });
     applied++;
   }

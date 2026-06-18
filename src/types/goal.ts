@@ -58,4 +58,9 @@ export interface Goal {
   plannerNotes?: string;
   /** Reach planner assigned start YYYY-MM-DD. */
   plannedStartDate?: string;
+  /**
+   * When true or omitted, deadline cannot be moved by planner/AI suggestions.
+   * Set to false to allow opt-in deadline shift suggestions (still requires apply).
+   */
+  deadlineLocked?: boolean;
 }

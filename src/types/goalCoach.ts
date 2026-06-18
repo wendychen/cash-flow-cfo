@@ -8,6 +8,7 @@ export interface GoalCoachGoalPayload {
   plannerPriority?: number;
   plannedStartDate?: string;
   isMagicWand: boolean;
+  deadlineLocked: boolean;
   milestoneCount: number;
   incompleteMilestones: number;
   taskCostTotal: number;

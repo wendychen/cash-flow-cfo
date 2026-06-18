@@ -503,6 +503,9 @@ export const zhTW: Messages = {
       priority: '規劃優先順序（1 = 最高）',
       plannedStart: '計劃開始日',
       notesPlaceholder: '此目標的規劃備註…',
+      allowDeadlineSuggestions: '允許期限調整建議',
+      deadlineLockedHint: '期限已鎖定 — 規劃器與 AI 教練無法建議移動。',
+      deadlineSoftHint: '已解鎖 — 教練可建議調整；您仍需逐項核准。',
     },
     export: '匯出目標',
     import: '匯入目標',
@@ -820,6 +823,8 @@ export const zhTW: Messages = {
       openGoal: '開啟目標',
       suggestShift: '建議：將 {title} 移至 {date}',
       applyShift: '套用 {title} → {date}',
+      allDeadlinesLocked:
+        '此群組內所有目標的期限均已鎖定。請在目標上啟用「允許期限調整建議」後才能建議平移。',
     },
   },
   language: {
