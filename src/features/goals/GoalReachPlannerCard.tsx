@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { RefreshCw, Route, Sparkles, Target } from 'lucide-react';
+import { Download, Printer, RefreshCw, Route, Sparkles, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCurrency } from '@/hooks/use-currency';
 import { useI18n } from '@/i18n';
@@ -16,6 +16,8 @@ import MonthlyFundingChart from './MonthlyFundingChart';
 import PlannerConflictDrawer from './PlannerConflictDrawer';
 import WeeklyFocusList from './WeeklyFocusList';
 import GoalCoachDialog from './GoalCoachDialog';
+import { saveGoalReachPlanCsvExport } from '@/lib/goalReachPlanExport';
+import { printGoalReachPlanReport } from '@/lib/printReport';
 
 interface GoalReachPlannerCardProps {
   goals: Goal[];
@@ -44,8 +46,8 @@ export default function GoalReachPlannerCard({
   onApplyDeadlineShift,
   onUpdateGoal,
 }: GoalReachPlannerCardProps) {
-  const { t } = useI18n();
-  const { format } = useCurrency();
+  const { t, locale } = useI18n();
+  const { format, currency } = useCurrency();
   const [now, setNow] = useState(() => new Date());
   const [conflictsOpen, setConflictsOpen] = useState(false);
   const [coachOpen, setCoachOpen] = useState(false);
@@ -81,6 +83,31 @@ export default function GoalReachPlannerCard({
   const simulationShortfallCount = plan.simulationCheckpoints.filter((c) => c.atRisk).length;
   const showConflicts = plan.conflicts.length > 0 || plan.feasibility < 100 || atRiskCount > 0;
 
+  const handlePrintPlan = () => {
+    printGoalReachPlanReport({
+      plan,
+      formatAmount: format,
+      displayCurrency: currency,
+      t,
+      locale,
+    });
+  };
+
+  const handleExportPlan = async () => {
+    const result = await saveGoalReachPlanCsvExport(plan);
+    if (!result.success) {
+      if (result.error === 'empty') {
+        window.alert(t('goalReach.export.empty'));
+      }
+      return;
+    }
+    const methodNote =
+      result.method === 'picker'
+        ? t('dashboard.savedToChosen')
+        : t('dashboard.downloadedDefault');
+    window.alert(t('goalReach.export.success', { filename: result.filename, method: methodNote }));
+  };
+
   useEffect(() => {
     if (!showConflicts) setConflictsOpen(false);
   }, [showConflicts]);
@@ -103,6 +130,14 @@ export default function GoalReachPlannerCard({
           <h3 className="font-semibold text-foreground">{t('goalReach.title')}</h3>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="outline" size="sm" onClick={handlePrintPlan}>
+            <Printer className="mr-2 h-4 w-4" />
+            {t('goalReach.export.print')}
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={() => void handleExportPlan()}>
+            <Download className="mr-2 h-4 w-4" />
+            {t('goalReach.export.csv')}
+          </Button>
           {onUpdateGoal && (
             <Button type="button" variant="outline" size="sm" onClick={() => setCoachOpen(true)}>
               <Sparkles className="mr-2 h-4 w-4 text-violet-500" />

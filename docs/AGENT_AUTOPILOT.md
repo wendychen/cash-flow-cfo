@@ -51,4 +51,14 @@ The write-up must include: summary, commits, architecture, test count, user how-
 | ✅ | PR-9 AI Coach dialog + apply flow | — |
 | ✅ | PR-10 BYOK settings + provider picker | — |
 
-**Goal Reach Planner DAG complete.** Next: new roadmap items or design §12 open questions.
+**Goal Reach Planner DAG complete.**
+
+### Post-DAG polish
+
+| Done | Item |
+|------|------|
+| ✅ | Local dev: inline `/api/goal-coach` + SW disabled in dev |
+| ✅ | Dashboard layout: narrower time navigator |
+| ✅ | Planner one-click **Print plan** / **Export plan** (CSV) |
+| ✅ | Income form width parity | — |
+| ⏳ | Savings/fixed-expense form width parity | **← next** |

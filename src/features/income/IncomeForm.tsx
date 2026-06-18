@@ -53,8 +53,8 @@ const IncomeForm = ({ onAddIncome }: IncomeFormProps) => {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-        <div className="flex-1 min-w-0">
+      <div className="flex flex-col gap-3 md:flex-row md:items-end md:flex-wrap xl:flex-nowrap">
+        <div className="w-full min-w-[7.5rem] md:w-auto md:flex-none md:basis-[8.5rem]">
           <label className="text-sm font-medium text-muted-foreground mb-1.5 block">{t('forms.date')}</label>
           <Input
             type="date"
@@ -63,7 +63,7 @@ const IncomeForm = ({ onAddIncome }: IncomeFormProps) => {
             className="bg-card"
           />
         </div>
-        <div className="flex-1 min-w-0">
+        <div className="w-full min-w-[8rem] md:w-auto md:flex-none md:basis-[9rem]">
           <label className="text-sm font-medium text-muted-foreground mb-1.5 block">{t('forms.type')}</label>
           <Select value={incomeType} onValueChange={(val) => setIncomeType(val as IncomeType)}>
             <SelectTrigger className="bg-card" data-testid="select-income-type">
@@ -75,7 +75,7 @@ const IncomeForm = ({ onAddIncome }: IncomeFormProps) => {
             </SelectContent>
           </Select>
         </div>
-        <div className="flex-[2] min-w-0">
+        <div className="w-full min-w-0 md:flex-1 xl:flex-[2]">
           <label className="text-sm font-medium text-muted-foreground mb-1.5 block">{t('forms.source')}</label>
           <Input
             type="text"
@@ -86,7 +86,7 @@ const IncomeForm = ({ onAddIncome }: IncomeFormProps) => {
             required
           />
         </div>
-        <div className="flex-[1.5] min-w-0">
+        <div className="w-full min-w-[10rem] md:w-auto md:flex-none md:basis-[11rem] xl:flex-1 xl:max-w-[14rem]">
           <label className="text-sm font-medium text-muted-foreground mb-1.5 block">{t('forms.amount')}</label>
           <div className="flex gap-2">
             <Input
@@ -112,8 +112,8 @@ const IncomeForm = ({ onAddIncome }: IncomeFormProps) => {
           </div>
         </div>
       </div>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-        <div className="flex-1 min-w-0">
+      <div className="flex flex-col gap-3 md:flex-row md:items-end">
+        <div className="w-full min-w-0 md:flex-1">
           <label className="text-sm font-medium text-muted-foreground mb-1.5 block">{t('forms.noteOptional')}</label>
           <Input
             type="text"

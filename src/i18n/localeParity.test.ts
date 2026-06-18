@@ -23,6 +23,7 @@ describe('locale parity', () => {
       expect(keys).toContain('goalReach.title');
       expect(keys).toContain('goalReach.aiCoach.title');
       expect(keys).toContain('goalReach.aiCoach.settings.title');
+      expect(keys).toContain('goalReach.export.print');
       expect(keys).toContain('goalReach.conflicts.simulationShortfall');
     }
   });

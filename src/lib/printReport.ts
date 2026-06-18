@@ -627,6 +627,45 @@ export function openPrintDocument(
   };
 }
 
+export interface GoalReachPlanPrintInput {
+  plan: GoalReachPlanSnapshot;
+  formatAmount: AmountFormatter;
+  displayCurrency: string;
+  t: PrintTranslateFn;
+  locale?: string;
+  printedAt?: Date;
+}
+
+export function buildGoalReachPlanOnlyPrintHtml({
+  plan,
+  formatAmount,
+  displayCurrency,
+  t,
+  locale,
+  printedAt = new Date(),
+}: GoalReachPlanPrintInput): string {
+  const dateFnsLocale = getDateFnsLocale(locale);
+  const printedDate = format(printedAt, 'PPpp', { locale: dateFnsLocale });
+
+  return `
+    <header class="report-header">
+      <h1>${t('printReport.goalReach.title')}</h1>
+      <p class="subtitle">${t('goalReach.export.printedAt', { date: printedDate, currency: escapeHtml(displayCurrency) })}</p>
+      <p class="subtitle">${t('goalReach.export.summary', { count: plan.activeGoalCount, feasibility: plan.feasibility })}</p>
+    </header>
+    ${buildGoalReachPlanPrintSection(plan, formatAmount, t as GoalReachPlanTranslateFn)}
+  `;
+}
+
+export function printGoalReachPlanReport(input: GoalReachPlanPrintInput): void {
+  if (input.plan.activeGoalCount === 0) return;
+  const body = buildGoalReachPlanOnlyPrintHtml(input);
+  openPrintDocument(input.t('printReport.goalReach.title'), body, {
+    locale: input.locale,
+    popUpBlocked: input.t('printReport.popUpBlocked'),
+  });
+}
+
 export function printGoalsReport(input: GoalsPrintInput): void {
   const body = buildGoalsPrintHtml(input);
   openPrintDocument(input.t('printReport.goals.title'), body, {

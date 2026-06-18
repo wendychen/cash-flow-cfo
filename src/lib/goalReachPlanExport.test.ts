@@ -3,8 +3,10 @@ import { en } from '@/i18n/locales/en';
 import { computeGoalReachPlan } from './goalReachPlanner';
 import {
   buildGoalReachPlanCsvSection,
+  buildGoalReachPlanExportFilename,
   buildGoalReachPlanPrintSection,
 } from './goalReachPlanExport';
+import { buildGoalReachPlanOnlyPrintHtml } from './printReport';
 import type { Goal } from '@/types/goal';
 
 const NOW = new Date('2026-06-17T12:00:00');
@@ -74,5 +76,33 @@ describe('goalReachPlanExport', () => {
     expect(csv).toContain('### GOAL REACH PLAN ###');
     expect(csv).toContain('Feasibility');
     expect(csv).toContain('Trip');
+  });
+
+  it('builds standalone plan print HTML', () => {
+    const plan = computeGoalReachPlan(
+      {
+        goals: [goal],
+        tasks: [],
+        latestSavingsBalance: 1000,
+        monthlySurplus: 200,
+      },
+      NOW
+    );
+
+    const html = buildGoalReachPlanOnlyPrintHtml({
+      plan,
+      formatAmount,
+      displayCurrency: 'NTD',
+      t,
+      locale: 'en',
+    });
+    expect(html).toContain('Goal Reach Plan');
+    expect(html).toContain('1 active goals');
+  });
+
+  it('names plan CSV export file with date', () => {
+    expect(buildGoalReachPlanExportFilename(new Date('2026-06-18'))).toBe(
+      'goal-reach-plan-2026-06-18.csv'
+    );
   });
 });

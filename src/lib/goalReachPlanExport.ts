@@ -127,3 +127,70 @@ export function buildGoalReachPlanCsvSection(plan: GoalReachPlanSnapshot): strin
 
   return out;
 }
+
+export function buildGoalReachPlanExportFilename(date = new Date()): string {
+  const stamp = date.toISOString().slice(0, 10);
+  return `goal-reach-plan-${stamp}.csv`;
+}
+
+function triggerCsvDownload(filename: string, content: string): void {
+  const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+export type GoalReachPlanCsvExportMethod = 'picker' | 'download' | 'cancelled';
+
+export interface GoalReachPlanCsvExportResult {
+  filename: string;
+  success: boolean;
+  method: GoalReachPlanCsvExportMethod;
+  error?: string;
+}
+
+export async function saveGoalReachPlanCsvExport(
+  plan: GoalReachPlanSnapshot
+): Promise<GoalReachPlanCsvExportResult> {
+  if (plan.activeGoalCount === 0) {
+    return {
+      filename: buildGoalReachPlanExportFilename(),
+      success: false,
+      method: 'cancelled',
+      error: 'empty',
+    };
+  }
+
+  const filename = buildGoalReachPlanExportFilename();
+  const csv = buildGoalReachPlanCsvSection(plan);
+
+  if (typeof window.showSaveFilePicker === 'function') {
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: filename,
+        types: [
+          {
+            description: 'Goal Reach Plan CSV',
+            accept: { 'text/csv': ['.csv'] },
+          },
+        ],
+      });
+      const writable = await handle.createWritable();
+      await writable.write(csv);
+      await writable.close();
+      return { filename: handle.name, success: true, method: 'picker' };
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        return { filename, success: false, method: 'cancelled' };
+      }
+    }
+  }
+
+  triggerCsvDownload(filename, csv);
+  return { filename, success: true, method: 'download' };
+}
