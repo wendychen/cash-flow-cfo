@@ -61,4 +61,6 @@ The write-up must include: summary, commits, architecture, test count, user how-
 | ✅ | Dashboard layout: narrower time navigator |
 | ✅ | Planner one-click **Print plan** / **Export plan** (CSV) |
 | ✅ | Income form width parity | — |
-| ⏳ | Savings/fixed-expense form width parity | **← next** |
+| ✅ | Savings/fixed-expense form width parity | — |
+
+**Post-DAG polish complete.** Next: design §12 open questions or new roadmap.

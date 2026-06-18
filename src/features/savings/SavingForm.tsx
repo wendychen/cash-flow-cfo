@@ -49,8 +49,11 @@ const SavingForm = ({ onAddSaving }: SavingFormProps) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-end">
-      <div className="w-28 shrink-0">
+    <form
+      onSubmit={handleSubmit}
+      className="flex flex-col gap-3 md:flex-row md:items-end md:flex-wrap xl:flex-nowrap"
+    >
+      <div className="w-full min-w-[8rem] md:w-auto md:flex-none md:basis-[9rem]">
         <label className="text-sm font-medium text-muted-foreground mb-1.5 block">{t('forms.type')}</label>
         <Select value={savingType} onValueChange={(val) => setSavingType(val as SavingType)}>
           <SelectTrigger className="bg-card" data-testid="select-saving-type">
@@ -62,7 +65,7 @@ const SavingForm = ({ onAddSaving }: SavingFormProps) => {
           </SelectContent>
         </Select>
       </div>
-      <div className="flex-1 min-w-0">
+      <div className="w-full min-w-[7.5rem] md:w-auto md:flex-none md:basis-[8.5rem]">
         <label className="text-sm font-medium text-muted-foreground mb-1.5 block">{t('forms.date')}</label>
         <Input
           type="date"
@@ -71,7 +74,7 @@ const SavingForm = ({ onAddSaving }: SavingFormProps) => {
           className="bg-card"
         />
       </div>
-      <div className="flex-[2] min-w-0">
+      <div className="w-full min-w-0 md:flex-1 xl:flex-[2]">
         <label className="text-sm font-medium text-muted-foreground mb-1.5 block">{t('forms.noteOptional')}</label>
         <Input
           type="text"
@@ -81,7 +84,7 @@ const SavingForm = ({ onAddSaving }: SavingFormProps) => {
           className="bg-card"
         />
       </div>
-      <div className="flex-1 min-w-0">
+      <div className="w-full min-w-[10rem] md:w-auto md:flex-none md:basis-[11rem] xl:flex-1 xl:max-w-[14rem]">
         <label className="text-sm font-medium text-muted-foreground mb-1.5 block">{t('forms.amount')}</label>
         <div className="flex gap-2">
           <Input
@@ -105,7 +108,10 @@ const SavingForm = ({ onAddSaving }: SavingFormProps) => {
           </Select>
         </div>
       </div>
-      <Button type="submit" className={`shrink-0 ${savingType === "goal" ? "bg-purple-600 hover:bg-purple-700" : "bg-emerald-600 hover:bg-emerald-700"}`}>
+      <Button
+        type="submit"
+        className={`shrink-0 ${savingType === "goal" ? "bg-purple-600 hover:bg-purple-700" : "bg-emerald-600 hover:bg-emerald-700"}`}
+      >
         {savingType === "goal" ? <Target className="w-4 h-4 mr-1.5" /> : <PiggyBank className="w-4 h-4 mr-1.5" />}
         {t('savings.form.add')}
       </Button>
