@@ -64,8 +64,8 @@ const ExpenseForm = ({ onAddExpense }: ExpenseFormProps) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-end">
-      <div className="flex-1 min-w-0">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3 md:flex-row md:items-end md:flex-wrap xl:flex-nowrap">
+      <div className="w-full min-w-[7.5rem] md:w-auto md:flex-none md:basis-[8.5rem]">
         <label className="text-sm font-medium text-muted-foreground mb-1.5 block">{t('forms.date')}</label>
         <Input
           type="date"
@@ -74,7 +74,7 @@ const ExpenseForm = ({ onAddExpense }: ExpenseFormProps) => {
           className="bg-card"
         />
       </div>
-      <div className="flex-1 min-w-0">
+      <div className="w-full min-w-[8rem] md:w-auto md:flex-none md:basis-[9rem]">
         <div className="flex items-center gap-1.5 mb-1.5">
           <label className="text-sm font-medium text-muted-foreground">{t('forms.category')}</label>
           <HoverCard>
@@ -152,7 +152,7 @@ const ExpenseForm = ({ onAddExpense }: ExpenseFormProps) => {
           </SelectContent>
         </Select>
       </div>
-      <div className="flex-[2] min-w-0">
+      <div className="w-full min-w-0 md:flex-1 xl:flex-[2]">
         <label className="text-sm font-medium text-muted-foreground mb-1.5 block">{t('forms.description')}</label>
         <Input
           type="text"
@@ -162,7 +162,7 @@ const ExpenseForm = ({ onAddExpense }: ExpenseFormProps) => {
           className="bg-card"
         />
       </div>
-      <div className="flex-1 min-w-0">
+      <div className="w-full min-w-[7rem] md:w-auto md:flex-none md:basis-[8rem]">
         <label className="text-sm font-medium text-muted-foreground mb-1.5 block">{t('forms.time')}</label>
         <Input
           type="text"
@@ -172,7 +172,7 @@ const ExpenseForm = ({ onAddExpense }: ExpenseFormProps) => {
           className="bg-card"
         />
       </div>
-      <div className="flex-[1.5] min-w-0">
+      <div className="w-full min-w-[10rem] md:w-auto md:flex-none md:basis-[11rem] xl:flex-1 xl:max-w-[14rem]">
         <label className="text-sm font-medium text-muted-foreground mb-1.5 block">{t('forms.amount')}</label>
         <div className="flex gap-2">
           <Input

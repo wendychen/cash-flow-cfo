@@ -289,29 +289,29 @@ export default function TimeNavigator({ selectedPeriod, onSelectPeriod, currentY
   };
 
   return (
-    <div className="bg-card rounded-xl shadow-card p-4 w-full" data-testid="time-navigator">
-      <div className="flex items-center justify-between gap-2 mb-3 pb-2 border-b">
-        <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium text-foreground">{t("timeNav.title")}</span>
+    <div className="bg-card rounded-xl shadow-card p-3 w-full min-w-0" data-testid="time-navigator">
+      <div className="mb-2.5 pb-2 border-b space-y-0.5">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <Calendar className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <span className="text-sm font-medium text-foreground truncate">{t("timeNav.title")}</span>
         </div>
-        <span className="text-[10px] text-muted-foreground tabular-nums">
+        <span className="block text-[10px] text-muted-foreground tabular-nums pl-5">
           {t("timeNav.yearRange", { start: years[0], end: years[years.length - 1] })}
         </span>
       </div>
 
-      <div className="flex items-center gap-2 mb-3 pb-2 border-b">
+      <div className="flex items-center gap-2 mb-2.5 pb-2 border-b">
         <Switch
           id="expand-all"
           checked={expandAll}
           onCheckedChange={handleExpandAllToggle}
         />
-        <Label htmlFor="expand-all" className="text-sm text-muted-foreground cursor-pointer">
+        <Label htmlFor="expand-all" className="text-xs text-muted-foreground cursor-pointer">
           {t("timeNav.expandAll")}
         </Label>
       </div>
 
-      <ScrollArea className="h-[min(520px,60vh)] pr-2">
+      <ScrollArea className="h-[min(520px,60vh)] pr-1">
         <div className="space-y-1">
           {[...years].reverse().map((year) => renderYear(year))}
         </div>

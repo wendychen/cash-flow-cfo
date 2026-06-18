@@ -448,7 +448,7 @@ export default function Dashboard() {
     <>
     <UserGuide open={userGuideOpen} onOpenChange={setUserGuideOpen} />
     <div className="min-h-screen bg-background p-6">
-      <div className="max-w-6xl mx-auto space-y-8">
+      <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -522,18 +522,14 @@ export default function Dashboard() {
         </div>
 
         {/* Main Layout: Time Navigator on left + Content on right (original layout style) */}
-        <div className="flex gap-8">
+        <div className="flex gap-4 lg:gap-5">
           {/* Left Sidebar - Time Navigator */}
-          <div className="w-80 flex-shrink-0">
+          <aside className="w-52 shrink-0 lg:w-56">
             <div className="sticky top-6 space-y-4">
-              <Card>
-                <CardContent className="p-4">
-                  <TimeNavigator
-                    selectedPeriod={selectedPeriod}
-                    onSelectPeriod={setSelectedPeriod}
-                  />
-                </CardContent>
-              </Card>
+              <TimeNavigator
+                selectedPeriod={selectedPeriod}
+                onSelectPeriod={setSelectedPeriod}
+              />
               <LongTermFinGoalCard
                 goal={longTermFinGoal}
                 currentSavings={latestSavingsBalance}
@@ -541,10 +537,10 @@ export default function Dashboard() {
                 onClearGoal={clearLongTermFinGoal}
               />
             </div>
-          </div>
+          </aside>
 
           {/* Right - Main Content */}
-          <div className="flex-1 min-w-0 space-y-6">
+          <main className="flex-1 min-w-0 space-y-6">
             {/* Summary Cards — auto-fit avoids clipping long currency values beside the sidebar */}
         <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,10.5rem),1fr))] gap-4">
           <Card className="min-w-0 overflow-hidden">
@@ -930,7 +926,7 @@ export default function Dashboard() {
             <p className="text-xs text-muted-foreground">{t('dashboard.backupHint')}</p>
           </CardContent>
         </Card>
-      </div>
+      </main>
     </div>
   </div>
 </div>
